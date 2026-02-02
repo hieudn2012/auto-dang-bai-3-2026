@@ -2,6 +2,8 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { InvokeChannel } from './types'
+import { handleSearchTop } from './features/x-search-top'
+import { handleCheckLive } from './features/x-check-live'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -60,6 +62,16 @@ const handle = ipcMain.handle as <T extends InvokeChannel>(channel: T, listener:
 // Đăng ký IPC handler
 handle(InvokeChannel.GET_CURRENT_TIME, async () => {
   console.log('get-current-time')
+})
+
+handle(InvokeChannel.OPEN_PROFILE, async (_event, id) => {
+  // await openProfile(id);
+  // await handleLogin();
+  await handleSearchTop();
+})
+
+handle(InvokeChannel.CHECK_LIVE, async (_event, accounts) => {
+  await handleCheckLive(accounts);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 
 contextBridge.exposeInMainWorld('api', {
   getCurrentTime: () => invoke(InvokeChannel.GET_CURRENT_TIME),
+  openProfile: (id: number) => invoke(InvokeChannel.OPEN_PROFILE, id),
+  checkLive: (accounts: string[]) => invoke(InvokeChannel.CHECK_LIVE, accounts),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

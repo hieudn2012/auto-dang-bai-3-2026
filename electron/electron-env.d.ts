@@ -24,4 +24,9 @@ declare namespace NodeJS {
 // Used in Renderer process, expose in `preload.ts`
 interface Window {
   ipcRenderer: import('electron').IpcRenderer
+  api: {
+    getCurrentTime: () => Promise<any>
+    openProfile: (id: number) => Promise<any>
+    checkLive: ({ accounts }: { accounts: string[] }) => Promise<any>
+  }
 }
