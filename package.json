@@ -11,6 +11,7 @@
     "up": "eval \"$(ssh-agent -s)\" && ssh-add \"/c/new tool/id_rsa\" && git pull origin master"
   },
   "dependencies": {
+    "@google/genai": "^1.39.0",
     "@headlessui/react": "^2.2.4",
     "@tanstack/react-query": "^5.74.4",
     "@types/lodash": "^4.17.16",
@@ -18,7 +19,7 @@
     "bufferutil": "^4.0.9",
     "formik": "^2.4.6",
     "gologin": "^2.1.21",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "moment": "^2.30.1",
     "puppeteer": "^24.10.0",
     "puppeteer-core": "^24.10.0",

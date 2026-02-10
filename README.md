@@ -28,3 +28,26 @@ export default {
 - Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
 - Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
 - Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+
+- Lưu cấu trúc thư mục file config json
+  {
+    "wokring_dir": "/Users/admin/Desktop/Tien Ich",
+  }
+
+- Lưu lịch sử các profile đã mở file txt 
+  - Mỗi profile sẽ có 1 dòng trong file txt
+  - Mỗi dòng sẽ có cấu trúc `profile_id || folder`
+  - Mỗi giá trị cách nhau bởi dấu `||`
+
+- Các tính năng
+  - Hiển thị danh sách profile
+  - Random folder - chọn ngẫu nhiên 1 folder trong thư mục làm việc mà chưa có profile nào được mở
+  - Đánh dấu folder đã mở
+  - Mở profile
+  - Post
+  - Edit bài post - chèn link
+  - Quote
+  - Edit bài quote - chèn link
+  
+
+

@@ -4,6 +4,8 @@ import path from 'node:path'
 import { InvokeChannel } from './types'
 import { handleSearchTop } from './features/x-search-top'
 import { handleCheckLive } from './features/x-check-live'
+import { createProductFolder, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, saveProductInfo } from './features/threads-folder'
+import { openThreadsProfile, threadsPost } from './features/threads-profile'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -73,6 +75,39 @@ handle(InvokeChannel.OPEN_PROFILE, async (_event, id) => {
 handle(InvokeChannel.CHECK_LIVE, async (_event, accounts) => {
   await handleCheckLive(accounts);
 })
+
+handle(InvokeChannel.OPEN_DIALOG_FOLDER, async () => {
+  return openDialogFolder();
+})
+
+handle(InvokeChannel.CREATE_PRODUCT_FOLDER, async (_event, parentFolder, productName) => {
+  return createProductFolder(parentFolder, productName);
+})
+
+handle(InvokeChannel.LOAD_PRODUCT_INFO, async (_event, productFolderPath) => {
+  return loadProductInfo(productFolderPath);
+})
+
+handle(InvokeChannel.OPEN_FOLDER, async (_event, path) => {
+  return openFolder(path);
+})
+
+handle(InvokeChannel.SAVE_PRODUCT_INFO, async (_event, info) => {
+  return saveProductInfo(info);
+})
+
+handle(InvokeChannel.MOVE_ALL_FILES_FROM_FOLDER_A_TO_FOLDER_B, async (_event, from, to) => {
+  return moveAllFilesFromFolderAtoFolderB(from, to);
+})
+
+handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id) => {
+  return openThreadsProfile(id);
+})
+
+handle(InvokeChannel.THREADS_POST, async (_event, wsUrl, username, folder) => {
+  return threadsPost({ wsUrl, username, folder });
+})
+
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
