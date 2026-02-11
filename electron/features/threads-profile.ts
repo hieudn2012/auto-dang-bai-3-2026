@@ -10,11 +10,13 @@ export const openThreadsProfile = async (id: number) => {
 export const threadsPost = async ({
   wsUrl,
   username,
-  folder
+  folder,
+  event
 }: {
   wsUrl: string,
   username: string,
   folder: string,
+  event: Electron.IpcMainEvent,
 }) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: wsUrl,
@@ -88,7 +90,91 @@ export const threadsPost = async ({
       }
     }
   });
+  event.sender.send('show-toast', { type: 'success', message: 'Đăng bài thành công!' });
 
 
   browser.disconnect();
+}
+
+export const clickPostButton = async ({
+  ws,
+  username,
+}: {
+  ws: string,
+  username: string,
+}) => {
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: ws,
+    defaultViewport: null,
+  });
+
+  // open new tab
+  const page = await browser.newPage();
+  await page.goto(`https://threads.com/@${username}`);
+  await waitRandom(5000, 10000);
+
+  const els = await page.$$('div.xc26acl');
+
+  for (const el of els) {
+    const text = await page.evaluate(e => e.textContent.trim(), el);
+    if (text === 'Post') {
+      await el.click();
+      break;
+    }
+  }
+}
+
+export const clickEditLatestPostButton = async ({
+  ws,
+  username,
+}: {
+  ws: string,
+  username: string,
+}) => {
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: ws,
+    defaultViewport: null,
+  });
+
+  // Lấy tất cả tabs
+  const pages = await browser.pages();
+
+  // Chọn tab cuối cùng
+  const page = pages[pages.length - 1];
+  await page.bringToFront();
+
+  // Đợi DOM load
+  await page.waitForSelector('div.x1c1b4dv', { timeout: 10000 });
+
+  // Tìm svg aria-label="More" nằm trong div.x1c1b4dv
+  const moreBtn = await page.$(
+    'div.x1c1b4dv svg[aria-label="More"]'
+  );
+
+  if (moreBtn) {
+    await moreBtn.click();
+  }
+  await waitRandom(3000, 5000);
+
+  await page.waitForSelector('div.x17zd0t2');
+
+
+  const editBtn = await page.evaluateHandle(() => {
+    const divs = document.querySelectorAll('div.x17zd0t2');
+
+    for (const div of divs) {
+      const span = div.querySelector('span');
+      if (span?.textContent?.trim() === 'Edit') {
+        return div; // click container
+      }
+    }
+    return null;
+  });
+
+  if (editBtn) {
+    await (editBtn as any).click();
+  }
+
+
+  await browser.disconnect();
 }

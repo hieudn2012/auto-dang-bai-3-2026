@@ -1,5 +1,5 @@
 import { ipcRenderer, contextBridge } from 'electron'
-import { InvokeChannel } from './types'
+import { InvokeChannel, MainConfig, UserInfo } from './types'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -7,7 +7,7 @@ const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...ar
 contextBridge.exposeInMainWorld('ipcRenderer', {
   on(...args: Parameters<typeof ipcRenderer.on>) {
     const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
+    return ipcRenderer.on(channel, listener)
   },
   off(...args: Parameters<typeof ipcRenderer.off>) {
     const [channel, ...omit] = args
@@ -38,6 +38,12 @@ contextBridge.exposeInMainWorld('api', {
   moveAllFilesFromFolderAtoFolderB: (from: string, to: string) => invoke(InvokeChannel.MOVE_ALL_FILES_FROM_FOLDER_A_TO_FOLDER_B, from, to),
   threadsProfileOpen: (id: number) => invoke(InvokeChannel.THREADS_PROFILE_OPEN, id),
   threadsPost: ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => invoke(InvokeChannel.THREADS_POST, wsUrl, username, folder),
+  saveMainConfig: (config: MainConfig) => invoke(InvokeChannel.SAVE_MAIN_CONFIG, config),
+  loadMainConfig: () => invoke(InvokeChannel.LOAD_MAIN_CONFIG),
+  randomFolderNotUsed: () => invoke(InvokeChannel.RANDOM_FOLDER_NOT_USED),
+  getFolderInfo: (path: string) => invoke(InvokeChannel.GET_FOLDER_INFO, path),
+  clickPostButton: (info: UserInfo) => invoke(InvokeChannel.CLICK_POST_BUTTON, info),
+  clickEditLatestPostButton: (info: UserInfo) => invoke(InvokeChannel.CLICK_EDIT_LATEST_POST_BUTTON, info),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

@@ -4,8 +4,9 @@ import path from 'node:path'
 import { InvokeChannel } from './types'
 import { handleSearchTop } from './features/x-search-top'
 import { handleCheckLive } from './features/x-check-live'
-import { createProductFolder, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, saveProductInfo } from './features/threads-folder'
-import { openThreadsProfile, threadsPost } from './features/threads-profile'
+import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
+import { clickEditLatestPostButton, clickPostButton, openThreadsProfile, threadsPost } from './features/threads-profile'
+import { initConfigFile, loadMainConfig, saveMainConfig } from './features/common'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -104,10 +105,33 @@ handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id) => {
   return openThreadsProfile(id);
 })
 
-handle(InvokeChannel.THREADS_POST, async (_event, wsUrl, username, folder) => {
-  return threadsPost({ wsUrl, username, folder });
+handle(InvokeChannel.THREADS_POST, async (event, wsUrl, username, folder) => {
+  await threadsPost({ wsUrl, username, folder, event });
 })
 
+handle(InvokeChannel.SAVE_MAIN_CONFIG, async (_event, config) => {
+  return saveMainConfig(config);
+})
+
+handle(InvokeChannel.LOAD_MAIN_CONFIG, async () => {
+  return loadMainConfig();
+})
+
+handle(InvokeChannel.RANDOM_FOLDER_NOT_USED, async () => {
+  return randomFolderNotUsed();
+})
+
+handle(InvokeChannel.GET_FOLDER_INFO, async (_event, path) => {
+  return getFolderInfo(path);
+})
+
+handle(InvokeChannel.CLICK_POST_BUTTON, async (_event, info) => {
+  return clickPostButton(info);
+})
+
+handle(InvokeChannel.CLICK_EDIT_LATEST_POST_BUTTON, async (_event, info) => {
+  return clickEditLatestPostButton(info);
+})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -133,4 +157,7 @@ export function sendToRenderer<T>(channel: string, data: T) {
   }
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(async () => {
+  await initConfigFile();
+  createWindow();
+})

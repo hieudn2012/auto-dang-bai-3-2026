@@ -1,6 +1,8 @@
 // change working folder
 import { dialog, shell } from 'electron';
 import fs from 'node:fs';
+import { getHistoryTxt, loadMainConfig } from './common';
+import { FolderInfo } from 'electron/types';
 
 export const openDialogFolder = async () => {
   const folderPath = dialog.showOpenDialogSync({
@@ -47,4 +49,35 @@ export const moveAllFilesFromFolderAtoFolderB = async (from: string, to: string)
   files.forEach((file) => {
     fs.renameSync(`${from}/${file}`, `${to}/${file}`);
   });
+}
+
+// random folder
+export const randomFolderNotUsed = async (): Promise<{ name: string, path: string }> => {
+  // get working folder
+  const config = await loadMainConfig();
+  const history = await getHistoryTxt();
+
+  // get all folder in working folder
+  const folders = fs.readdirSync(config?.workingDir || '');
+
+  // get all folder not in history
+  const foldersNotInHistory = folders.filter((folder) => !history.some((item) => item.folder === `${config?.workingDir}/${folder}`));
+
+  // random folder not in history
+  const randomFolderName = foldersNotInHistory[Math.floor(Math.random() * foldersNotInHistory.length)];
+  return {
+    name: randomFolderName,
+    path: `${config?.workingDir}/${randomFolderName}`
+  };
+}
+
+// get folder info
+export const getFolderInfo = async (path: string): Promise<FolderInfo> => {
+  const cap = fs.readFileSync(`${path}/cap.txt`, 'utf8');
+  const link = fs.readFileSync(`${path}/link.txt`, 'utf8');
+
+  return {
+    cap,
+    link,
+  }
 }

@@ -31,7 +31,7 @@ export default {
 
 - Lưu cấu trúc thư mục file config json
   {
-    "wokring_dir": "/Users/admin/Desktop/Tien Ich",
+    "wokringDir": "/Users/admin/Desktop/Tien Ich",
   }
 
 - Lưu lịch sử các profile đã mở file txt 

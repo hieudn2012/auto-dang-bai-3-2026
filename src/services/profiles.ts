@@ -15,9 +15,6 @@ const getNativeClientProfileOpenedList = async () => {
     return acc;
   }, {} as Record<number, (typeof data)[0]>);
 
-  console.log(openedMap, 'openedMap');
-
-
   return openedMap;
 }
 

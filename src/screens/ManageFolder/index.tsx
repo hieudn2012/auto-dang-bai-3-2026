@@ -61,14 +61,25 @@ const ManageFolder = () => {
     setMessage('Đã di chuyển tất cả file');
   }
 
+  const handleSaveMainConfig = async () => {
+    await window.api.saveMainConfig({ workingDir: workingFolder });
+  }
+
+  const handleLoadMainConfig = async () => {
+    const config = await window.api.loadMainConfig();
+    setWorkingFolder(config?.workingDir || '');
+  }
+
   return (
     <Layout>
       <div>
         <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
             <Input placeholder="Nhập tên thư mục làm việc" value={workingFolder} onChange={(e) => setWorkingFolder(e.target.value)} />
-            <div className="w-[200px]">
-              <Button onClick={handleOpenDialogFolder}>Chọn thư mục</Button>
+            <div className="flex gap-1">
+              <Button onClick={handleOpenDialogFolder}>Chọn folder</Button>
+              <Button onClick={handleLoadMainConfig}>Load folder làm việc</Button>
+              <Button onClick={handleSaveMainConfig}>Lưu</Button>
             </div>
           </div>
           <div className="flex gap-2">
