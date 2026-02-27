@@ -15,10 +15,11 @@ type WindownInstance = typeof window & {
     threadsPost: ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => Promise<any>,
     saveMainConfig: (config: MainConfig) => Promise<any>,
     loadMainConfig: () => Promise<MainConfig | null>,
-    randomFolderNotUsed: () => Promise<{ name: string, path: string }>,
+    randomFolderNotUsed: (exclude: string[]) => Promise<{ name: string, path: string }>,
     getFolderInfo: (path: string) => Promise<{ cap: string, link: string }>,
     clickPostButton: (info: UserInfo) => Promise<any>,
     clickEditLatestPostButton: (info: UserInfo) => Promise<any>,
+    saveHistoryTxt: ({ profile_id, folder }: { profile_id: number, folder: string }) => Promise<any>,
   }
 }
 

@@ -1,10 +1,10 @@
 import axios from "axios";
 import fs from 'node:fs/promises';
-import puppeteer from 'puppeteer';
+import puppeteer, { Page } from 'puppeteer';
 import { waitRandom } from "./common";
 
 export const openThreadsProfile = async (id: number) => {
-  axios.post(`http://127.0.0.1:53200/api/v2/profile-open`, { profile_id: id })
+  return axios.post(`http://127.0.0.1:53200/api/v2/profile-open`, { profile_id: id })
 }
 
 export const threadsPost = async ({
@@ -32,7 +32,7 @@ export const threadsPost = async ({
 
   for (const el of els) {
     const text = await page.evaluate(e => e.textContent.trim(), el);
-    if (text === 'Post') {
+    if (text === 'Post' || text === 'Đăng') {
       await el.click();
       break;
     }
@@ -99,27 +99,107 @@ export const threadsPost = async ({
 export const clickPostButton = async ({
   ws,
   username,
+  folder,
+  type = 'quote',
 }: {
   ws: string,
   username: string,
+  folder: string,
+  type: 'post' | 'quote',
 }) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
   });
 
+  // closes all pages
+  const pages = await browser.pages();
+
+  // close all and keep only first page
+  for (let i = 1; i < pages.length; i++) {
+    await pages[i].close();
+  }
+
   // open new tab
   const page = await browser.newPage();
   await page.goto(`https://threads.com/@${username}`);
   await waitRandom(5000, 10000);
 
-  const els = await page.$$('div.xc26acl');
+  if (type === 'post') {
+    const els = await page.$$('div.xc26acl');
 
-  for (const el of els) {
-    const text = await page.evaluate(e => e.textContent.trim(), el);
-    if (text === 'Post') {
-      await el.click();
-      break;
+    for (const el of els) {
+      const text = await page.evaluate(e => e.textContent.trim(), el);
+      if (text === 'Post' || text === 'Đăng') {
+        await el.click();
+        break;
+      }
+    }
+  }
+
+  if (type === 'quote') {
+    const repostSvg = await page.$(
+      'div.x4vbgl9 svg[aria-label="Repost"]'
+    )
+
+    if (repostSvg) {
+      await repostSvg.click();
+      await waitRandom(3000, 5000);
+      const spans = await page.$$('div.x17zd0t2 span')
+
+      for (const span of spans) {
+        const text = await span.evaluate(el => el.textContent?.trim())
+        if (text === 'Quote' || text === 'Trích dẫn') {
+          await span.click()
+          break
+        }
+      }
+
+    }
+  }
+
+
+
+  await uploadMedia({ page, username, folder });
+  await browser.disconnect();
+}
+
+// upload media
+export const uploadMedia = async ({
+  page,
+  username,
+  folder,
+}: {
+  page: Page,
+  username: string,
+  folder: string,
+}) => {
+  if (page) {
+    await page.bringToFront();
+    await waitRandom(5000, 10000);
+
+    // find input type = file
+    const inputFile = await page.$('input[type="file"]');
+    console.log(inputFile);
+    // get all videos in folder
+    const videos = await fs.readdir(folder);
+    // filter only video files
+    const videoFiles = videos.filter(video => video.endsWith('.mp4') || video.endsWith('.mov') || video.endsWith('.webm'));
+    console.log(videoFiles);
+    // upload all video files
+    for (const video of videoFiles) {
+      await (inputFile as any).uploadFile(`${folder}/${video}`);
+      await waitRandom(3000, 5000);
+    }
+
+    // filter only image files
+    const images = await fs.readdir(folder);
+    const imageFiles = images.filter(image => image.endsWith('.avif') || image.endsWith('.jpg') || image.endsWith('.jpeg') || image.endsWith('.png') || image.endsWith('.webp'));
+    console.log(imageFiles);
+    // upload all image files
+    for (const image of imageFiles) {
+      await (inputFile as any).uploadFile(`${folder}/${image}`);
+      await waitRandom(3000, 5000);
     }
   }
 }
@@ -150,9 +230,15 @@ export const clickEditLatestPostButton = async ({
   const moreBtn = await page.$(
     'div.x1c1b4dv svg[aria-label="More"]'
   );
+  const moreBtnVn = await page.$(
+    'div.x1c1b4dv svg[aria-label="Xem thêm"]'
+  );
 
   if (moreBtn) {
     await moreBtn.click();
+  }
+  if (moreBtnVn) {
+    await moreBtnVn.click();
   }
   await waitRandom(3000, 5000);
 
@@ -164,7 +250,7 @@ export const clickEditLatestPostButton = async ({
 
     for (const div of divs) {
       const span = div.querySelector('span');
-      if (span?.textContent?.trim() === 'Edit') {
+      if (span?.textContent?.trim() === 'Edit' || span?.textContent?.trim() === 'Chỉnh sửa') {
         return div; // click container
       }
     }

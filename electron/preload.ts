@@ -1,5 +1,5 @@
 import { ipcRenderer, contextBridge } from 'electron'
-import { InvokeChannel, MainConfig, UserInfo } from './types'
+import { History, InvokeChannel, MainConfig, UserInfo } from './types'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -40,10 +40,11 @@ contextBridge.exposeInMainWorld('api', {
   threadsPost: ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => invoke(InvokeChannel.THREADS_POST, wsUrl, username, folder),
   saveMainConfig: (config: MainConfig) => invoke(InvokeChannel.SAVE_MAIN_CONFIG, config),
   loadMainConfig: () => invoke(InvokeChannel.LOAD_MAIN_CONFIG),
-  randomFolderNotUsed: () => invoke(InvokeChannel.RANDOM_FOLDER_NOT_USED),
+  randomFolderNotUsed: (exclude: string[] = []) => invoke(InvokeChannel.RANDOM_FOLDER_NOT_USED, exclude),
   getFolderInfo: (path: string) => invoke(InvokeChannel.GET_FOLDER_INFO, path),
   clickPostButton: (info: UserInfo) => invoke(InvokeChannel.CLICK_POST_BUTTON, info),
   clickEditLatestPostButton: (info: UserInfo) => invoke(InvokeChannel.CLICK_EDIT_LATEST_POST_BUTTON, info),
+  saveHistoryTxt: ({ profile_id, folder }: History) => invoke(InvokeChannel.SAVE_HISTORY_TXT, profile_id, folder),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

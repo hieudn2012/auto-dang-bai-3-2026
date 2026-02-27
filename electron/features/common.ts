@@ -1,5 +1,6 @@
 import { app } from "electron";
 import { History, MainConfig } from "electron/types";
+import { trim } from "lodash";
 import fs from 'node:fs';
 
 // wait random from to ms
@@ -41,9 +42,11 @@ export const getHistoryTxt = async (): Promise<History[]> => {
   // convert to History Array
   const historyArray = history.split('\n').map(item => {
     const [profile_id, folder] = item.split('||');
-    return { profile_id: parseInt(profile_id), folder };
+    return { profile_id: trim(profile_id), folder: trim(folder) };
   });
-  return historyArray;
+
+  // return ignore folder start .
+  return historyArray.filter(item => !item.folder.startsWith('.'));
 }
 
 // init config file
@@ -59,4 +62,14 @@ export const initConfigFile = async () => {
   if (!fs.existsSync(`${appConfig}/history.txt`)) {
     fs.writeFileSync(`${appConfig}/history.txt`, '');
   }
+}
+
+// save history txt, add 1 line new line
+export const saveHistoryTxt = async ({ profile_id, folder }: { profile_id: number, folder: string }) => {
+  // get app config in system
+  const appConfig = app.getPath('userData');
+  // get history from file history.txt
+  const historyTxt = fs.readFileSync(`${appConfig}/history.txt`, 'utf8');
+  // add 1 line new line
+  fs.writeFileSync(`${appConfig}/history.txt`, `${historyTxt}\n${profile_id} || ${folder}`);
 }

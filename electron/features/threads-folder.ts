@@ -52,7 +52,7 @@ export const moveAllFilesFromFolderAtoFolderB = async (from: string, to: string)
 }
 
 // random folder
-export const randomFolderNotUsed = async (): Promise<{ name: string, path: string }> => {
+export const randomFolderNotUsed = async (exclude: string[] = []): Promise<{ name: string, path: string }> => {
   // get working folder
   const config = await loadMainConfig();
   const history = await getHistoryTxt();
@@ -61,7 +61,13 @@ export const randomFolderNotUsed = async (): Promise<{ name: string, path: strin
   const folders = fs.readdirSync(config?.workingDir || '');
 
   // get all folder not in history
-  const foldersNotInHistory = folders.filter((folder) => !history.some((item) => item.folder === `${config?.workingDir}/${folder}`));
+  const foldersNotInHistory = folders.filter(folder => {
+    const folderPath = `${config?.workingDir}/${folder}`;
+    return (
+      !history.some(item => item.folder === folderPath) &&
+      !exclude.includes(folderPath)
+    );
+  });
 
   // random folder not in history
   const randomFolderName = foldersNotInHistory[Math.floor(Math.random() * foldersNotInHistory.length)];

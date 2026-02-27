@@ -1,8 +1,13 @@
-import { useQueries } from "@tanstack/react-query"
+import { useMutation, useQueries } from "@tanstack/react-query"
 import axios from "axios"
+import { windowInstance } from "./window"
 
-const getProfiles = () => {
-  return axios.post(`/api/v2/profile-list`, { group_id: 257818 })
+const getProfiles = (group_id: number) => {
+  return axios.post(`/api/v2/profile-list`, { group_id, limit: 100 })
+}
+
+const getGroupList = () => {
+  return axios.post(`/api/v2/group-list`)
 }
 
 const getNativeClientProfileOpenedList = async () => {
@@ -18,10 +23,10 @@ const getNativeClientProfileOpenedList = async () => {
   return openedMap;
 }
 
-export const useGetProfiles = () => {
+export const useGetProfiles = (group_id: number) => {
   return useQueries({
     queries: [
-      { queryKey: ['profiles'], queryFn: getProfiles }
+      { queryKey: ['profiles', group_id], queryFn: () => getProfiles(group_id) }
     ]
   })
 }
@@ -30,6 +35,22 @@ export const useGetNativeClientProfileOpenedList = () => {
   return useQueries({
     queries: [
       { queryKey: ['native-client-profile-opened-list'], queryFn: getNativeClientProfileOpenedList }
+    ]
+  })
+}
+
+export const useOpenProfile = () => {
+  return useMutation({
+    mutationFn: (id: number) => {
+      return windowInstance.api.threadsProfileOpen(id);
+    }
+  })
+}
+
+export const useGetGroupList = () => {
+  return useQueries({
+    queries: [
+      { queryKey: ['group-list'], queryFn: getGroupList }
     ]
   })
 }

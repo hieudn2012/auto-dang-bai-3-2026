@@ -16,6 +16,7 @@ export enum InvokeChannel {
   GET_FOLDER_INFO = 'get-folder-info',
   CLICK_POST_BUTTON = 'click-post-button',
   CLICK_EDIT_LATEST_POST_BUTTON = 'click-edit-latest-post-button',
+  SAVE_HISTORY_TXT = 'save-history-txt',
 }
 
 export type MainConfig = {
@@ -23,7 +24,7 @@ export type MainConfig = {
 }
 
 export type History = {
-  profile_id: number
+  profile_id: string
   folder: string
 }
 
@@ -35,4 +36,6 @@ export type FolderInfo = {
 export type UserInfo = {
   ws: string;
   username: string;
+  folder: string;
+  type: 'post' | 'quote';
 }

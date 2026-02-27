@@ -14,8 +14,6 @@ export const handleLogin = async () => {
     defaultViewport: null,
   });
 
-  console.log('Connected to browser', browser);
-
   // // Mở tab mới
   const page = await browser.newPage();
 
