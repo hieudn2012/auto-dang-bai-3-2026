@@ -5,6 +5,7 @@ import { execSync } from 'child_process'
 import { waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
+import { matchPath } from "react-router-dom";
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -285,11 +286,8 @@ export const uploadMedia = async ({
     console.log(videoFiles);
     // upload all video files
 
-    // TODO: check platform window or mac
-    const isMac = process.platform === 'darwin';
-    const matchPath = isMac ? '/' : '\\';
     for (const video of videoFiles) {
-      const filePath = path.resolve(`${folder}${matchPath}${video}`);
+      const filePath = path.join(folder, video);
       await (inputFile as any).uploadFile(filePath);
       await waitRandom(3000, 5000);
     }
@@ -300,7 +298,7 @@ export const uploadMedia = async ({
     console.log(imageFiles);
     // upload all image files
     for (const image of imageFiles) {
-      const imagePath = path.resolve(`${folder}${matchPath}${image}`);
+      const imagePath = path.join(folder, image);
       await (inputFile as any).uploadFile(imagePath);
       await waitRandom(3000, 5000);
     }
