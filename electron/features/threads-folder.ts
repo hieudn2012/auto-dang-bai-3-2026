@@ -60,9 +60,12 @@ export const randomFolderNotUsed = async (exclude: string[] = []): Promise<{ nam
   // get all folder in working folder
   const folders = fs.readdirSync(config?.workingDir || '');
 
+  const isMac = process.platform === 'darwin';
+  const matchPath = isMac ? '/' : '\\';
+
   // get all folder not in history
   const foldersNotInHistory = folders.filter(folder => {
-    const folderPath = `${config?.workingDir}/${folder}`;
+    const folderPath = `${config?.workingDir}${matchPath}${folder}`;
     return (
       !history.some(item => item.folder === folderPath) &&
       !exclude.includes(folderPath)
@@ -73,14 +76,16 @@ export const randomFolderNotUsed = async (exclude: string[] = []): Promise<{ nam
   const randomFolderName = foldersNotInHistory[Math.floor(Math.random() * foldersNotInHistory.length)];
   return {
     name: randomFolderName,
-    path: `${config?.workingDir}/${randomFolderName}`
+    path: `${config?.workingDir}${matchPath}${randomFolderName}`
   };
 }
 
 // get folder info
 export const getFolderInfo = async (path: string): Promise<FolderInfo> => {
-  const cap = fs.readFileSync(`${path}/cap.txt`, 'utf8');
-  const link = fs.readFileSync(`${path}/link.txt`, 'utf8');
+  const isMac = process.platform === 'darwin';
+  const matchPath = isMac ? '/' : '\\';
+  const cap = fs.readFileSync(`${path}${matchPath}cap.txt`, 'utf8');
+  const link = fs.readFileSync(`${path}${matchPath}link.txt`, 'utf8');
 
   return {
     cap,

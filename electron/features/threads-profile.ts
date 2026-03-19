@@ -286,8 +286,7 @@ export const uploadMedia = async ({
 
     // TODO: check platform window or mac
     const isMac = process.platform === 'darwin';
-    console.log(isMac, 'isMac')
-    const matchPath = '\\';
+    const matchPath = isMac ? '/' : '\\';
     for (const video of videoFiles) {
       await (inputFile as any).uploadFile(`${folder}${matchPath}${video}`);
       await waitRandom(3000, 5000);
