@@ -151,6 +151,7 @@ export const threadsPost = async ({
 
     // filter only video files
     const videoFiles = videos.filter(video => video.endsWith('.mp4') || video.endsWith('.mov') || video.endsWith('.webm'));
+    console.log(folder, 'folder');
     console.log(videoFiles);
     // upload all video files
     for (const video of videoFiles) {
