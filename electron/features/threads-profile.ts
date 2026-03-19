@@ -4,6 +4,7 @@ import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
 import { waitRandom } from "./common";
 import os from 'os'
+import path from "node:path";
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -288,7 +289,8 @@ export const uploadMedia = async ({
     const isMac = process.platform === 'darwin';
     const matchPath = isMac ? '/' : '\\';
     for (const video of videoFiles) {
-      await (inputFile as any).uploadFile(`${folder}${matchPath}${video}`);
+      const filePath = path.resolve(`${folder}${matchPath}${video}`);
+      await (inputFile as any).uploadFile(filePath);
       await waitRandom(3000, 5000);
     }
 
@@ -298,7 +300,8 @@ export const uploadMedia = async ({
     console.log(imageFiles);
     // upload all image files
     for (const image of imageFiles) {
-      await (inputFile as any).uploadFile(`${folder}${matchPath}${image}`);
+      const imagePath = path.resolve(`${folder}${matchPath}${image}`);
+      await (inputFile as any).uploadFile(imagePath);
       await waitRandom(3000, 5000);
     }
   }
