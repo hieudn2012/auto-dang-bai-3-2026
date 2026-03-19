@@ -1,10 +1,105 @@
 import axios from "axios";
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
+import { execSync } from 'child_process'
 import { waitRandom } from "./common";
+import os from 'os'
 
-export const openThreadsProfile = async (id: number) => {
-  return axios.post(`http://127.0.0.1:53200/api/v2/profile-open`, { profile_id: id })
+export function getScreenSize() {
+  const platform = os.platform()
+
+  // 🪟 WINDOWS
+  if (platform === 'win32') {
+    const output = execSync(
+      'powershell -command "Add-Type -AssemblyName System.Windows.Forms; ' +
+      '[System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width; ' +
+      '[System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height"'
+    )
+      .toString()
+      .trim()
+      .split(/\s+/)
+
+    return {
+      width: Number(output[0]),
+      height: Number(output[1]),
+    }
+  }
+
+  // 🍎 macOS
+  if (platform === 'darwin') {
+    const output = execSync(
+      `osascript -e 'tell application "Finder" to get bounds of window of desktop'`
+    )
+      .toString()
+      .trim()
+
+    const [, , width, height] = output.split(',').map(Number)
+
+    return { width, height }
+  }
+
+  // 🐧 LINUX
+  if (platform === 'linux') {
+    const output = execSync(`xdpyinfo | grep dimensions`)
+      .toString()
+      .match(/(\d+)x(\d+)/)
+
+    if (!output) throw new Error('Cannot detect screen size')
+
+    return {
+      width: Number(output[1]),
+      height: Number(output[2]),
+    }
+  }
+
+  throw new Error('Unsupported OS')
+}
+
+const { width: SCREEN_W, height: SCREEN_H } = getScreenSize()
+
+const WIN_W = 800
+const WIN_H = 500
+
+const GAP = 0 // có thể = 10 nếu muốn hở
+
+const COLS = Math.floor(SCREEN_W / (WIN_W + GAP))
+const ROWS = Math.floor(SCREEN_H / (WIN_H + GAP))
+
+const MAX_SLOTS = COLS * ROWS
+
+// 3008 / 800 = 3 (mỗi hàng 3 browser)
+
+export function calcFlowPosition(index: number) {
+  const slot = index % MAX_SLOTS   // 🔥 quay vòng
+
+  const col = slot % COLS
+  const row = Math.floor(slot / COLS)
+
+  const x = col * (WIN_W + GAP)
+  const y = row * (WIN_H + GAP)
+
+  return {
+    x,
+    y,
+    width: WIN_W,
+    height: WIN_H,
+    slot, // (optional) debug
+  }
+}
+
+export const openThreadsProfile = async (id: number, index: number) => {
+  // const { x, y, width, height } = calcFlowPosition(index)
+  await axios.post(`http://127.0.0.1:53200/api/v2/profile-open`, {
+    profile_id: id,
+    // args: [
+    //   `--window-size=${width},${height}`,
+    //   `--window-position=${x},${y}`,
+    //   '--no-first-run',
+    //   '--disable-infobars',
+    //   '--disable-gpu',
+    // ]
+  })
+  return true
 }
 
 export const threadsPost = async ({
@@ -112,16 +207,17 @@ export const clickPostButton = async ({
     defaultViewport: null,
   });
 
-  // closes all pages
-  const pages = await browser.pages();
-
-  // close all and keep only first page
-  for (let i = 1; i < pages.length; i++) {
-    await pages[i].close();
-  }
-
   // open new tab
   const page = await browser.newPage();
+
+  // close all pages and keep only this page
+  const pages = await browser.pages();
+  for (const p of pages) {
+    if (p !== page) {
+      await p.close();
+    }
+  }
+
   await page.goto(`https://threads.com/@${username}`);
   await waitRandom(5000, 10000);
 
@@ -157,8 +253,6 @@ export const clickPostButton = async ({
 
     }
   }
-
-
 
   await uploadMedia({ page, username, folder });
   await browser.disconnect();
@@ -219,8 +313,20 @@ export const clickEditLatestPostButton = async ({
   // Lấy tất cả tabs
   const pages = await browser.pages();
 
+  let targetPage: Page | null = null;
+
+  // logs all urls
+  for (const page of pages) {
+    console.log(page.url());
+    // find page with url contains threads.com
+    if (page.url().includes('threads.com')) {
+      targetPage = page;
+      break;
+    }
+  }
+
   // Chọn tab cuối cùng
-  const page = pages[pages.length - 1];
+  const page = targetPage || pages[pages.length - 1];
   await page.bringToFront();
 
   // Đợi DOM load
@@ -264,3 +370,37 @@ export const clickEditLatestPostButton = async ({
 
   await browser.disconnect();
 }
+
+// focus threads tab
+export const focusThreadsTab = async ({
+  ws,
+}: {
+  ws: string,
+}) => {
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: ws,
+    defaultViewport: null,
+  });
+
+  // Lấy tất cả tabs
+  const pages = await browser.pages();
+
+  let targetPage: Page | null = null;
+
+  // logs all urls
+  for (const page of pages) {
+    console.log(page.url());
+    // find page with url contains threads.com
+    if (page.url().includes('threads.com')) {
+      targetPage = page;
+      break;
+    }
+  }
+
+  // Chọn tab cuối cùng
+  const page = targetPage || pages[pages.length - 1];
+  await page.bringToFront();
+
+  await browser.disconnect();
+}
+

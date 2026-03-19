@@ -101,8 +101,8 @@ handle(InvokeChannel.MOVE_ALL_FILES_FROM_FOLDER_A_TO_FOLDER_B, async (_event, fr
   return moveAllFilesFromFolderAtoFolderB(from, to);
 })
 
-handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id) => {
-  return openThreadsProfile(id);
+handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id, index) => {
+  return openThreadsProfile(id, index);
 })
 
 handle(InvokeChannel.THREADS_POST, async (event, wsUrl, username, folder) => {

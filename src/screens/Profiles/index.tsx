@@ -43,6 +43,7 @@ const Profiles = () => {
   const [userMap, setUserMap] = useState<UserMap>({});
   const [open, setOpen] = useState(false);
   const [currentFolder, setCurrentFolder] = useState<{ cap: string, link: string, path: string, profile_id: number }>({ cap: '', link: '', path: '', profile_id: 0 });
+  const [totalBrowsers, setTotalBrowsers] = useState(0);
 
   const handlePost = ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => {
     windowInstance.api.threadsPost({ wsUrl, username, folder });
@@ -183,7 +184,7 @@ const Profiles = () => {
                 </td>
                 <td className="border border-gray-300 p-4">
                   <div className="flex gap-1">
-                    <OpenProfle id={profile.profile_id} />
+                    <OpenProfle id={profile.profile_id} total={totalBrowsers} onOpen={() => setTotalBrowsers(prev => prev + 1)} />
                     <Button
                       onClick={() =>
                         handlePost({
@@ -220,9 +221,9 @@ const Profiles = () => {
   )
 }
 
-const OpenProfle = ({ id }: { id: number }) => {
+const OpenProfle = ({ id, total, onOpen }: { id: number, total: number, onOpen?: () => void }) => {
   const { mutate: openProfile, isPending: isOpenProfilePending } = useOpenProfile();
-  return <Button onClick={() => openProfile(id)} loading={isOpenProfilePending}><i className="fa-brands fa-chrome"></i></Button>
+  return <Button onClick={() => { openProfile({ id, index: total }); onOpen?.() }} loading={isOpenProfilePending}><i className="fa-brands fa-chrome"></i></Button>
 }
 
 export default Profiles;

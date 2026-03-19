@@ -28,7 +28,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 
 contextBridge.exposeInMainWorld('api', {
   getCurrentTime: () => invoke(InvokeChannel.GET_CURRENT_TIME),
-  openProfile: (id: number) => invoke(InvokeChannel.OPEN_PROFILE, id),
+  openProfile: (id: number, index: number) => invoke(InvokeChannel.OPEN_PROFILE, id, index),
   checkLive: (accounts: string[]) => invoke(InvokeChannel.CHECK_LIVE, accounts),
   openDialogFolder: () => invoke(InvokeChannel.OPEN_DIALOG_FOLDER),
   createProductFolder: (parentFolder: string, productName: string) => invoke(InvokeChannel.CREATE_PRODUCT_FOLDER, parentFolder, productName),
@@ -36,7 +36,7 @@ contextBridge.exposeInMainWorld('api', {
   openFolder: (path: string) => invoke(InvokeChannel.OPEN_FOLDER, path),
   saveProductInfo: (info: { cap: string, link: string }) => invoke(InvokeChannel.SAVE_PRODUCT_INFO, info),
   moveAllFilesFromFolderAtoFolderB: (from: string, to: string) => invoke(InvokeChannel.MOVE_ALL_FILES_FROM_FOLDER_A_TO_FOLDER_B, from, to),
-  threadsProfileOpen: (id: number) => invoke(InvokeChannel.THREADS_PROFILE_OPEN, id),
+  threadsProfileOpen: (id: number, index: number) => invoke(InvokeChannel.THREADS_PROFILE_OPEN, id, index),
   threadsPost: ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => invoke(InvokeChannel.THREADS_POST, wsUrl, username, folder),
   saveMainConfig: (config: MainConfig) => invoke(InvokeChannel.SAVE_MAIN_CONFIG, config),
   loadMainConfig: () => invoke(InvokeChannel.LOAD_MAIN_CONFIG),

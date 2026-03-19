@@ -41,8 +41,8 @@ export const useGetNativeClientProfileOpenedList = () => {
 
 export const useOpenProfile = () => {
   return useMutation({
-    mutationFn: (id: number) => {
-      return windowInstance.api.threadsProfileOpen(id);
+    mutationFn: ({ id, index }: { id: number, index: number }) => {
+      return windowInstance.api.threadsProfileOpen(id, index);
     }
   })
 }
