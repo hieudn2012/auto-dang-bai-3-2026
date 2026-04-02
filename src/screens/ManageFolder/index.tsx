@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import TextArea from "@/components/TextArea";
 import { map, uniqBy } from "lodash";
 import { useState } from "react";
+import ConvertCookie from "./ConvertCookie";
 
 // short name like abc...def
 const shortName = (name: string) => {
@@ -93,6 +94,7 @@ const ManageFolder = () => {
           <Button onClick={handleCreateProductFolder}>Tạo sản phẩm</Button>
           <Button onClick={handleLoadProductInfo}>Load thông tin sản phẩm</Button>
         </div>
+        <ConvertCookie />
         <div className="font-bold mt-5">Danh sách sản phẩm</div>
         <div className="flex gap-1">
           {map(products, ({ name }) => (
