@@ -278,6 +278,18 @@ export const uploadMedia = async ({
     // find input type = file
     const inputFile = await page.$('input[type="file"]');
     console.log(inputFile);
+
+    // filter only image files
+    const images = await fs.readdir(folder);
+    const imageFiles = images.filter(image => image.endsWith('.avif') || image.endsWith('.jpg') || image.endsWith('.jpeg') || image.endsWith('.png') || image.endsWith('.webp'));
+    console.log(imageFiles);
+    // upload all image files
+    for (const image of imageFiles) {
+      const imagePath = path.join(folder, image);
+      await (inputFile as any).uploadFile(imagePath);
+      await waitRandom(3000, 5000);
+    }
+
     // get all videos in folder
     const videos = await fs.readdir(folder);
     // filter only video files
@@ -289,17 +301,6 @@ export const uploadMedia = async ({
     for (const video of videoFiles) {
       const filePath = path.join(folder, video);
       await (inputFile as any).uploadFile(filePath);
-      await waitRandom(3000, 5000);
-    }
-
-    // filter only image files
-    const images = await fs.readdir(folder);
-    const imageFiles = images.filter(image => image.endsWith('.avif') || image.endsWith('.jpg') || image.endsWith('.jpeg') || image.endsWith('.png') || image.endsWith('.webp'));
-    console.log(imageFiles);
-    // upload all image files
-    for (const image of imageFiles) {
-      const imagePath = path.join(folder, image);
-      await (inputFile as any).uploadFile(imagePath);
       await waitRandom(3000, 5000);
     }
   }
