@@ -17,10 +17,13 @@ export enum InvokeChannel {
   CLICK_POST_BUTTON = 'click-post-button',
   CLICK_EDIT_LATEST_POST_BUTTON = 'click-edit-latest-post-button',
   SAVE_HISTORY_TXT = 'save-history-txt',
+  SETUP_NEW_ACCOUNT = 'setup-new-account',
 }
 
 export type MainConfig = {
   workingDir: string
+  linkPost: string
+  caption: string
 }
 
 export type History = {

@@ -7,7 +7,7 @@ const getProfiles = (group_id: number) => {
 }
 
 const getGroupList = () => {
-  return axios.post(`/api/v2/group-list`)
+  return axios.post(`/api/v2/group-list`, { page: 1, limit: 100 })
 }
 
 const getNativeClientProfileOpenedList = async () => {

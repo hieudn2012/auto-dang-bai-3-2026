@@ -20,6 +20,7 @@ type WindownInstance = typeof window & {
     clickPostButton: (info: UserInfo) => Promise<any>,
     clickEditLatestPostButton: (info: UserInfo) => Promise<any>,
     saveHistoryTxt: ({ profile_id, folder }: { profile_id: number, folder: string }) => Promise<any>,
+    setupNewAccount: (info: { ws: string }) => Promise<any>,
   }
 }
 

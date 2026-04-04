@@ -3,7 +3,7 @@ import Input from "@/components/Input";
 import Layout from "@/components/Layout";
 import TextArea from "@/components/TextArea";
 import { map, uniqBy } from "lodash";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ConvertCookie from "./ConvertCookie";
 
 // short name like abc...def
@@ -19,6 +19,8 @@ const shortName = (name: string) => {
 
 const ManageFolder = () => {
   const [workingFolder, setWorkingFolder] = useState('');
+  const [linkPost, setLinkPost] = useState('');
+  const [caption, setCaption] = useState('');
   const [productFolder, setProductFolder] = useState('');
   const [productSelected, setProductSelected] = useState('');
   const [message, setMessage] = useState('');
@@ -63,13 +65,19 @@ const ManageFolder = () => {
   }
 
   const handleSaveMainConfig = async () => {
-    await window.api.saveMainConfig({ workingDir: workingFolder });
+    await window.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption });
   }
 
   const handleLoadMainConfig = async () => {
     const config = await window.api.loadMainConfig();
     setWorkingFolder(config?.workingDir || '');
+    setLinkPost(config?.linkPost || '');
+    setCaption(config?.caption || '');
   }
+
+  useEffect(() => {
+    handleLoadMainConfig();
+  }, []);
 
   return (
     <Layout>
@@ -77,20 +85,22 @@ const ManageFolder = () => {
         <div className="flex flex-col gap-2">
           <div className="flex flex-col gap-2">
             <Input placeholder="Nhập tên thư mục làm việc" value={workingFolder} onChange={(e) => setWorkingFolder(e.target.value)} />
+            <Input placeholder="Nhập link post" value={linkPost} onChange={(e) => setLinkPost(e.target.value)} />
+            <TextArea placeholder="Nhập caption" value={caption} onChange={(e) => setCaption(e.target.value)} />
             <div className="flex gap-1">
               <Button onClick={handleOpenDialogFolder}>Chọn folder</Button>
               <Button onClick={handleLoadMainConfig}>Load folder làm việc</Button>
               <Button onClick={handleSaveMainConfig}>Lưu</Button>
             </div>
           </div>
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Input placeholder="Nhập tên thư mục sản phẩm" value={productFolder} onChange={(e) => setProductFolder(e.target.value)} />
             <div className="w-[300px]">
               <Button>Ramdom sản phẩm</Button>
             </div>
-          </div>
+          </div> */}
         </div>
-        <div className="flex gap-2 mt-2">
+        {/* <div className="flex gap-2 mt-2">
           <Button onClick={handleCreateProductFolder}>Tạo sản phẩm</Button>
           <Button onClick={handleLoadProductInfo}>Load thông tin sản phẩm</Button>
         </div>
@@ -126,7 +136,7 @@ const ManageFolder = () => {
               </div>
             </div>
           ))}
-        </div>
+        </div> */}
       </div>
     </Layout>
   )

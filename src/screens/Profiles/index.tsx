@@ -114,6 +114,10 @@ const Profiles = () => {
     });
   }
 
+  const setupNewAccount = async (ws: string) => {
+    await windowInstance.api.setupNewAccount({ ws });
+  }
+
   return (
     <Layout>
       <div>
@@ -167,6 +171,9 @@ const Profiles = () => {
                     </Button>
                     <Button onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote' })}>
                       <i className="fa-solid fa-retweet"></i>
+                    </Button>
+                    <Button onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws)}>
+                      <i className="fa-solid fa-user-plus"></i>
                     </Button>
                     <Button
                       onClick={() =>

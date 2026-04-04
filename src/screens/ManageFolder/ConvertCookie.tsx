@@ -10,14 +10,9 @@ type CookieItem = {
 };
 
 const parseCookiesFromRawLine = (
-  line: string,
+  cookieStr: string,
   domain = '.instagram.com'
 ): CookieItem[] => {
-  const parts = line.split('|');
-
-  // lấy phần cookie (index 3)
-  const cookieStr = parts[3] || '';
-
   return cookieStr
     .split(';')
     .map((c) => c.trim())

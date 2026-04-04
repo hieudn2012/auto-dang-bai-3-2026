@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 const routers = [
   { path: routerPath.manage_folder, name: 'Thư mục' },
   { path: routerPath.profiles, name: 'Hồ sơ' },
+  { path: routerPath.import_sheet, name: 'Nhập file' },
 ];
 
 const SiderBar = () => {

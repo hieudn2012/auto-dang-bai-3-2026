@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import { routerPath } from './configs/router'
 import ManageFolder from './screens/ManageFolder'
 import Profiles from './screens/Profiles'
+import ImportSheet from './screens/ImportSheet'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ function App() {
           <Route path={routerPath.home} element={<ManageFolder />} />
           <Route path={routerPath.manage_folder} element={<ManageFolder />} />
           <Route path={routerPath.profiles} element={<Profiles />} />
+          <Route path={routerPath.import_sheet} element={<ImportSheet />} />
         </Routes>
       </Router>
     </QueryClientProvider>

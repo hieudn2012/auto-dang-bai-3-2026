@@ -2,10 +2,9 @@ import axios from "axios";
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
-import { waitRandom } from "./common";
+import { loadMainConfig, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
-import { matchPath } from "react-router-dom";
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -205,6 +204,8 @@ export const clickPostButton = async ({
   folder: string,
   type: 'post' | 'quote',
 }) => {
+  const config = await loadMainConfig();
+  const caption = config?.caption || '';
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -258,6 +259,70 @@ export const clickPostButton = async ({
   }
 
   await uploadMedia({ page, username, folder });
+  await waitRandom(3000, 5000);
+
+  // find div with class x6s0dn4 x17zd0t2 x78zum5 x47corl x10l6tqk x13vifvy
+  const textArea = await page.$('div.x6s0dn4.x17zd0t2.x78zum5.x47corl.x10l6tqk.x13vifvy');
+  if (textArea) {
+    await textArea.click();
+    await waitRandom(1000, 2000);
+    await page.keyboard.type(caption, { delay: 100 });
+  }
+
+  await browser.disconnect();
+}
+
+export const setupNewAccount = async ({
+  ws,
+}: {
+  ws: string,
+}) => {
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: ws,
+    defaultViewport: null,
+  });
+
+  // open new tab
+  const page = await browser.newPage();
+  await page.goto(`https://threads.com/`);
+  await waitRandom(5000, 10000);
+
+  // find span with "Continue with Instagram"
+  const spans = await page.$$('span');
+  let continueWithInstagram = null;
+  for (const span of spans) {
+    const text = await page.evaluate(el => el.textContent?.trim(), span);
+    console.log(text);
+
+    if (text === 'Continue with Instagram') {
+      continueWithInstagram = span;
+    }
+  }
+
+  if (continueWithInstagram) {
+    await continueWithInstagram.click();
+    await waitRandom(5000, 10000);
+  }
+
+  // find div with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
+  const nextButton = await page.$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
+
+  if (nextButton) {
+    await nextButton.click();
+    await waitRandom(5000, 8000);
+  }
+
+  // find divs with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
+  const divs = await page.$$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
+
+  // each div with content = "Join Threads" then click
+  for (const div of divs) {
+    const text = await page.evaluate(el => el.textContent?.trim(), div);
+    if (text === 'Join Threads') {
+      await div.click();
+    }
+  }
+
   await browser.disconnect();
 }
 
@@ -313,6 +378,7 @@ export const clickEditLatestPostButton = async ({
   ws: string,
   username: string,
 }) => {
+  const config = await loadMainConfig();
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -373,6 +439,13 @@ export const clickEditLatestPostButton = async ({
 
   if (editBtn) {
     await (editBtn as any).click();
+    await waitRandom(5000, 10000);
+    // enter
+    await page.keyboard.press('Enter');
+    await waitRandom(1000, 3000);
+    // keyboard link
+    await page.keyboard.type(config?.linkPost || '', { delay: 100 });
+    await waitRandom(1000, 3000);
   }
 
 
@@ -411,4 +484,5 @@ export const focusThreadsTab = async ({
 
   await browser.disconnect();
 }
+
 
