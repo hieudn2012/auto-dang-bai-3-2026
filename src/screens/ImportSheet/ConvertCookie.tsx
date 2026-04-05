@@ -20,21 +20,11 @@ export const parseCookiesFromRawLine = (
     .filter(Boolean)
     .map((c) => {
       const [name, ...rest] = c.split('=');
-      const now = Math.floor(Date.now() / 1000);
-
       return {
         name: name.trim(),
         value: rest.join('=').trim(),
         domain,
         path: '/',
-
-        // IXBrowser required
-        expirationDate: now + 3600 * 24 * 30, // 30 ngày
-        hostOnly: false,
-        httpOnly: true,
-        secure: true,
-        sameSite: 'no_restriction', // quan trọng
-        storeId: '0',
       };
     });
 };
