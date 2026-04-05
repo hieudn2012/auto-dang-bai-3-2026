@@ -301,7 +301,7 @@ export const setupNewAccount = async ({
 
   if (continueWithInstagram) {
     await continueWithInstagram.click();
-    await waitRandom(5000, 10000);
+    await waitRandom(20000, 30000);
   }
 
   // find div with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
@@ -309,7 +309,7 @@ export const setupNewAccount = async ({
 
   if (nextButton) {
     await nextButton.click();
-    await waitRandom(5000, 8000);
+    await waitRandom(20000, 30000);
   }
 
   // find divs with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
