@@ -125,12 +125,12 @@ handle(InvokeChannel.GET_FOLDER_INFO, async (_event, path) => {
   return getFolderInfo(path);
 })
 
-handle(InvokeChannel.CLICK_POST_BUTTON, async (_event, info) => {
-  return clickPostButton(info);
+handle(InvokeChannel.CLICK_POST_BUTTON, async (event, info) => {
+  return clickPostButton(info, event);
 })
 
-handle(InvokeChannel.CLICK_EDIT_LATEST_POST_BUTTON, async (_event, info) => {
-  return clickEditLatestPostButton(info);
+handle(InvokeChannel.CLICK_EDIT_LATEST_POST_BUTTON, async (event, info) => {
+  return clickEditLatestPostButton(info, event);
 })
 
 handle(InvokeChannel.SAVE_HISTORY_TXT, async (_event, profile_id, folder) => {

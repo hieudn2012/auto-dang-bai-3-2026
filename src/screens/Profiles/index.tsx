@@ -6,7 +6,7 @@ import { useGetNativeClientProfileOpenedList, useGetProfiles, useOpenProfile } f
 import { windowInstance } from "@/services/window";
 import { UserInfo } from "electron/types";
 import { find, map, split } from "lodash";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Group } from "./Group";
 
@@ -118,6 +118,22 @@ const Profiles = () => {
     await windowInstance.api.setupNewAccount({ ws });
   }
 
+  useEffect(() => {
+    const handleToast = (_event: any, arg: any) => {
+      const { type, message, username } = arg as { type: 'success' | 'error' | 'info', message: string, username?: string };
+      const el = document.getElementById(`message-${username}`);
+      el && (el.textContent = message);
+    }
+
+    //@ts-ignore
+    window.ipcRenderer.on('show-toast', handleToast)
+
+    return () => {
+      //@ts-ignore
+      window.ipcRenderer.off('show-toast', handleToast)
+    }
+  }, [])
+
   return (
     <Layout>
       <div>
@@ -135,6 +151,7 @@ const Profiles = () => {
               <th className="border border-gray-300 p-4">ID</th>
               <th className="border border-gray-300 p-4">Name</th>
               <th className="border border-gray-300 p-4">Info</th>
+              <th className="border border-gray-300 p-4">Message</th>
               <th className="border border-gray-300 p-4">Manual</th>
               <th className="border border-gray-300 p-4">Action</th>
             </tr>
@@ -168,6 +185,9 @@ const Profiles = () => {
                       {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
                     </div>
                   </div>
+                </td>
+                <td className="border border-gray-300 p-4">
+                  <p id={`message-${profile.name}`}></p>
                 </td>
 
                 <td className="border border-gray-300 p-4">

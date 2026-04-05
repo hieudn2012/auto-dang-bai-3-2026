@@ -19,24 +19,26 @@ const queryClient = new QueryClient({
 })
 
 function App() {
-  useEffect(() => {
-    const handleToast = (_event: any, arg: any) => {
-      const { type, message } = arg as { type: 'success' | 'error' | 'info', message: string };
-      if (type === 'success') {
-        toast.success(message)
-      } else if (type === 'error') {
-        toast.error(message)
-      } else {
-        toast.info(message)
-      }
-    }
+  // useEffect(() => {
+  //   const handleToast = (_event: any, arg: any) => {
+  //     const { type, message, username } = arg as { type: 'success' | 'error' | 'info', message: string, username?: string };
+  //     const displayMessage = username ? `${username}: ${message}` : message;
+      
+  //     if (type === 'success') {
+  //       toast.success(displayMessage)
+  //     } else if (type === 'error') {
+  //       toast.error(displayMessage)
+  //     } else {
+  //       toast.info(displayMessage)
+  //     }
+  //   }
 
-    window.ipcRenderer.on('show-toast', handleToast)
+  //   window.ipcRenderer.on('show-toast', handleToast)
 
-    return () => {
-      window.ipcRenderer.off('show-toast', handleToast)
-    }
-  }, [])
+  //   return () => {
+  //     window.ipcRenderer.off('show-toast', handleToast)
+  //   }
+  // }, [])
 
   return (
     <QueryClientProvider client={queryClient}>

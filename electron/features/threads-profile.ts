@@ -5,6 +5,7 @@ import { execSync } from 'child_process'
 import { loadMainConfig, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
+import { IpcMainEvent } from "electron";
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -203,13 +204,16 @@ export const clickPostButton = async ({
   username: string,
   folder: string,
   type: 'post' | 'quote',
-}) => {
+}, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const caption = config?.caption || '';
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
   });
+
+  // send event to renderer
+  event.sender.send('show-toast', { type: 'info', message: 'Đang đăng bài...', username });
 
   // open new tab
   const page = await browser.newPage();
@@ -258,6 +262,7 @@ export const clickPostButton = async ({
     }
   }
 
+  event.sender.send('show-toast', { type: 'info', message: 'Đang tải media...', username });
   await uploadMedia({ page, username, folder });
   await waitRandom(3000, 5000);
 
@@ -267,6 +272,23 @@ export const clickPostButton = async ({
     await textArea.click();
     await waitRandom(1000, 2000);
     await page.keyboard.type(caption, { delay: 100 });
+  }
+
+  // find div modal with class x1n2onr6 x1ja2u2z x1afcbsf x78zum5 xdt5ytf x1a2a7pz x71s49j x1plvlek xryxfnj x5hsz1j x1u6grsq x1mkrjbl x4hg4is
+  const modal = await page.$('div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is');
+  // in modal find div with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
+  if (modal) {
+    const postButton = await modal.$('div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5');
+    if (postButton) {
+      await postButton.click();
+      await waitRandom(5000, 10000);
+      // send event to main process
+      event.sender.send('show-toast', {
+        message: 'Post completed ✅',
+        type: 'success',
+        username,
+      });
+    }
   }
 
   await browser.disconnect();
@@ -377,7 +399,7 @@ export const clickEditLatestPostButton = async ({
 }: {
   ws: string,
   username: string,
-}) => {
+}, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
@@ -425,6 +447,11 @@ export const clickEditLatestPostButton = async ({
   await page.waitForSelector('div.x17zd0t2');
 
 
+  event.sender.send('show-toast', {
+    message: 'Đang edit...',
+    type: 'info',
+    username,
+  });
   const editBtn = await page.evaluateHandle(() => {
     const divs = document.querySelectorAll('div.x17zd0t2');
 
@@ -446,6 +473,19 @@ export const clickEditLatestPostButton = async ({
     // keyboard link
     await page.keyboard.type(config?.linkPost || '', { delay: 100 });
     await waitRandom(1000, 3000);
+    
+    // press tab
+    await page.keyboard.press('Tab');
+    await waitRandom(1000, 3000);
+    // press enter
+    await page.keyboard.press('Enter');
+    await waitRandom(1000, 3000);
+    
+    event.sender.send('show-toast', {
+      message: 'Edit completed ✅',
+      type: 'success',
+      username,
+    });
   }
 
 
