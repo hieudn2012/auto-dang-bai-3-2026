@@ -129,32 +129,47 @@ const Profiles = () => {
           <Button onClick={() => bulkSaveHistory(map(data?.data?.data?.data, (profile) => profile.profile_id))}>Save history</Button>
           <Group value={group_id} onChange={setGroupId} />
         </div>
-        <table className="w-full table-auto border-collapse border border-gray-400">
+        <table className="w-full table-auto border-collapse border border-gray-400 text-sm">
           <thead className="text-left">
             <tr>
-              <th className="border border-gray-300 p-4">Check</th>
               <th className="border border-gray-300 p-4">ID</th>
               <th className="border border-gray-300 p-4">Name</th>
-              <th className="border border-gray-300 p-4">Opened</th>
-              <th className="border border-gray-300 p-4">Config</th>
+              <th className="border border-gray-300 p-4">Info</th>
               <th className="border border-gray-300 p-4">Manual</th>
               <th className="border border-gray-300 p-4">Action</th>
             </tr>
           </thead>
           <tbody>
-            {map(data?.data?.data?.data, (profile) => (
+            {map(data?.data?.data?.data, (profile, index) => (
               <tr key={profile.profile_id}>
                 <td className="border border-gray-300 p-4">
-                  <input type="checkbox" className="w-6 h-6" />
-                </td>
-                <td className="border border-gray-300 p-4">{profile.profile_id}</td>
-                <td className="border border-gray-300 p-4">{profile.name}</td>
-                <td className="border border-gray-300 p-4">{openedList?.[profile.profile_id]?.open_time || 'N/A'}</td>
-                <td className="border border-gray-300 p-4">
-                  <div className="flex gap-1 items-center">
-                    {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
+                  <div className="flex gap-2">
+                    <input type="checkbox" className="w-4 h-4" />
+                    <p className="font-bold">{index + 1}</p>
+                    <p>{profile.profile_id}</p>
                   </div>
                 </td>
+                <td className="border border-gray-300 p-4">
+                  <div>
+                    <p>{profile.name}</p>
+                    <p className="text-xs">{`${profile.proxy_ip}:${profile.proxy_port}`}</p>
+                  </div>
+                </td>
+                <td className="border border-gray-300 p-4">
+                  <div>
+                    <div>
+                      {openedList?.[profile.profile_id]?.open_time ? (
+                        <i className="fa-solid fa-check text-green-500"></i>
+                      ) : (
+                        <i className="fa-solid fa-xmark text-red-500"></i>
+                      )}
+                    </div>
+                    <div className="text-xs">
+                      {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
+                    </div>
+                  </div>
+                </td>
+
                 <td className="border border-gray-300 p-4">
                   <div className="flex gap-1 flex-wrap">
                     <Button onClick={() => handleRandomFolder(profile.profile_id)}>

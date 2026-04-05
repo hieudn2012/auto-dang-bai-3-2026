@@ -3,5 +3,5 @@ export const routerPath = {
   profiles: '/profiles',
   tools: '/tools',
   manage_folder: '/manage-folder',
-  import_sheet: '/import-sheet'
+  import_sheet: '/tools'
 };

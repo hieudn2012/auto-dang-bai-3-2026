@@ -7,7 +7,7 @@ interface Props {
 const Layout = ({ children }: Props) => {
   return (
     <div className="flex">
-      <div className="w-[200px]">
+      <div className="w-[50px] pt-[300px]">
         <SiderBar />
       </div>
       <div className="flex-1 p-8">
