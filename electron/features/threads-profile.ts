@@ -284,7 +284,7 @@ export const setupNewAccount = async ({
 
   // open new tab
   const page = await browser.newPage();
-  await page.goto(`https://threads.com/`);
+  await page.goto(`https://threads.com/login`);
   await waitRandom(5000, 10000);
 
   // find span with "Continue with Instagram"
