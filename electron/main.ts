@@ -5,7 +5,7 @@ import { InvokeChannel } from './types'
 import { handleSearchTop } from './features/x-search-top'
 import { handleCheckLive } from './features/x-check-live'
 import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
-import { clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount, threadsPost } from './features/threads-profile'
+import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount, threadsPost } from './features/threads-profile'
 import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
@@ -137,8 +137,12 @@ handle(InvokeChannel.SAVE_HISTORY_TXT, async (_event, profile_id, folder) => {
   return saveHistoryTxt({ profile_id, folder });
 })
 
-handle(InvokeChannel.SETUP_NEW_ACCOUNT, async (_event, info) => {
-  return setupNewAccount(info);
+handle(InvokeChannel.SETUP_NEW_ACCOUNT, async (event, info) => {
+  return setupNewAccount(info, event);
+})
+
+handle(InvokeChannel.CHECK_LIVE_ACCOUNTS, async (_event, accounts) => {
+  return checkLiveAccounts(accounts);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

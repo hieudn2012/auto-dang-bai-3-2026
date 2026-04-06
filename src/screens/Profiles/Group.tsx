@@ -6,7 +6,7 @@ export const Group = ({ value, onChange }: { value: number, onChange: (value: nu
 
   return (
     <select value={value} onChange={(e) => onChange(Number(e.target.value))} className="text-white px-2 rounded-md font-medium">
-      {map(groupList?.data?.data.data, (group) => (
+      {map(groupList?.data?.data?.data, (group) => (
         <option key={group.id} value={group.id}>{group.title}</option>
       ))}
     </select>

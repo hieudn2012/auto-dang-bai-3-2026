@@ -10,6 +10,10 @@ const getGroupList = () => {
   return axios.post(`/api/v2/group-list`, { page: 1, limit: 100 })
 }
 
+const deleteProfile = (profile_id: number) => {
+  return axios.post(`api/v2/profile-delete`, { profile_id });
+}
+
 const getNativeClientProfileOpenedList = async () => {
   const res = await axios.post(`/api/v2/native-client-profile-opened-list`, { group_id: 257818 })
   const data = res?.data?.data || [];
@@ -52,5 +56,13 @@ export const useGetGroupList = () => {
     queries: [
       { queryKey: ['group-list'], queryFn: getGroupList }
     ]
+  })
+}
+
+export const useDeleteProfile = () => {
+  return useMutation({
+    mutationFn: ({ profile_id }: { profile_id: number }) => {
+      return deleteProfile(profile_id);
+    }
   })
 }

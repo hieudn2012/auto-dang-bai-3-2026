@@ -212,140 +212,183 @@ export const clickPostButton = async ({
     defaultViewport: null,
   });
 
-  // send event to renderer
-  event.sender.send('show-toast', { type: 'info', message: 'Đang đăng bài...', username });
+  try {
+    // send event to renderer
+    event.sender.send('show-toast', { type: 'info', message: 'Đang đăng bài...', username });
 
-  // open new tab
-  const page = await browser.newPage();
+    // open new tab
+    const page = await browser.newPage();
 
-  // close all pages and keep only this page
-  const pages = await browser.pages();
-  for (const p of pages) {
-    if (p !== page) {
-      await p.close();
-    }
-  }
-
-  await page.goto(`https://threads.com/@${username}`);
-  await waitRandom(5000, 10000);
-
-  if (type === 'post') {
-    const els = await page.$$('div.xc26acl');
-
-    for (const el of els) {
-      const text = await page.evaluate(e => e.textContent.trim(), el);
-      if (text === 'Post' || text === 'Đăng') {
-        await el.click();
-        break;
+    // close all pages and keep only this page
+    const pages = await browser.pages();
+    for (const p of pages) {
+      if (p !== page) {
+        await p.close();
       }
     }
-  }
 
-  if (type === 'quote') {
-    const repostSvg = await page.$(
-      'div.x4vbgl9 svg[aria-label="Repost"]'
-    )
+    await page.goto(`https://threads.com/@${username}`);
+    await waitRandom(5000, 10000);
 
-    if (repostSvg) {
-      await repostSvg.click();
-      await waitRandom(3000, 5000);
-      const spans = await page.$$('div.x17zd0t2 span')
+    if (type === 'post') {
+      const els = await page.$$('div.xc26acl');
 
-      for (const span of spans) {
-        const text = await span.evaluate(el => el.textContent?.trim())
-        if (text === 'Quote' || text === 'Trích dẫn') {
-          await span.click()
-          break
+      for (const el of els) {
+        const text = await page.evaluate(e => e.textContent.trim(), el);
+        if (text === 'Post' || text === 'Đăng') {
+          await el.click();
+          break;
         }
       }
-
     }
-  }
 
-  event.sender.send('show-toast', { type: 'info', message: 'Đang tải media...', username });
-  await uploadMedia({ page, username, folder });
-  await waitRandom(3000, 5000);
+    if (type === 'quote') {
+      const repostSvg = await page.$(
+        'div.x4vbgl9 svg[aria-label="Repost"]'
+      )
 
-  // find div with class x6s0dn4 x17zd0t2 x78zum5 x47corl x10l6tqk x13vifvy
-  const textArea = await page.$('div.x6s0dn4.x17zd0t2.x78zum5.x47corl.x10l6tqk.x13vifvy');
-  if (textArea) {
-    await textArea.click();
-    await waitRandom(1000, 2000);
-    await page.keyboard.type(caption, { delay: 100 });
-  }
+      if (repostSvg) {
+        await repostSvg.click();
+        await waitRandom(3000, 5000);
+        const spans = await page.$$('div.x17zd0t2 span')
 
-  // find div modal with class x1n2onr6 x1ja2u2z x1afcbsf x78zum5 xdt5ytf x1a2a7pz x71s49j x1plvlek xryxfnj x5hsz1j x1u6grsq x1mkrjbl x4hg4is
-  const modal = await page.$('div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is');
-  // in modal find div with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
-  if (modal) {
-    const postButton = await modal.$('div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5');
-    if (postButton) {
-      await postButton.click();
-      await waitRandom(5000, 10000);
-      // send event to main process
-      event.sender.send('show-toast', {
-        message: 'Post completed ✅',
-        type: 'success',
-        username,
-      });
+        for (const span of spans) {
+          const text = await span.evaluate(el => el.textContent?.trim())
+          if (text === 'Quote' || text === 'Trích dẫn') {
+            await span.click()
+            break
+          }
+        }
+
+      }
     }
-  }
 
-  await browser.disconnect();
+    event.sender.send('show-toast', { type: 'info', message: 'Đang tải media...', username });
+    await uploadMedia({ page, username, folder });
+    await waitRandom(3000, 5000);
+
+    // find div with class x6s0dn4 x17zd0t2 x78zum5 x47corl x10l6tqk x13vifvy
+    const textArea = await page.$('div.x6s0dn4.x17zd0t2.x78zum5.x47corl.x10l6tqk.x13vifvy');
+    if (textArea) {
+      await textArea.click();
+      await waitRandom(1000, 2000);
+      event.sender.send('show-toast', { type: 'info', message: 'Đang nhập caption...', username });
+      await page.keyboard.type(caption, { delay: 100 });
+    }
+
+    // find div modal with class x1n2onr6 x1ja2u2z x1afcbsf x78zum5 xdt5ytf x1a2a7pz x71s49j x1plvlek xryxfnj x5hsz1j x1u6grsq x1mkrjbl x4hg4is
+    const modal = await page.$('div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is');
+    // in modal find div with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
+    if (modal) {
+      const postButton = await modal.$('div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5');
+      if (postButton) {
+        await postButton.click();
+        await waitRandom(5000, 10000);
+        // send event to main process
+        event.sender.send('show-toast', {
+          message: 'Post completed ✅',
+          type: 'success',
+          username,
+        });
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    event.sender.send('show-toast', {
+      message: 'Post failed ❌',
+      type: 'error',
+      username,
+    });
+  } finally {
+    await browser.disconnect();
+  }
 }
 
 export const setupNewAccount = async ({
   ws,
+  username,
 }: {
   ws: string,
-}) => {
+  username: string,
+}, event: IpcMainEvent) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
   });
 
-  // open new tab
-  const page = await browser.newPage();
-  await page.goto(`https://threads.com/login`);
-  await waitRandom(5000, 10000);
+  try {
+    // open new tab
+    const page = await browser.newPage();
+    await page.goto(`https://threads.com/login`);
+    await waitRandom(5000, 10000);
 
-  // find span with "Continue with Instagram"
-  const spans = await page.$$('span');
-  let continueWithInstagram = null;
-  for (const span of spans) {
-    const text = await page.evaluate(el => el.textContent?.trim(), span);
-    console.log(text);
+    event.sender.send('show-toast', {
+      message: 'Đang setup account...',
+      type: 'info',
+      username,
+    });
 
-    if (text === 'Continue with Instagram') {
-      continueWithInstagram = span;
+    // find span with "Continue with Instagram"
+    const spans = await page.$$('span');
+    let continueWithInstagram = null;
+    for (const span of spans) {
+      const text = await page.evaluate(el => el.textContent?.trim(), span);
+      console.log(text);
+
+      if (text === 'Continue with Instagram') {
+        continueWithInstagram = span;
+        event.sender.send('show-toast', {
+          message: 'Đang click "Continue with Instagram"...',
+          type: 'info',
+          username,
+        });
+      }
     }
-  }
 
-  if (continueWithInstagram) {
-    await continueWithInstagram.click();
-    await waitRandom(20000, 30000);
-  }
-
-  // find div with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
-  const nextButton = await page.$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
-
-  if (nextButton) {
-    await nextButton.click();
-    await waitRandom(20000, 30000);
-  }
-
-  // find divs with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
-  const divs = await page.$$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
-
-  // each div with content = "Join Threads" then click
-  for (const div of divs) {
-    const text = await page.evaluate(el => el.textContent?.trim(), div);
-    if (text === 'Join Threads') {
-      await div.click();
+    if (continueWithInstagram) {
+      await continueWithInstagram.click();
+      await waitRandom(20000, 30000);
     }
-  }
 
-  await browser.disconnect();
+    // find div with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
+    const nextButton = await page.$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
+
+    if (nextButton) {
+      await nextButton.click();
+      await waitRandom(20000, 30000);
+      event.sender.send('show-toast', {
+        message: 'Đang click "Next" lần 1...',
+        type: 'info',
+        username,
+      });
+    }
+
+    // find divs with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
+    const divs = await page.$$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
+
+    // each div with content = "Join Threads" then click
+    for (const div of divs) {
+      const text = await page.evaluate(el => el.textContent?.trim(), div);
+      if (text === 'Join Threads') {
+        await div.click();
+        await waitRandom(5000, 10000);
+        event.sender.send('show-toast', {
+          message: 'Setup new account success ✅',
+          type: 'success',
+          username,
+        });
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    event.sender.send('show-toast', {
+      message: 'Setup new account failed ❌',
+      type: 'error',
+      username,
+    });
+  } finally {
+    await browser.disconnect();
+  }
 }
 
 // upload media
@@ -473,14 +516,14 @@ export const clickEditLatestPostButton = async ({
     // keyboard link
     await page.keyboard.type(config?.linkPost || '', { delay: 100 });
     await waitRandom(1000, 3000);
-    
+
     // press tab
     await page.keyboard.press('Tab');
     await waitRandom(1000, 3000);
     // press enter
     await page.keyboard.press('Enter');
     await waitRandom(1000, 3000);
-    
+
     event.sender.send('show-toast', {
       message: 'Edit completed ✅',
       type: 'success',
@@ -524,5 +567,73 @@ export const focusThreadsTab = async ({
 
   await browser.disconnect();
 }
+
+// check live accounts
+export const checkLiveAccounts = async ({
+  ws,
+  accounts,
+  batchSize = 10,
+}: {
+  ws: string,
+  accounts: string[],
+  batchSize?: number,
+}) => {
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: ws,
+    defaultViewport: null,
+  });
+
+  const liveAccounts: string[] = [];
+  const deadAccounts: string[] = [];
+
+  // chia batch 10 accounts
+  const batches = [];
+
+  for (let i = 0; i < accounts.length; i += batchSize) {
+    batches.push(accounts.slice(i, i + batchSize));
+  }
+
+  // xử lý từng batch
+  for (const batch of batches) {
+    const tasks = batch.map(async (user) => {
+      const page = await browser.newPage();
+
+      try {
+        await page.goto(`https://threads.com/@${user}`, {
+          waitUntil: "domcontentloaded",
+          timeout: 15000,
+        });
+
+        await waitRandom(5000, 10000);
+
+        const content = await page.content();
+
+        const isLive = !content.includes(
+          "Not all who wander are lost, but this page is"
+        );
+
+        if (isLive) {
+          liveAccounts.push(user);
+        } else {
+          deadAccounts.push(user);
+        }
+      } catch (err) {
+        console.log(`Error with user ${user}`, err);
+      } finally {
+        await page.close();
+      }
+    });
+
+    // chạy song song trong batch
+    await Promise.all(tasks);
+    console.log(`✅ Done batch (${batch.length} accounts)`);
+  }
+
+  return {
+    liveAccounts,
+    deadAccounts,
+  }
+}
+
 
 

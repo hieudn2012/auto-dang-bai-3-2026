@@ -114,8 +114,13 @@ const Profiles = () => {
     });
   }
 
-  const setupNewAccount = async (ws: string) => {
-    await windowInstance.api.setupNewAccount({ ws });
+  const setupNewAccount = async (ws: string, username: string) => {
+    await windowInstance.api.setupNewAccount({ ws, username });
+  }
+
+  const handleCopyWs = async (ws: string) => {
+    await navigator.clipboard.writeText(ws);
+    toast.success('Đã copy WebSocket URL');
   }
 
   useEffect(() => {
@@ -180,6 +185,7 @@ const Profiles = () => {
                       ) : (
                         <i className="fa-solid fa-xmark text-red-500"></i>
                       )}
+
                     </div>
                     <div className="text-xs">
                       {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
@@ -198,8 +204,8 @@ const Profiles = () => {
                     <Button onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}>
                       <i className="fa-regular fa-eye"></i>
                     </Button>
-                    <Button onClick={() => handleCopyLink(userMap?.[profile.profile_id]?.link)}>
-                      <i className="fa-solid fa-link"></i>
+                    <Button onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}>
+                      <i className="fa-solid fa-copy"></i>
                     </Button>
                     <Button onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post' })}>
                       <i className="fa-solid fa-circle-play"></i>
@@ -207,7 +213,7 @@ const Profiles = () => {
                     <Button onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote' })}>
                       <i className="fa-solid fa-retweet"></i>
                     </Button>
-                    <Button onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws)}>
+                    <Button onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)}>
                       <i className="fa-solid fa-user-plus"></i>
                     </Button>
                     <Button

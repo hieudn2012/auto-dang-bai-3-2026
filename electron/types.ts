@@ -18,6 +18,7 @@ export enum InvokeChannel {
   CLICK_EDIT_LATEST_POST_BUTTON = 'click-edit-latest-post-button',
   SAVE_HISTORY_TXT = 'save-history-txt',
   SETUP_NEW_ACCOUNT = 'setup-new-account',
+  CHECK_LIVE_ACCOUNTS = 'check-live-accounts',
 }
 
 export type MainConfig = {
