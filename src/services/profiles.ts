@@ -3,11 +3,11 @@ import axios from "axios"
 import { windowInstance } from "./window"
 
 const getProfiles = (group_id: number) => {
-  return axios.post(`/api/v2/profile-list`, { group_id, limit: 100 })
+  return axios.post(`/api/v2/profile-list`, { group_id, limit: 1000 })
 }
 
 const getGroupList = () => {
-  return axios.post(`/api/v2/group-list`, { page: 1, limit: 100 })
+  return axios.post(`/api/v2/group-list`, { page: 1, limit: 1000 })
 }
 
 const deleteProfile = (profile_id: number) => {
