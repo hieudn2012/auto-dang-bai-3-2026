@@ -11,7 +11,7 @@ const CheckLive = () => {
   const [batchSize, setBatchSize] = useState(10);
   const [dieAccounts, setDieAccounts] = useState<string[]>([]);
   const [{ data }] = useGetProfiles(groupId);
-  const { mutate: deleteProfile } = useDeleteProfile();
+  const { mutateAsync: deleteProfile } = useDeleteProfile();
   const accounts = data?.data?.data?.data;
 
   const [ws, setWs] = useState('');
@@ -22,10 +22,13 @@ const CheckLive = () => {
     setDieAccounts(result.deadAccounts);
   }
 
-  const handleDeleteDieAccounts = () => {
+  const handleDeleteDieAccounts = async () => {
     const dieAccs = accounts?.filter((acc: any) => dieAccounts.includes(acc.name)) || [];
     const profileIdsToDelete = dieAccs.map((acc: any) => acc.profile_id);
-    profileIdsToDelete.forEach((id: number) => deleteProfile({ profile_id: id }));
+
+    for (const profileId of profileIdsToDelete) {
+      await deleteProfile({ profile_id: profileId });
+    }
     setDieAccounts([]);
     toast.success(`Đã xóa ${profileIdsToDelete.length} profile bị die`)
   }
