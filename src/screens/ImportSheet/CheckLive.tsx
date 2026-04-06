@@ -7,6 +7,8 @@ import Input from "@/components/Input";
 import { toast } from "react-toastify";
 
 const CheckLive = () => {
+  const [checkLiveLoading, setCheckLiveLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [groupId, setGroupId] = useState(0);
   const [batchSize, setBatchSize] = useState(10);
   const [dieAccounts, setDieAccounts] = useState<string[]>([]);
@@ -17,12 +19,16 @@ const CheckLive = () => {
   const [ws, setWs] = useState('');
 
   const handleCheckLive = async () => {
+    setCheckLiveLoading(true);
     const accountsStr = accounts?.map((account: any) => account.name);
     const result = await windowInstance.api.checkLiveAccounts({ ws, accounts: accountsStr, batchSize });
     setDieAccounts(result.deadAccounts);
+    setCheckLiveLoading(false);
+    toast.success(`Hoàn thành kiểm tra! Tìm thấy ${result.liveAccounts.length} live accounts và ${result.deadAccounts.length} die accounts.`);
   }
 
   const handleDeleteDieAccounts = async () => {
+    setLoading(true);
     const dieAccs = accounts?.filter((acc: any) => dieAccounts.includes(acc.name)) || [];
     const profileIdsToDelete = dieAccs.map((acc: any) => acc.profile_id);
 
@@ -30,7 +36,8 @@ const CheckLive = () => {
       await deleteProfile({ profile_id: profileId });
     }
     setDieAccounts([]);
-    toast.success(`Đã xóa ${profileIdsToDelete.length} profile bị die`)
+    toast.success(`Đã xóa ${profileIdsToDelete.length} profile bị die`);
+    setLoading(false);
   }
 
   return (
@@ -44,7 +51,7 @@ const CheckLive = () => {
           <Input placeholder="Batch size..." value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} />
         </div>
       </div>
-      <Button onClick={handleCheckLive}>
+      <Button onClick={handleCheckLive} loading={checkLiveLoading}>
         Check Live
       </Button>
       <div>
@@ -54,7 +61,7 @@ const CheckLive = () => {
             <li key={acc}>{acc}</li>
           ))}
         </ul>
-        <Button onClick={handleDeleteDieAccounts}>
+        <Button onClick={handleDeleteDieAccounts} loading={loading}>
           Xóa accounts bị die
         </Button>
       </div>
