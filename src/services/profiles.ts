@@ -14,10 +14,13 @@ const deleteProfile = (profile_id: number) => {
   return axios.post(`api/v2/profile-delete`, { profile_id });
 }
 
+const closeProfile = (profile_id: number) => {
+  return axios.post(`api/v2/profile-close`, { profile_id });
+}
+
 const getNativeClientProfileOpenedList = async () => {
   const res = await axios.post(`/api/v2/native-client-profile-opened-list`, { group_id: 257818 })
   const data = res?.data?.data || [];
-
   // convert to map
   const openedMap = data.reduce((acc: any, item: any) => {
     acc[item.profile_id] = item;
@@ -27,10 +30,18 @@ const getNativeClientProfileOpenedList = async () => {
   return openedMap;
 }
 
+export const useCloseProfile = () => {
+  return useMutation({
+    mutationFn: ({ profile_id }: { profile_id: number }) => {
+      return closeProfile(profile_id);
+    }
+  })
+}
+
 export const useGetProfiles = (group_id: number) => {
   return useQueries({
     queries: [
-      { queryKey: ['profiles', group_id], queryFn: () => getProfiles(group_id) }
+      { queryKey: ['profiles', group_id], queryFn: () => getProfiles(group_id), enabled: group_id !== -1 }
     ]
   })
 }

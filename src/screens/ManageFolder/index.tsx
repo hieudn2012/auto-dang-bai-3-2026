@@ -85,7 +85,7 @@ const ManageFolder = () => {
         <div className="flex flex-col gap-2">
           <div className="flex flex-col gap-2">
             <Input placeholder="Nhập tên thư mục làm việc" value={workingFolder} onChange={(e) => setWorkingFolder(e.target.value)} />
-            <Input placeholder="Nhập link post" value={linkPost} onChange={(e) => setLinkPost(e.target.value)} />
+            <TextArea placeholder="Nhập link post" value={linkPost} onChange={(e) => setLinkPost(e.target.value)} />
             <TextArea placeholder="Nhập caption" value={caption} onChange={(e) => setCaption(e.target.value)} />
             <div className="flex gap-1">
               <Button onClick={handleOpenDialogFolder}>Chọn folder</Button>

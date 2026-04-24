@@ -2,7 +2,7 @@ import Button from "@/components/Button";
 import Dialog from "@/components/Dialog";
 import Layout from "@/components/Layout";
 import TextArea from "@/components/TextArea";
-import { useGetNativeClientProfileOpenedList, useGetProfiles, useOpenProfile } from "@/services/profiles";
+import { useCloseProfile, useGetNativeClientProfileOpenedList, useGetProfiles, useOpenProfile } from "@/services/profiles";
 import { windowInstance } from "@/services/window";
 import { UserInfo } from "electron/types";
 import { find, map, split } from "lodash";
@@ -37,22 +37,24 @@ const waitFor = (timer: number) => {
 }
 
 const Profiles = () => {
-  const [group_id, setGroupId] = useState(0);
+  const [group_id, setGroupId] = useState(-1);
   const [{ data }] = useGetProfiles(group_id);
   const [{ data: openedList, refetch }] = useGetNativeClientProfileOpenedList();
+  const { mutate: openProfile } = useOpenProfile();
+  const { mutate: closeProfile } = useCloseProfile();
   const [userMap, setUserMap] = useState<UserMap>({});
   const [open, setOpen] = useState(false);
   const [currentFolder, setCurrentFolder] = useState<{ cap: string, link: string, path: string, profile_id: number }>({ cap: '', link: '', path: '', profile_id: 0 });
   const [totalBrowsers, setTotalBrowsers] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   const handlePost = ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => {
     windowInstance.api.threadsPost({ wsUrl, username, folder });
   }
 
   const handleRandomFolder = async (profile_id: number) => {
-    const { name, path } = await windowInstance.api.randomFolderNotUsed(
-      map(userMap, (item) => item.path)
-    );
+    const currentPaths = map(userMap, (item) => item.path);
+    const { name, path } = await windowInstance.api.randomFolderNotUsed(currentPaths);
     setUserMap(prev => ({ ...prev, [profile_id]: { profile_id, name, path } }));
   }
 
@@ -96,22 +98,23 @@ const Profiles = () => {
   const handleRefetch = async () => {
     await refetch();
     map(userMap, async (userItem) => {
+      const findName = find(data?.data?.data?.data, (item) => item.profile_id === userItem.profile_id);
       const { cap, link } = await windowInstance.api.getFolderInfo(userItem.path);
-      setUserMap(prev => ({ ...prev, [userItem.profile_id]: { ...userItem, cap, link } }));
+      setUserMap(prev => ({ ...prev, [userItem.profile_id]: { ...userItem, cap, link, name: findName?.name || userItem.name } }));
     });
     toast.success('Đã lấy thông tin folder');
   }
 
   const bulkRandomProduct = async (ids: number[]) => {
-    ids.forEach(async (id) => {
+    for (const id of ids) {
       await handleRandomFolder(id);
-    });
+    }
   }
 
   const bulkSaveHistory = async (ids: number[]) => {
-    ids.forEach(async (id) => {
+    for (const id of ids) {
       await saveHistoryTxt({ profile_id: id, folder: userMap?.[id]?.path });
-    });
+    }
   }
 
   const setupNewAccount = async (ws: string, username: string) => {
@@ -121,6 +124,62 @@ const Profiles = () => {
   const handleCopyWs = async (ws: string) => {
     await navigator.clipboard.writeText(ws);
     toast.success('Đã copy WebSocket URL');
+  }
+
+  const handleBulkOpenProfile = async () => {
+    for (const id of selectedIds) {
+      openProfile({ id, index: 0 });
+      await waitFor(3);
+    }
+    // Wait longer for profiles to fully open and stabilize
+    await waitFor(30);
+    await refetch();
+    // Additional wait after refetch
+    await waitFor(10);
+  }
+
+  const handleBulkClose = async () => {
+    for (const id of selectedIds) {
+      if (!!userMap[id]) {
+        closeProfile({ profile_id: id });
+        await waitFor(0.3);
+      }
+    }
+  }
+
+  const handleBulkPost = async () => {
+    for (const id of selectedIds) {
+      if (!!userMap[id] && openedList?.[id]?.ws) {
+        document.getElementById(`post-button-${id}`)?.click();
+        await waitFor(1)
+      }
+    }
+  }
+
+  const handleBulkEdit = async () => {
+    for (const id of selectedIds) {
+      document.getElementById(`edit-folder-${id}`)?.click();
+      await waitFor(0.1);
+    }
+  }
+
+  const handleBulkRandom = async () => {
+    for (const id of selectedIds) {
+      document.getElementById(`random-folder-${id}`)?.click();
+      await waitFor(0.1);
+    }
+  }
+
+
+  const handleAutoPost = async () => {
+    await handleBulkPost();
+    await waitFor(80);
+    toast.success('Đã hoàn thành post.');
+
+    await waitFor(10);
+    await handleBulkEdit();
+    await waitFor(80);
+    toast.success('Đã hoàn thành edit.');
   }
 
   useEffect(() => {
@@ -150,10 +209,33 @@ const Profiles = () => {
           <Button onClick={() => bulkSaveHistory(map(data?.data?.data?.data, (profile) => profile.profile_id))}>Save history</Button>
           <Group value={group_id} onChange={setGroupId} />
         </div>
+        <div className="flex gap-2 my-2">
+          <Button onClick={handleBulkOpenProfile}>Bulk open</Button>
+          <Button onClick={handleBulkRandom}>Bulk random</Button>
+          <Button onClick={handleBulkPost}>Bulk post</Button>
+          <Button onClick={handleBulkEdit}>Bulk edit</Button>
+          <Button onClick={handleBulkClose}>Close all</Button>
+          <Button onClick={handleAutoPost}>Auto post</Button>
+        </div>
         <table className="w-full table-auto border-collapse border border-gray-400 text-sm">
           <thead className="text-left">
             <tr>
-              <th className="border border-gray-300 p-4">ID</th>
+              <th className="border border-gray-300 p-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox" className="w-4 h-4"
+                    checked={selectedIds.length === data?.data?.data?.data?.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(map(data?.data?.data?.data, (profile) => profile.profile_id));
+                      } else {
+                        setSelectedIds([]);
+                      }
+                    }}
+                  />
+                  <span>Select all</span>
+                </div>
+              </th>
               <th className="border border-gray-300 p-4">Name</th>
               <th className="border border-gray-300 p-4">Info</th>
               <th className="border border-gray-300 p-4">Message</th>
@@ -166,7 +248,18 @@ const Profiles = () => {
               <tr key={profile.profile_id}>
                 <td className="border border-gray-300 p-4">
                   <div className="flex gap-2">
-                    <input type="checkbox" className="w-4 h-4" />
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4"
+                      checked={selectedIds.includes(profile.profile_id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds([...selectedIds, profile.profile_id]);
+                        } else {
+                          setSelectedIds(selectedIds.filter((id) => id !== profile.profile_id));
+                        }
+                      }}
+                    />
                     <p className="font-bold">{index + 1}</p>
                     <p>{profile.profile_id}</p>
                   </div>
@@ -198,7 +291,7 @@ const Profiles = () => {
 
                 <td className="border border-gray-300 p-4">
                   <div className="flex gap-1 flex-wrap">
-                    <Button onClick={() => handleRandomFolder(profile.profile_id)}>
+                    <Button id={`random-folder-${profile.profile_id}`} onClick={() => handleRandomFolder(profile.profile_id)}>
                       <i className="fa-solid fa-arrow-rotate-right"></i>
                     </Button>
                     <Button onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}>
@@ -207,7 +300,9 @@ const Profiles = () => {
                     <Button onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}>
                       <i className="fa-solid fa-copy"></i>
                     </Button>
-                    <Button onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post' })}>
+                    <Button
+                      id={`post-button-${profile.profile_id}`}
+                      onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post' })}>
                       <i className="fa-solid fa-circle-play"></i>
                     </Button>
                     <Button onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote' })}>
@@ -217,6 +312,7 @@ const Profiles = () => {
                       <i className="fa-solid fa-user-plus"></i>
                     </Button>
                     <Button
+                      id={`edit-folder-${profile.profile_id}`}
                       onClick={() =>
                         clickEditLatestPostButton({
                           ws: openedList?.[profile.profile_id]?.ws,

@@ -514,7 +514,11 @@ export const clickEditLatestPostButton = async ({
     await page.keyboard.press('Enter');
     await waitRandom(1000, 3000);
     // keyboard link
-    await page.keyboard.type(config?.linkPost || '', { delay: 100 });
+
+    // link post split \n and random link
+    const links = config?.linkPost?.split('\n') || [];
+    const randomLink = links[Math.floor(Math.random() * links.length)];
+    await page.keyboard.type(randomLink, { delay: 100 });
     await waitRandom(1000, 3000);
 
     // press tab
