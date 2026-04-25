@@ -69,7 +69,8 @@ export const randomFolderNotUsed = async (exclude: string[] = []): Promise<{ nam
     return (
       !history.some(item => item.folder === folderPath) &&
       ![...exclude].includes(folderPath) &&
-      !folderPath.includes(`.DS_Store`)
+      !folderPath.includes(`.DS_Store`) &&
+      !folderPath.includes(`desktop.ini`)
     );
   });
 

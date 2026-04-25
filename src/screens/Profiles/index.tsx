@@ -129,7 +129,7 @@ const Profiles = () => {
     for (const id of ids) {
       if (!!openedList?.[id]) {
         closeProfile({ profile_id: id });
-        await waitFor(0.3);
+        await waitFor(1);
       }
     }
   }
