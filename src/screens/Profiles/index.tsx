@@ -9,6 +9,7 @@ import { find, map, split } from "lodash";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Group } from "./Group";
+import Input from "@/components/Input";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -47,6 +48,7 @@ const Profiles = () => {
   const [currentFolder, setCurrentFolder] = useState<{ cap: string, link: string, path: string, profile_id: number }>({ cap: '', link: '', path: '', profile_id: 0 });
   const [totalBrowsers, setTotalBrowsers] = useState(0);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [batchSize, setBatchSize] = useState(20);
 
   const handlePost = ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => {
     windowInstance.api.threadsPost({ wsUrl, username, folder });
@@ -95,16 +97,6 @@ const Profiles = () => {
     }
   }
 
-  const handleRefetch = async () => {
-    await refetch();
-    map(userMap, async (userItem) => {
-      const findName = find(data?.data?.data?.data, (item) => item.profile_id === userItem.profile_id);
-      const { cap, link } = await windowInstance.api.getFolderInfo(userItem.path);
-      setUserMap(prev => ({ ...prev, [userItem.profile_id]: { ...userItem, cap, link, name: findName?.name || userItem.name } }));
-    });
-    toast.success('Đã lấy thông tin folder');
-  }
-
   const bulkRandomProduct = async (ids: number[]) => {
     for (const id of ids) {
       await handleRandomFolder(id);
@@ -126,60 +118,103 @@ const Profiles = () => {
     toast.success('Đã copy WebSocket URL');
   }
 
-  const handleBulkOpenProfile = async () => {
-    for (const id of selectedIds) {
+  const handleBulkOpenProfile = async (ids: number[]) => {
+    for (const id of ids) {
       openProfile({ id, index: 0 });
       await waitFor(3);
     }
-    // Wait longer for profiles to fully open and stabilize
-    await waitFor(30);
-    await refetch();
-    // Additional wait after refetch
-    await waitFor(10);
   }
 
-  const handleBulkClose = async () => {
-    for (const id of selectedIds) {
-      if (!!userMap[id]) {
+  const handleBulkClose = async (ids: number[], openedList: any) => {
+    for (const id of ids) {
+      if (!!openedList?.[id]) {
         closeProfile({ profile_id: id });
         await waitFor(0.3);
       }
     }
   }
 
-  const handleBulkPost = async () => {
-    for (const id of selectedIds) {
-      if (!!userMap[id] && openedList?.[id]?.ws) {
+  const handleBulkPost = async (ids: number[], openedList: any) => {
+    for (const id of ids) {
+      if (!!openedList?.[id]?.ws) {
         document.getElementById(`post-button-${id}`)?.click();
-        await waitFor(1)
+        await waitFor(0.2)
       }
     }
   }
 
-  const handleBulkEdit = async () => {
-    for (const id of selectedIds) {
-      document.getElementById(`edit-folder-${id}`)?.click();
-      await waitFor(0.1);
+  const handleBulkEdit = async (ids: number[], openedList: any) => {
+    for (const id of ids) {
+      if (!!openedList?.[id]?.ws) {
+        document.getElementById(`edit-folder-${id}`)?.click();
+        await waitFor(0.2);
+      }
     }
   }
 
-  const handleBulkRandom = async () => {
-    for (const id of selectedIds) {
-      document.getElementById(`random-folder-${id}`)?.click();
-      await waitFor(0.1);
+  const handleBulkRandom = async (ids: number[], openedList: any) => {
+    for (const id of ids) {
+      if (!!openedList?.[id]?.ws) {
+        document.getElementById(`random-folder-${id}`)?.click();
+        await waitFor(0.1);
+      }
     }
   }
 
 
-  const handleAutoPost = async () => {
-    await handleBulkPost();
-    await waitFor(80);
+  const handleAutoPost = async (ids: number[]) => {
+    await handleBulkOpenProfile(ids);
+    await waitFor(10);
+    toast.success('Đã mở profile.');
+
+    const { data } = await refetch();
+    await waitFor(5);
+    toast.success('Đã refetch.');
+
+    await handleBulkRandom(ids, data);
+    await waitFor(10);
+    toast.success('Đã random folder.');
+
+    await handleBulkPost(ids, data);
+    await waitFor(60);
     toast.success('Đã hoàn thành post.');
 
-    await waitFor(10);
-    await handleBulkEdit();
-    await waitFor(80);
+    await handleBulkEdit(ids, data);
+    await waitFor(50);
     toast.success('Đã hoàn thành edit.');
+
+    await handleBulkClose(ids, data);
+    toast.success('Đã đóng profile.');
+  }
+
+  const handleBatch = async () => {
+    const allSelectedIds = [...selectedIds];
+    const batches: number[][] = [];
+
+    // Split into batches
+    for (let i = 0; i < allSelectedIds.length; i += batchSize) {
+      batches.push(allSelectedIds.slice(i, i + batchSize));
+    }
+
+    console.log(`Processing ${allSelectedIds.length} users in ${batches.length} batches of max ${batchSize} users each`);
+
+    // Process each batch
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      console.log(`Processing batch ${i + 1}/${batches.length} with ${batch.length} users:`, batch);
+
+      // Set current batch
+      await handleAutoPost(batch);
+
+
+      // Wait between batches (optional cooldown)
+      if (i < batches.length - 1) {
+        console.log(`Batch ${i + 1} completed, waiting before next batch...`);
+        await waitFor(10);
+      }
+    }
+
+    toast.success(`Đã hoàn thành tất cả ${batches.length} batches với ${allSelectedIds.length} users`);
   }
 
   useEffect(() => {
@@ -202,7 +237,7 @@ const Profiles = () => {
     <Layout>
       <div>
         <div className="my-5 flex gap-2">
-          <Button onClick={handleRefetch}>
+          <Button onClick={() => refetch()}>
             <i className="fa-solid fa-arrows-rotate"></i>
           </Button>
           <Button onClick={() => bulkRandomProduct(map(data?.data?.data?.data, (profile) => profile.profile_id))}>Random product</Button>
@@ -210,12 +245,15 @@ const Profiles = () => {
           <Group value={group_id} onChange={setGroupId} />
         </div>
         <div className="flex gap-2 my-2">
-          <Button onClick={handleBulkOpenProfile}>Bulk open</Button>
-          <Button onClick={handleBulkRandom}>Bulk random</Button>
-          <Button onClick={handleBulkPost}>Bulk post</Button>
-          <Button onClick={handleBulkEdit}>Bulk edit</Button>
-          <Button onClick={handleBulkClose}>Close all</Button>
-          <Button onClick={handleAutoPost}>Auto post</Button>
+          <Button onClick={() => handleBulkOpenProfile(selectedIds)}>Bulk open</Button>
+          <Button onClick={() => handleBulkRandom(selectedIds, openedList)}>Bulk random</Button>
+          <Button onClick={() => handleBulkPost(selectedIds, openedList)}>Bulk post</Button>
+          <Button onClick={() => handleBulkEdit(selectedIds, openedList)}>Bulk edit</Button>
+          <Button onClick={() => handleBulkClose(selectedIds, openedList)}>Close all</Button>
+          <div className="w-[80px]">
+            <Input type="number" value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} />
+          </div>
+          <Button onClick={handleBatch}>Batch process</Button>
         </div>
         <table className="w-full table-auto border-collapse border border-gray-400 text-sm">
           <thead className="text-left">
