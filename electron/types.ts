@@ -19,6 +19,15 @@ export enum InvokeChannel {
   SAVE_HISTORY_TXT = 'save-history-txt',
   SETUP_NEW_ACCOUNT = 'setup-new-account',
   CHECK_LIVE_ACCOUNTS = 'check-live-accounts',
+  GET_REPORT_BY_REPORT_NAME = 'get-report-by-report-name',
+  SAVE_TELEGRAM_TOKEN = 'save-telegram-token',
+  GET_TELEGRAM_TOKEN = 'get-telegram-token',
+  SAVE_TELEGRAM_CHAT_ID = 'save-telegram-chat-id',
+  GET_TELEGRAM_CHAT_ID = 'get-telegram-chat-id',
+  SEND_TELEGRAM_MESSAGE = 'send-telegram-message',
+  SEND_REPORT_TO_TELEGRAM = 'send-report-to-telegram',
+  TEST_TELEGRAM_CONNECTION = 'test-telegram-connection',
+  GET_BOT_INFO = 'get-bot-info',
 }
 
 export type MainConfig = {
@@ -42,4 +51,6 @@ export type UserInfo = {
   username: string;
   folder: string;
   type: 'post' | 'quote';
+  id?: number;
+  reportName?: string;
 }

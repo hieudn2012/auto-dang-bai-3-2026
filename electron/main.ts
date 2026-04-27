@@ -6,7 +6,8 @@ import { handleSearchTop } from './features/x-search-top'
 import { handleCheckLive } from './features/x-check-live'
 import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount, threadsPost } from './features/threads-profile'
-import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
+import { getReportByReportName, initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
+import { saveTelegramToken, getTelegramToken, saveTelegramChatId, getTelegramChatId, sendTelegramMessage, sendReportToTelegram, testTelegramConnection, getBotInfo } from './features/telegram'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -143,6 +144,42 @@ handle(InvokeChannel.SETUP_NEW_ACCOUNT, async (event, info) => {
 
 handle(InvokeChannel.CHECK_LIVE_ACCOUNTS, async (_event, accounts) => {
   return checkLiveAccounts(accounts);
+})
+
+handle(InvokeChannel.GET_REPORT_BY_REPORT_NAME, async (_event, reportName) => {
+  return getReportByReportName(reportName);
+})
+
+handle(InvokeChannel.SAVE_TELEGRAM_TOKEN, async (_event, token) => {
+  return saveTelegramToken(token);
+})
+
+handle(InvokeChannel.GET_TELEGRAM_TOKEN, async () => {
+  return getTelegramToken();
+})
+
+handle(InvokeChannel.SAVE_TELEGRAM_CHAT_ID, async (_event, chatId) => {
+  return saveTelegramChatId(chatId);
+})
+
+handle(InvokeChannel.GET_TELEGRAM_CHAT_ID, async () => {
+  return getTelegramChatId();
+})
+
+handle(InvokeChannel.SEND_TELEGRAM_MESSAGE, async (_event, message) => {
+  return sendTelegramMessage(message);
+})
+
+handle(InvokeChannel.SEND_REPORT_TO_TELEGRAM, async (_event, reportName, reportData) => {
+  return sendReportToTelegram(reportName, reportData);
+})
+
+handle(InvokeChannel.TEST_TELEGRAM_CONNECTION, async () => {
+  return testTelegramConnection();
+})
+
+handle(InvokeChannel.GET_BOT_INFO, async () => {
+  return getBotInfo();
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

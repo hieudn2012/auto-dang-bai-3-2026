@@ -21,6 +21,7 @@
     "gologin": "^2.1.21",
     "lodash": "^4.17.23",
     "moment": "^2.30.1",
+    "node-telegram-bot-api": "^0.67.0",
     "puppeteer": "^24.10.0",
     "puppeteer-core": "^24.10.0",
     "react": "^18.2.0",

@@ -2,7 +2,7 @@ import axios from "axios";
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
-import { loadMainConfig, waitRandom } from "./common";
+import { loadMainConfig, saveReportTxt, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
@@ -439,75 +439,74 @@ export const uploadMedia = async ({
 export const clickEditLatestPostButton = async ({
   ws,
   username,
+  reportName,
+  id,
 }: {
   ws: string,
   username: string,
+  reportName: string,
+  id: number,
 }, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
   });
+  try {
+    // Lấy tất cả tabs
+    const pages = await browser.pages();
 
-  // Lấy tất cả tabs
-  const pages = await browser.pages();
+    let targetPage: Page | null = null;
 
-  let targetPage: Page | null = null;
-
-  // logs all urls
-  for (const page of pages) {
-    console.log(page.url());
-    // find page with url contains threads.com
-    if (page.url().includes('threads.com')) {
-      targetPage = page;
-      break;
-    }
-  }
-
-  // Chọn tab cuối cùng
-  const page = targetPage || pages[pages.length - 1];
-  await page.bringToFront();
-
-  // Đợi DOM load
-  await page.waitForSelector('div.x1c1b4dv', { timeout: 10000 });
-
-  // Tìm svg aria-label="More" nằm trong div.x1c1b4dv
-  const moreBtn = await page.$(
-    'div.x1c1b4dv svg[aria-label="More"]'
-  );
-  const moreBtnVn = await page.$(
-    'div.x1c1b4dv svg[aria-label="Xem thêm"]'
-  );
-
-  if (moreBtn) {
-    await moreBtn.click();
-  }
-  if (moreBtnVn) {
-    await moreBtnVn.click();
-  }
-  await waitRandom(3000, 5000);
-
-  await page.waitForSelector('div.x17zd0t2');
-
-
-  event.sender.send('show-toast', {
-    message: 'Đang edit...',
-    type: 'info',
-    username,
-  });
-  const editBtn = await page.evaluateHandle(() => {
-    const divs = document.querySelectorAll('div.x17zd0t2');
-
-    for (const div of divs) {
-      const span = div.querySelector('span');
-      if (span?.textContent?.trim() === 'Edit' || span?.textContent?.trim() === 'Chỉnh sửa') {
-        return div; // click container
+    // logs all urls
+    for (const page of pages) {
+      console.log(page.url());
+      // find page with url contains threads.com
+      if (page.url().includes('threads.com')) {
+        targetPage = page;
+        break;
       }
     }
-    return null;
-  });
 
-  if (editBtn) {
+    // Chọn tab cuối cùng
+    const page = targetPage || pages[pages.length - 1];
+    await page.bringToFront();
+
+    // Đợi DOM load
+    await page.waitForSelector('div.x1c1b4dv', { timeout: 10000 });
+
+    // Tìm svg aria-label="More" nằm trong div.x1c1b4dv
+    const moreBtn = await page.$(
+      'div.x1c1b4dv svg[aria-label="More"]'
+    );
+    const moreBtnVn = await page.$(
+      'div.x1c1b4dv svg[aria-label="Xem thêm"]'
+    );
+
+    await moreBtn?.click();
+    await moreBtnVn?.click();
+    await waitRandom(3000, 5000);
+
+    await page.waitForSelector('div.x17zd0t2');
+
+
+    event.sender.send('show-toast', {
+      message: 'Đang edit...',
+      type: 'info',
+      username,
+    });
+    const editBtn = await page.evaluateHandle(() => {
+      const divs = document.querySelectorAll('div.x17zd0t2');
+
+      for (const div of divs) {
+        const span = div.querySelector('span');
+        if (span?.textContent?.trim() === 'Edit' || span?.textContent?.trim() === 'Chỉnh sửa') {
+          return div; // click container
+        }
+      }
+      return null;
+    });
+
     await (editBtn as any).click();
     await waitRandom(5000, 10000);
     // enter
@@ -533,10 +532,32 @@ export const clickEditLatestPostButton = async ({
       type: 'success',
       username,
     });
+
+    if (reportName) {
+      saveReportTxt({
+        reportName,
+        note: 'Edit completed',
+        id,
+        status: 'completed',
+        username,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    if (reportName) {
+      saveReportTxt({
+        reportName,
+        note: 'Edit failed',
+        id,
+        status: 'failed',
+        username,
+      });
+    }
+  } finally {
+    await browser.disconnect();
   }
 
 
-  await browser.disconnect();
 }
 
 // focus threads tab

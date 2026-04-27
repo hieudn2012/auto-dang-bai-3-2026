@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Group } from "./Group";
 import Input from "@/components/Input";
+import ReportModal from "./Report";
+import ScheduleModal from "./Schedule";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -49,6 +51,7 @@ const Profiles = () => {
   const [totalBrowsers, setTotalBrowsers] = useState(0);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [batchSize, setBatchSize] = useState(20);
+  const [reportName, setReportName] = useState('');
 
   const handlePost = ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => {
     windowInstance.api.threadsPost({ wsUrl, username, folder });
@@ -94,18 +97,6 @@ const Profiles = () => {
     } else {
       toast.error('Không tìm thấy link threads-store');
       return;
-    }
-  }
-
-  const bulkRandomProduct = async (ids: number[]) => {
-    for (const id of ids) {
-      await handleRandomFolder(id);
-    }
-  }
-
-  const bulkSaveHistory = async (ids: number[]) => {
-    for (const id of ids) {
-      await saveHistoryTxt({ profile_id: id, folder: userMap?.[id]?.path });
     }
   }
 
@@ -236,26 +227,46 @@ const Profiles = () => {
   return (
     <Layout>
       <div>
-        <div className="my-5 flex gap-2">
-          <Button onClick={() => refetch()}>
-            <i className="fa-solid fa-arrows-rotate"></i>
-          </Button>
-          <Button onClick={() => bulkRandomProduct(map(data?.data?.data?.data, (profile) => profile.profile_id))}>Random product</Button>
-          <Button onClick={() => bulkSaveHistory(map(data?.data?.data?.data, (profile) => profile.profile_id))}>Save history</Button>
-          <Group value={group_id} onChange={setGroupId} />
-        </div>
-        <div className="flex gap-2 my-2">
-          <Button onClick={() => handleBulkOpenProfile(selectedIds)}>Bulk open</Button>
-          <Button onClick={() => handleBulkRandom(selectedIds, openedList)}>Bulk random</Button>
-          <Button onClick={() => handleBulkPost(selectedIds, openedList)}>Bulk post</Button>
-          <Button onClick={() => handleBulkEdit(selectedIds, openedList)}>Bulk edit</Button>
-          <Button onClick={() => handleBulkClose(selectedIds, openedList)}>Close all</Button>
-          <div className="w-[80px]">
-            <Input type="number" value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} />
+
+        <div className="flex justify-between mb-2">
+          <div>
+            <div className="flex gap-2">
+              <Button onClick={() => refetch()}>
+                <i className="fa-solid fa-arrows-rotate"></i>
+              </Button>
+              <Group value={group_id} onChange={setGroupId} />
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button onClick={() => handleBulkOpenProfile(selectedIds)} tooltip="Open profile">
+                <i className="fa-solid fa-folder-open"></i>
+              </Button>
+              <Button onClick={() => handleBulkRandom(selectedIds, openedList)} tooltip="Random">
+                <i className="fa-solid fa-random"></i>
+              </Button>
+              <Button onClick={() => handleBulkPost(selectedIds, openedList)} tooltip="Post">
+                <i className="fa-solid fa-paper-plane"></i>
+              </Button>
+              <Button onClick={() => handleBulkEdit(selectedIds, openedList)} tooltip="Edit">
+                <i className="fa-solid fa-pen-to-square"></i>
+              </Button>
+              <Button onClick={() => handleBulkClose(selectedIds, openedList)} tooltip="Close">
+                <i className="fa-solid fa-xmark"></i>
+              </Button>
+            </div>
           </div>
-          <Button onClick={handleBatch}>Batch process</Button>
+          <div className="flex gap-2">
+            <div className="flex gap-2 items-start">
+              <Input type="text" value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder="Report name" />
+              <Input type="number" value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} />
+            </div>
+            <Button onClick={handleBatch} tooltip="Batch">
+              <i className="fa-solid fa-play"></i>
+            </Button>
+            <ReportModal reportName={reportName} />
+            <ScheduleModal onSchedule={() => console.log('kaka')} />
+          </div>
         </div>
-        <table className="w-full table-auto border-collapse border border-gray-400 text-sm">
+        <table className="w-full table-auto border-collapse border border-gray-400 text-sm rounded-lg overflow-hidden">
           <thead className="text-left">
             <tr>
               <th className="border border-gray-300 p-4">
@@ -329,34 +340,38 @@ const Profiles = () => {
 
                 <td className="border border-gray-300 p-4">
                   <div className="flex gap-1 flex-wrap">
-                    <Button id={`random-folder-${profile.profile_id}`} onClick={() => handleRandomFolder(profile.profile_id)}>
+                    <Button id={`random-folder-${profile.profile_id}`} onClick={() => handleRandomFolder(profile.profile_id)} tooltip="Random folder">
                       <i className="fa-solid fa-arrow-rotate-right"></i>
                     </Button>
-                    <Button onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}>
+                    <Button onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)} tooltip="Show info">
                       <i className="fa-regular fa-eye"></i>
                     </Button>
-                    <Button onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}>
+                    <Button onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')} tooltip="Copy ws">
                       <i className="fa-solid fa-copy"></i>
                     </Button>
                     <Button
                       id={`post-button-${profile.profile_id}`}
+                      tooltip="Post"
                       onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post' })}>
                       <i className="fa-solid fa-circle-play"></i>
                     </Button>
-                    <Button onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote' })}>
+                    <Button onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote' })} tooltip="Quote">
                       <i className="fa-solid fa-retweet"></i>
                     </Button>
-                    <Button onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)}>
+                    <Button onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)} tooltip="Setup new account">
                       <i className="fa-solid fa-user-plus"></i>
                     </Button>
                     <Button
                       id={`edit-folder-${profile.profile_id}`}
+                      tooltip="Edit folder"
                       onClick={() =>
                         clickEditLatestPostButton({
                           ws: openedList?.[profile.profile_id]?.ws,
                           username: profile.name,
                           folder: userMap?.[profile.profile_id]?.path,
                           type: 'post',
+                          id: profile.profile_id,
+                          reportName,
                         })
                       }
                     >
@@ -375,6 +390,7 @@ const Profiles = () => {
                           folder: ``,
                         })
                       }
+                      tooltip="Post"
                     >
                       <i className="fa-regular fa-circle-play"></i>
                     </Button>

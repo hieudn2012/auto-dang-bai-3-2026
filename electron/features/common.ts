@@ -73,3 +73,49 @@ export const saveHistoryTxt = async ({ profile_id, folder }: { profile_id: numbe
   // add 1 line new line
   fs.writeFileSync(`${appConfig}/history.txt`, `${historyTxt}\n${profile_id} || ${folder}`);
 }
+
+// save report txt
+export const saveReportTxt = async ({ reportName, note, id, status, username }: { reportName: string, note: string, id: number, status: string, username: string }) => {
+  // get app config in system
+  const appConfig = app.getPath('userData');
+  // create report file if not exists
+  if (!fs.existsSync(`${appConfig}/report.txt`)) {
+    fs.writeFileSync(`${appConfig}/report.txt`, '');
+  }
+  // get report from file report.txt
+  const reportTxt = fs.readFileSync(`${appConfig}/report.txt`, 'utf8');
+  // add 1 line new line
+  // id || username || create_at || status || note || reportName
+  const date = new Date().toLocaleString();
+  fs.writeFileSync(`${appConfig}/report.txt`, `${reportTxt}\n${id} || ${username} || ${date} || ${status} || ${note} || ${reportName}`);
+}
+
+// get report by reportName
+export const getReportByReportName = async (reportName: string) => {
+  // get app config in system
+  const appConfig = app.getPath('userData');
+  // get report from file report.txt
+  const reportTxt = fs.readFileSync(`${appConfig}/report.txt`, 'utf8');
+  // find report by reportName
+  const reports = reportTxt.split('\n').filter(item => item.includes(reportName));
+  const results = reports.map((item)  => {
+    const [id, username, create_at, status, note, reportName] = item.split(' || ');
+    return {
+      id,
+      username,
+      create_at,
+      status,
+      note,
+      reportName
+    }
+  });
+  const totalFailed = results.filter(item => item.status === 'failed').length;
+  const totalCompleted = results.filter(item => item.status === 'completed').length;
+  const failedItems = results.filter(item => item.status === 'failed');
+  return {
+    results,
+    totalFailed,
+    totalCompleted,
+    failedItems,
+  };
+}

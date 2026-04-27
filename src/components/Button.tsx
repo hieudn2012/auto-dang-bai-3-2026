@@ -1,12 +1,31 @@
+import React, { useState } from 'react';
+
 type Props = React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
   loading?: boolean;
+  tooltip?: string;
 }
 
-const Button = ({ loading, ...props }: Props) => {
+const Button = ({ loading, tooltip, ...props }: Props) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
-    <button className="px-2 py-1 rounded-md bg-primary text-white text-md font-semibold" {...props} disabled={loading}>
-      {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : props.children}
-    </button>
+    <div className="relative inline-block">
+      <button 
+        className="px-4 py-1 rounded-md bg-primary text-white text-md font-semibold hover:bg-primary/80" 
+        {...props} 
+        disabled={loading}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : props.children}
+      </button>
+      {tooltip && (
+        <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap z-50 transition-all duration-200 ease-in-out ${showTooltip ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-1 pointer-events-none'}`}>
+          {tooltip}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+        </div>
+      )}
+    </div>
   )
 }
 
