@@ -263,7 +263,7 @@ const Profiles = () => {
               <i className="fa-solid fa-play"></i>
             </Button>
             <ReportModal reportName={reportName} />
-            <ScheduleModal onSchedule={() => handleAutoPost(selectedIds)} />
+            <ScheduleModal onSchedule={() => handleBatch()} />
           </div>
         </div>
         <table className="w-full table-auto border-collapse border border-gray-400 text-sm rounded-lg overflow-hidden">
