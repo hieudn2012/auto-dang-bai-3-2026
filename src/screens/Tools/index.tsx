@@ -3,6 +3,7 @@ import Button from "@/components/Button";
 import Layout from "@/components/Layout";
 import TextArea from "@/components/TextArea";
 import { map } from "lodash";
+import { windowInstance } from "@/services/window";
 
 const Tools = () => {
   const [accounts, setAccounts] = useState('');
@@ -10,7 +11,7 @@ const Tools = () => {
   const handleCheckLive = () => {
     const list = accounts.trim().split('\n');
     const trimList = map(list, (item) => item.trim());
-    window.api.checkLive({ accounts: trimList});
+    windowInstance.api.checkLive({ accounts: trimList});
   }
 
   return (
