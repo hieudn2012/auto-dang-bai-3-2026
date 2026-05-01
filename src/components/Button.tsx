@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { twMerge } from 'tailwind-merge';
 
 type Props = React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement> & {
   loading?: boolean;
@@ -10,9 +11,9 @@ const Button = ({ loading, tooltip, ...props }: Props) => {
 
   return (
     <div className="relative inline-block">
-      <button 
-        className="px-4 py-1 rounded-md bg-primary text-white text-md font-semibold hover:bg-primary/80" 
-        {...props} 
+      <button
+        {...props}
+        className={twMerge("px-4 py-2 rounded-lg bg-primary text-white text-md font-semibold hover:bg-primary/80 dark:bg-gradient-to-r dark:from-dark-accent dark:to-dark-accentHover dark:hover:from-dark-accentHover dark:hover:to-dark-accent hover:scale-95 active:scale-90 shadow-lg dark:shadow-xl border border-primary/20 dark:border-dark-accent/30 transition-all duration-150", props.className)}
         disabled={loading}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}

@@ -28,6 +28,7 @@ export enum InvokeChannel {
   SEND_REPORT_TO_TELEGRAM = 'send-report-to-telegram',
   TEST_TELEGRAM_CONNECTION = 'test-telegram-connection',
   GET_BOT_INFO = 'get-bot-info',
+  CHECK_VALID_CAPTION_OR_LINK = 'check-valid-caption-or-link',
 }
 
 export type MainConfig = {

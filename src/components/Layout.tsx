@@ -6,12 +6,14 @@ interface Props {
 
 const Layout = ({ children }: Props) => {
   return (
-    <div className="flex">
-      <div className="w-[50px] pt-[300px]">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-bg dark:to-dark-bgSecondary transition-colors duration-300">
+      <div className="w-[60px] bg-white/80 dark:bg-dark-bgSecondary/80 backdrop-blur-sm border-r border-gray-200/50 dark:border-dark-border/50 flex flex-col shadow-xl">
         <SiderBar />
       </div>
-      <div className="flex-1 p-8">
-        {children}
+      <div className="flex-1 p-8 bg-gradient-to-br from-gray-50/50 to-white/50 dark:from-dark-bg/50 dark:to-dark-bgSecondary/50 transition-colors duration-300">
+        <div className="max-w-full animate-fadeIn">
+          {children}
+        </div>
       </div>
     </div>
   )

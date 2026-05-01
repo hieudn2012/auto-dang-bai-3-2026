@@ -1,14 +1,14 @@
 import './App.css'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { toast, ToastContainer } from 'react-toastify'
+import { ToastContainer } from './components/ToastContainer'
 import 'react-toastify/dist/ReactToastify.css'
 
 import { routerPath } from './configs/router'
 import ManageFolder from './screens/ManageFolder'
 import Profiles from './screens/Profiles'
 import ImportSheet from './screens/ImportSheet'
+import { DarkModeProvider } from './contexts/DarkModeContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,39 +19,20 @@ const queryClient = new QueryClient({
 })
 
 function App() {
-  // useEffect(() => {
-  //   const handleToast = (_event: any, arg: any) => {
-  //     const { type, message, username } = arg as { type: 'success' | 'error' | 'info', message: string, username?: string };
-  //     const displayMessage = username ? `${username}: ${message}` : message;
-      
-  //     if (type === 'success') {
-  //       toast.success(displayMessage)
-  //     } else if (type === 'error') {
-  //       toast.error(displayMessage)
-  //     } else {
-  //       toast.info(displayMessage)
-  //     }
-  //   }
-
-  //   window.ipcRenderer.on('show-toast', handleToast)
-
-  //   return () => {
-  //     window.ipcRenderer.off('show-toast', handleToast)
-  //   }
-  // }, [])
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastContainer />
-      <Router>
-        <Routes>
-          <Route path={routerPath.home} element={<ManageFolder />} />
-          <Route path={routerPath.manage_folder} element={<ManageFolder />} />
-          <Route path={routerPath.profiles} element={<Profiles />} />
-          <Route path={routerPath.import_sheet} element={<ImportSheet />} />
-        </Routes>
-      </Router>
-    </QueryClientProvider>
+    <DarkModeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastContainer />
+        <Router>
+          <Routes>
+            <Route path={routerPath.home} element={<ManageFolder />} />
+            <Route path={routerPath.manage_folder} element={<ManageFolder />} />
+            <Route path={routerPath.profiles} element={<Profiles />} />
+            <Route path={routerPath.import_sheet} element={<ImportSheet />} />
+          </Routes>
+        </Router>
+      </QueryClientProvider>
+    </DarkModeProvider>
   )
 }
 

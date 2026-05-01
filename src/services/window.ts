@@ -31,6 +31,7 @@ type WindownInstance = typeof window & {
     sendReportToTelegram: (reportName: string, reportData: any) => Promise<void>,
     testTelegramConnection: () => Promise<boolean>,
     getBotInfo: () => Promise<any>,
+    checkValidCaptionOrLink: () => Promise<any>,
   }
 }
 

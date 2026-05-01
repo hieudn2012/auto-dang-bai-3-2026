@@ -2,74 +2,24 @@ import Button from "@/components/Button";
 import Input from "@/components/Input";
 import Layout from "@/components/Layout";
 import TextArea from "@/components/TextArea";
-import { map, uniqBy } from "lodash";
+import { windowInstance } from "@/services/window";
 import { useEffect, useState } from "react";
-import ConvertCookie from "./ConvertCookie";
-
-// short name like abc...def
-const shortName = (name: string) => {
-  const maxLength = 10;
-  if (name.length <= maxLength) {
-    return name;
-  }
-  return `${name.substring(0, maxLength / 2)}...${name.substring(name.length - maxLength / 2)}`;
-}
-
-
 
 const ManageFolder = () => {
   const [workingFolder, setWorkingFolder] = useState('');
   const [linkPost, setLinkPost] = useState('');
   const [caption, setCaption] = useState('');
-  const [productFolder, setProductFolder] = useState('');
-  const [productSelected, setProductSelected] = useState('');
-  const [message, setMessage] = useState('');
-
-  const [products, setProducts] = useState<{ cap: string, link: string, name: string }[]>([]);
 
   const handleOpenDialogFolder = async () => {
-    const folderPath = await window.api.openDialogFolder();
+    const folderPath = await windowInstance.api.openDialogFolder();
     setWorkingFolder(folderPath);
   }
-
-  const handleCreateProductFolder = async () => {
-    await window.api.createProductFolder(workingFolder, productFolder);
-  }
-
-  const handleLoadProductInfo = async () => {
-    const productInfo = await window.api.loadProductInfo(`${workingFolder}/${productFolder}`);
-    setProducts((currentProducts) => uniqBy([...currentProducts, { ...productInfo, name: productFolder }], 'name'));
-  }
-
-  const handleChangeProductInfo = (name: string, value: string) => {
-    setProducts(products.map((product) => product.name === name ? { ...product, cap: value } : product));
-  }
-
-  const handleChangeLink = (name: string, value: string) => {
-    setProducts(products.map((product) => product.name === name ? { ...product, link: value } : product));
-  }
-
-  const openFolder = (path: string) => {
-    window.api.openFolder(path);
-    setMessage('Đang mở thư mục')
-  }
-
-  const handleSaveProductInfo = ({ cap, link, path }: { cap: string, link: string, path: string }) => {
-    window.api.saveProductInfo({ cap, link, path });
-    setMessage('Đã lưu thông tin');
-  }
-
-  const handleMoveAllFilesFromFolderAtoFolderB = async () => {
-    await window.api.moveAllFilesFromFolderAtoFolderB(`/Users/admin/Desktop/download`, `${workingFolder}/${productSelected}`);
-    setMessage('Đã di chuyển tất cả file');
-  }
-
   const handleSaveMainConfig = async () => {
-    await window.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption });
+    await windowInstance.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption });
   }
 
   const handleLoadMainConfig = async () => {
-    const config = await window.api.loadMainConfig();
+    const config = await windowInstance.api.loadMainConfig();
     setWorkingFolder(config?.workingDir || '');
     setLinkPost(config?.linkPost || '');
     setCaption(config?.caption || '');
@@ -81,62 +31,98 @@ const ManageFolder = () => {
 
   return (
     <Layout>
-      <div>
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col gap-2">
-            <Input placeholder="Nhập tên thư mục làm việc" value={workingFolder} onChange={(e) => setWorkingFolder(e.target.value)} />
-            <TextArea placeholder="Nhập link post" value={linkPost} onChange={(e) => setLinkPost(e.target.value)} />
-            <TextArea placeholder="Nhập caption" value={caption} onChange={(e) => setCaption(e.target.value)} />
-            <div className="flex gap-1">
-              <Button onClick={handleOpenDialogFolder}>Chọn folder</Button>
-              <Button onClick={handleLoadMainConfig}>Load folder làm việc</Button>
-              <Button onClick={handleSaveMainConfig}>Lưu</Button>
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+            <i className="fas fa-cog text-blue-500 mr-2"></i>
+            Cấu Hình Thư Mục Làm Việc
+          </h2>
+          
+          <div className="space-y-6">
+            {/* Working Folder Section */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                <i className="fas fa-folder text-blue-400 mr-1"></i>
+                Thư Mục Làm Việc
+              </label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Nhập tên thư mục làm việc" 
+                  value={workingFolder} 
+                  onChange={(e) => setWorkingFolder(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={handleOpenDialogFolder}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  <i className="fas fa-folder-open mr-2"></i>
+                  Chọn Folder
+                </Button>
+              </div>
+            </div>
+
+            {/* Link Post Section */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                <i className="fas fa-link text-green-400 mr-1"></i>
+                Link Post Mặc Định
+              </label>
+              <TextArea 
+                placeholder="Nhập link post" 
+                value={linkPost} 
+                onChange={(e) => setLinkPost(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+
+            {/* Caption Section */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                <i className="fas fa-closed-captioning text-purple-400 mr-1"></i>
+                Caption Mặc Định
+              </label>
+              <TextArea 
+                placeholder="Nhập caption" 
+                value={caption} 
+                onChange={(e) => setCaption(e.target.value)}
+                className="min-h-[120px]"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <Button 
+                onClick={handleLoadMainConfig}
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white"
+              >
+                <i className="fas fa-download mr-2"></i>
+                Load Config
+              </Button>
+              <Button 
+                onClick={handleSaveMainConfig}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white"
+              >
+                <i className="fas fa-save mr-2"></i>
+                Lưu Config
+              </Button>
             </div>
           </div>
-          {/* <div className="flex gap-2">
-            <Input placeholder="Nhập tên thư mục sản phẩm" value={productFolder} onChange={(e) => setProductFolder(e.target.value)} />
-            <div className="w-[300px]">
-              <Button>Ramdom sản phẩm</Button>
+        </div>
+
+        {/* Info Card */}
+        <div className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <div className="flex items-start">
+            <i className="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+            <div className="text-sm text-blue-800">
+              <h3 className="font-medium mb-1">Thông tin cấu hình</h3>
+              <p className="text-blue-700">
+                Cấu hình này sẽ được sử dụng làm mặc định cho các chức năng khác trong ứng dụng. 
+                Thư mục làm việc là nơi chứa các folder sản phẩm của bạn.
+              </p>
             </div>
-          </div> */}
+          </div>
         </div>
-        {/* <div className="flex gap-2 mt-2">
-          <Button onClick={handleCreateProductFolder}>Tạo sản phẩm</Button>
-          <Button onClick={handleLoadProductInfo}>Load thông tin sản phẩm</Button>
-        </div>
-        <ConvertCookie />
-        <div className="font-bold mt-5">Danh sách sản phẩm</div>
-        <div className="flex gap-1">
-          {map(products, ({ name }) => (
-            <Button key={name} onClick={() => setProductSelected(name)}>
-              {shortName(name)}
-            </Button>
-          ))}
-        </div>
-        <div className="mt-5">
-          {map(products.filter((product) => product.name === productSelected), ({ cap, link, name }) => (
-            <div key={name} className="flex flex-col gap-2">
-              <div className="font-bold">
-                {name}
-              </div>
-              <div className="h-[500px]">
-                <TextArea value={cap} onChange={(e) => handleChangeProductInfo(name, e.target.value)} />
-              </div>
-              <div>
-                <TextArea value={link} onChange={(e) => handleChangeLink(name, e.target.value)} />
-              </div>
-              <div className="flex justify-between">
-                <div className="flex gap-1">
-                  <Button onClick={() => openFolder(`${workingFolder}/${name}`)}>Mở thư mục</Button>
-                  <Button onClick={handleMoveAllFilesFromFolderAtoFolderB}>Lấy media file</Button>
-                  <Button onClick={() => handleSaveProductInfo({ path: `${workingFolder}/${name}`, cap, link })}>Lưu thông tin</Button>
-                  <Button>Đánh dấu đã đăng</Button>
-                </div>
-                <div className="font-bold text-green-600">{message}</div>
-              </div>
-            </div>
-          ))}
-        </div> */}
       </div>
     </Layout>
   )

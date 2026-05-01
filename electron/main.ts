@@ -2,11 +2,10 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { InvokeChannel } from './types'
-import { handleSearchTop } from './features/x-search-top'
-import { handleCheckLive } from './features/x-check-live'
 import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount, threadsPost } from './features/threads-profile'
 import { getReportByReportName, initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
+import { checkValidCaptionOrLink } from './features/caption'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -65,16 +64,6 @@ const handle = ipcMain.handle as <T extends InvokeChannel>(channel: T, listener:
 // Đăng ký IPC handler
 handle(InvokeChannel.GET_CURRENT_TIME, async () => {
   console.log('get-current-time')
-})
-
-handle(InvokeChannel.OPEN_PROFILE, async (_event, id) => {
-  // await openProfile(id);
-  // await handleLogin();
-  await handleSearchTop();
-})
-
-handle(InvokeChannel.CHECK_LIVE, async (_event, accounts) => {
-  await handleCheckLive(accounts);
 })
 
 handle(InvokeChannel.OPEN_DIALOG_FOLDER, async () => {
@@ -147,6 +136,10 @@ handle(InvokeChannel.CHECK_LIVE_ACCOUNTS, async (_event, accounts) => {
 
 handle(InvokeChannel.GET_REPORT_BY_REPORT_NAME, async (_event, reportName) => {
   return getReportByReportName(reportName);
+})
+
+handle(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK, async () => {
+  return checkValidCaptionOrLink();
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Group } from "../Profiles/Group";
 import { useDeleteProfile, useGetProfiles } from "@/services/profiles";
 import Input from "@/components/Input";
-import { toast } from "react-toastify";
+import { toast } from "@/components/ToastContainer";
 
 const CheckLive = () => {
   const [checkLiveLoading, setCheckLiveLoading] = useState(false);
@@ -41,29 +41,172 @@ const CheckLive = () => {
   }
 
   return (
-    <div className="flex flex-col gap-2 items-start py-2">
-      <Group onChange={setGroupId} value={groupId} />
-      <div className="flex gap-2 w-full">
-        <div className="flex-1">
-          <Input placeholder="Nhập WebSocket URL..." value={ws} onChange={(e) => setWs(e.target.value)} />
-        </div>
-        <div className="w-40">
-          <Input placeholder="Batch size..." value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} />
+    <div className="max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
+          <i className="fas fa-signal text-green-500 mr-2"></i>
+          Check Live Accounts
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 text-sm">
+          Test account connectivity and remove inactive profiles
+        </p>
+      </div>
+
+      {/* Configuration Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+          <i className="fas fa-cog text-gray-400 mr-2"></i>
+          Configuration
+        </h3>
+        
+        <div className="space-y-4">
+          {/* Group Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i className="fas fa-users text-gray-400 mr-1"></i>
+              Select Group
+            </label>
+            <Group onChange={setGroupId} value={groupId} />
+          </div>
+
+          {/* WebSocket and Batch Size */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i className="fas fa-link text-gray-400 mr-1"></i>
+                WebSocket URL
+              </label>
+              <Input 
+                placeholder="Nhập WebSocket URL..." 
+                value={ws} 
+                onChange={(e) => setWs(e.target.value)} 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i className="fas fa-layer-group text-gray-400 mr-1"></i>
+                Batch Size
+              </label>
+              <Input 
+                placeholder="Batch size..." 
+                value={batchSize} 
+                onChange={(e) => setBatchSize(Number(e.target.value))} 
+              />
+            </div>
+          </div>
+
+          {/* Check Button */}
+          <div className="flex justify-center">
+            <Button 
+              onClick={handleCheckLive} 
+              loading={checkLiveLoading}
+              className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-medium"
+              disabled={!ws.trim() || !accounts?.length}
+            >
+              <i className="fas fa-play mr-2"></i>
+              Check Live Accounts
+            </Button>
+          </div>
         </div>
       </div>
-      <Button onClick={handleCheckLive} loading={checkLiveLoading}>
-        Check Live
-      </Button>
-      <div>
-        <h3 className="font-medium">Die accounts:</h3>
-        <ul className="list-disc list-inside">
-          {dieAccounts.map((acc) => (
-            <li key={acc}>{acc}</li>
-          ))}
-        </ul>
-        <Button onClick={handleDeleteDieAccounts} loading={loading}>
-          Xóa accounts bị die
-        </Button>
+
+      {/* Results Section */}
+      {dieAccounts.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-red-600 dark:text-red-400 flex items-center">
+              <i className="fas fa-skull-crossbones mr-2"></i>
+              Die Accounts ({dieAccounts.length})
+            </h3>
+            <Button 
+              onClick={handleDeleteDieAccounts} 
+              loading={loading}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white"
+            >
+              <i className="fas fa-trash mr-2"></i>
+              Delete All
+            </Button>
+          </div>
+
+          {/* Account List */}
+          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800 max-h-60 overflow-y-auto">
+            <ul className="space-y-2">
+              {dieAccounts.map((acc, index) => (
+                <li key={acc} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-red-200 dark:border-red-700">
+                  <div className="flex items-center">
+                    <span className="text-red-500 mr-2">
+                      <i className="fas fa-times-circle"></i>
+                    </span>
+                    <span className="font-mono text-sm text-gray-900 dark:text-white">{acc}</span>
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">#{index + 1}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Summary */}
+          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {accounts?.length || 0}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total Accounts</div>
+            </div>
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {(accounts?.length || 0) - dieAccounts.length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Live Accounts</div>
+            </div>
+            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                {dieAccounts.length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Die Accounts</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success State */}
+      {dieAccounts.length === 0 && accounts?.length > 0 && (
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-6 border border-green-200 dark:border-green-800 text-center">
+          <i className="fas fa-check-circle text-green-500 text-4xl mb-3"></i>
+          <h3 className="text-lg font-medium text-green-900 dark:text-green-100 mb-2">
+            All Accounts Are Live!
+          </h3>
+          <p className="text-green-700 dark:text-green-300 text-sm">
+            All {accounts.length} accounts in this group are active and functioning properly.
+          </p>
+        </div>
+      )}
+
+      {/* Instructions */}
+      <div className="mt-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center">
+          <i className="fas fa-info-circle text-blue-500 mr-2"></i>
+          How to Use
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800 dark:text-blue-200">
+          <div className="space-y-2">
+            <h4 className="font-medium text-blue-900 dark:text-blue-100">Step 1:</h4>
+            <p>Select a group of accounts to check</p>
+          </div>
+          <div className="space-y-2">
+            <h4 className="font-medium text-blue-900 dark:text-blue-100">Step 2:</h4>
+            <p>Enter WebSocket URL and batch size</p>
+          </div>
+          <div className="space-y-2">
+            <h4 className="font-medium text-blue-900 dark:text-blue-100">Step 3:</h4>
+            <p>Click "Check Live Accounts" to test connectivity</p>
+          </div>
+          <div className="space-y-2">
+            <h4 className="font-medium text-blue-900 dark:text-blue-100">Step 4:</h4>
+            <p>Review results and delete dead accounts if needed</p>
+          </div>
+        </div>
       </div>
     </div>
   );

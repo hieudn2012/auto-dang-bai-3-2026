@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld('api', {
   sendReportToTelegram: (reportName: string, reportData: any) => invoke(InvokeChannel.SEND_REPORT_TO_TELEGRAM, reportName, reportData),
   testTelegramConnection: () => invoke(InvokeChannel.TEST_TELEGRAM_CONNECTION),
   getBotInfo: () => invoke(InvokeChannel.GET_BOT_INFO),
+  checkValidCaptionOrLink: () => invoke(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

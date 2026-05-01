@@ -1,6 +1,7 @@
 import { useGetGroupList } from "@/services/profiles"
-import { get, map } from "lodash";
-import { useEffect } from "react";
+import { get, map } from "lodash"
+import { useEffect } from "react"
+import Select from "@/components/Select"
 
 export const Group = ({ value, onChange }: { value: number, onChange: (value: number) => void }) => {
   const [{ data: groupList }] = useGetGroupList();
@@ -11,11 +12,17 @@ export const Group = ({ value, onChange }: { value: number, onChange: (value: nu
     }
   }, [groupList]);
 
+  const options = map(groupList?.data?.data?.data, (group) => ({
+    value: group.id,
+    label: group.title
+  }));
+
   return (
-    <select value={value} onChange={(e) => onChange(Number(e.target.value))} className="text-white px-2 rounded-md font-medium">
-      {map(groupList?.data?.data?.data, (group) => (
-        <option key={group.id} value={group.id}>{group.title}</option>
-      ))}
-    </select>
+    <Select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      options={options}
+      className="min-w-[200px]"
+    />
   )
 }
