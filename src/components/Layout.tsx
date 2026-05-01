@@ -1,4 +1,5 @@
 import SiderBar from "./SiderBar";
+import PageTransition from "./PageTransition";
 
 interface Props {
   children: React.ReactNode;
@@ -11,9 +12,9 @@ const Layout = ({ children }: Props) => {
         <SiderBar />
       </div>
       <div className="flex-1 p-8 bg-gradient-to-br from-gray-50/50 to-white/50 dark:from-dark-bg/50 dark:to-dark-bgSecondary/50 transition-colors duration-300">
-        <div className="max-w-full animate-fadeIn">
+        <PageTransition className="max-w-full">
           {children}
-        </div>
+        </PageTransition>
       </div>
     </div>
   )
