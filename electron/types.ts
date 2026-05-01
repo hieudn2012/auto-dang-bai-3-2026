@@ -54,4 +54,5 @@ export type UserInfo = {
   type: 'post' | 'quote';
   id?: number;
   reportName?: string;
+  mode?: 'default' | 'affiliate';
 }

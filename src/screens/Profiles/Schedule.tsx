@@ -146,74 +146,119 @@ const ScheduleModal = ({ onSchedule }: Props) => {
   return (
     <div>
       <div>
-        <Button onClick={() => setShowModal(true)} tooltip="Hẹn giờ">
-          <i className="fa-solid fa-clock"></i>
+        <Button 
+          onClick={() => setShowModal(true)} 
+          tooltip="Hẹn giờ"
+          className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+        >
+          <i className="fa-solid fa-clock mr-2"></i>
+          Schedule
         </Button>
       </div>
       <Dialog open={showModal} onClose={() => setShowModal(false)}>
         <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-white">Hẹn giờ đăng bài</h2>
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                <i className="fa-solid fa-clock text-amber-600 dark:text-amber-400"></i>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Hẹn giờ đăng bài</h2>
+            </div>
             <button
               onClick={() => setShowModal(false)}
-              className="text-gray-400 hover:text-gray-200 text-2xl"
+              className="text-gray-400 hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-800/50 transition-colors"
             >
               ×
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="space-y-3">
               {schedules.map((schedule, index) => (
-                <div key={schedule.id} className="flex items-center gap-2 p-3 bg-gray-900/50 rounded border border-gray-700">
-                  <span className="text-gray-300 w-8">{index + 1}.</span>
+                <div key={schedule.id} className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700/50 backdrop-blur-sm">
+                  <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold text-sm">{index + 1}</span>
+                  </div>
                   <Input
                     type="time"
                     value={schedule.time}
                     onChange={(e) => updateSchedule(schedule.id, e.target.value)}
-                    className="flex-1 bg-white"
+                    className="flex-1 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm"
                   />
-                  <label className="flex items-center gap-2 text-gray-300">
+                  <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={schedule.enabled}
                       onChange={(e) => toggleSchedule(schedule.id, e.target.checked)}
-                      className="rounded"
+                      className="rounded w-4 h-4 text-amber-500 focus:ring-amber-500"
                     />
-                    Kích hoạt
+                    <span className="text-sm">Kích hoạt</span>
                   </label>
                   {schedule.time && schedule.enabled && (
-                    <span className="text-xs text-blue-400">
-                      {getTimeUntilSchedule(schedule.time)}
-                    </span>
+                    <div className="px-3 py-1 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                        {getTimeUntilSchedule(schedule.time)}
+                      </span>
+                    </div>
                   )}
                   {schedules.length > 1 && (
                     <button
                       onClick={() => removeSchedule(schedule.id)}
-                      className="text-red-400 hover:text-red-300"
+                      className="w-8 h-8 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200 flex items-center justify-center"
+                      title="Xóa"
                     >
-                      <i className="fa-solid fa-trash"></i>
+                      <i className="fa-solid fa-trash text-sm"></i>
                     </button>
                   )}
                 </div>
               ))}
+              {schedules.length === 0 && (
+                <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+                  <i className="fa-solid fa-clock text-4xl mb-3 opacity-50 text-gray-500 dark:text-gray-400"></i>
+                  <p>Chưa có lịch hẹn nào</p>
+                  <p className="text-sm mt-1">Nhấn "Thêm thời gian" để tạo lịch mới</p>
+                </div>
+              )}
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={addSchedule} tooltip="Thêm thời gian">
-                <i className="fa-solid fa-plus"></i>
+            <div className="flex gap-3 pt-4 border-t border-gray-700/50">
+              <Button 
+                onClick={addSchedule} 
+                tooltip="Thêm thời gian"
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              >
+                <i className="fa-solid fa-plus mr-2"></i>
                 Thêm thời gian
               </Button>
-              <Button onClick={startScheduling} tooltip="Bắt đầu hẹn giờ">
-                <i className="fa-solid fa-play"></i>
+              <Button 
+                onClick={startScheduling} 
+                tooltip="Bắt đầu hẹn giờ"
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+              >
+                <i className="fa-solid fa-play mr-2"></i>
                 Bắt đầu hẹn giờ
               </Button>
             </div>
 
-            <div className="text-sm text-gray-400">
-              <p>• Chọn thời gian để đăng bài tự động</p>
-              <p>• Có thể thêm nhiều mốc thời gian</p>
-              <p>• Hệ thống sẽ gọi callback khi đến thời gian</p>
+            <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                <i className="fa-solid fa-info-circle text-blue-500 dark:text-blue-400 mr-2"></i>
+                Hướng dẫn sử dụng
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-start gap-2">
+                  <i className="fa-solid fa-check text-green-500 dark:text-green-400 mt-0.5 text-xs"></i>
+                  <p>Chọn thời gian để đăng bài tự động</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <i className="fa-solid fa-check text-green-500 dark:text-green-400 mt-0.5 text-xs"></i>
+                  <p>Có thể thêm nhiều mốc thời gian</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <i className="fa-solid fa-check text-green-500 dark:text-green-400 mt-0.5 text-xs"></i>
+                  <p>Hệ thống sẽ gọi callback khi đến thời gian</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -53,10 +53,7 @@ const Profiles = () => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [batchSize, setBatchSize] = useState(20);
   const [reportName, setReportName] = useState('');
-
-  const handlePost = ({ wsUrl, username, folder }: { wsUrl: string, username: string, folder: string }) => {
-    windowInstance.api.threadsPost({ wsUrl, username, folder });
-  }
+  const [mode, setMode] = useState<'default' | 'affiliate'>('default');
 
   const handleRandomFolder = async (profile_id: number) => {
     const currentPaths = map(userMap, (item) => item.path);
@@ -230,13 +227,24 @@ const Profiles = () => {
       <div className="p-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-            <i className="fas fa-users text-blue-500 mr-3"></i>
-            Profile Management
-          </h1>
-          <p className="text-gray-600">
-            Quản lý và điều khiển các profile tài khoản mạng xã hội
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+                <i className="fas fa-users text-blue-500 mr-3"></i>
+                Profile Management
+              </h1>
+              <p className="text-gray-600">
+                Quản lý và điều khiển các profile tài khoản mạng xã hội
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              {mode === 'default' ? (
+                <i className="fas fa-heart text-5xl text-red-500"></i>
+              ) : (
+                <i className="fab fa-amazon text-5xl text-orange-500"></i>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Control Panel */}
@@ -251,6 +259,17 @@ const Profiles = () => {
                 </Button>
                 <div className="flex-1 min-w-[200px]">
                   <Group value={group_id} onChange={setGroupId} />
+                </div>
+                <div className="flex-1 min-w-[200px]">
+                  <Select
+                    value={mode}
+                    onChange={(event) => setMode(event.target.value as unknown as 'default' | 'affiliate')}
+                    options={[
+                      { value: 'default', label: 'Mặc định' },
+                      { value: 'affiliate', label: 'Affiliate' },
+                    ]}
+                    className="w-full"
+                  />
                 </div>
               </div>
 
@@ -302,7 +321,7 @@ const Profiles = () => {
                   className="w-20"
                 />
               </div>
-              <Button onClick={handleBatch} tooltip="Batch" className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white">
+              <Button onClick={handleBatch} tooltip="Batch" className="px-3 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                 <i className="fa-solid fa-play mr-2"></i>
                 Batch
               </Button>
@@ -428,13 +447,13 @@ const Profiles = () => {
                       <Button
                         id={`post-button-${profile.profile_id}`}
                         tooltip="Post"
-                        onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post' })}
+                        onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post', mode })}
                         className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
                       >
                         <i className="fa-solid fa-circle-play"></i>
                       </Button>
                       <Button
-                        onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote' })}
+                        onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote', mode })}
                         tooltip="Quote"
                         className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
                       >
@@ -458,6 +477,7 @@ const Profiles = () => {
                             type: 'post',
                             id: profile.profile_id,
                             reportName,
+                            mode,
                           })
                         }
                         className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"

@@ -107,17 +107,63 @@ const checkValid = (data: string, path: string) => {
 }
 
 export const getRandomCaption = (path: string) => {
-  const data = fs.readFileSync(path, 'utf-8');
-  const normalizedData = data.replace(/\r\n/g, '\n');
-  const captions = normalizedData.split('\n\n\n\n');
-  const randomIndex = Math.floor(Math.random() * captions.length);
-  return captions[randomIndex];
+  try {
+    // Check if path is a directory, if so, look for caption.txt file
+    let filePath = path;
+    if (fs.existsSync(path) && fs.statSync(path).isDirectory()) {
+      filePath = path + '/cap.txt';
+    }
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.error(`Caption file not found: ${filePath}`);
+      return ''; // Return empty string if file doesn't exist
+    }
+    
+    const data = fs.readFileSync(filePath, 'utf-8');
+    const normalizedData = data.replace(/\r\n/g, '\n');
+    const captions = normalizedData.split('\n\n\n').filter(caption => caption.trim().length > 0);
+    
+    if (captions.length === 0) {
+      console.error(`No captions found in file: ${filePath}`);
+      return ''; // Return empty string if no captions
+    }
+    
+    const randomIndex = Math.floor(Math.random() * captions.length);
+    return captions[randomIndex];
+  } catch (error) {
+    console.error(`Error reading caption file: ${path}`, error);
+    return ''; // Return empty string on error
+  }
 }
 
 export const getRandomLink = (path: string) => {
-  const data = fs.readFileSync(path, 'utf-8');
-  const normalizedData = data.replace(/\r\n/g, '\n');
-  const links = normalizedData.split('\n');
-  const randomIndex = Math.floor(Math.random() * links.length);
-  return links[randomIndex];
+  try {
+    // Check if path is a directory, if so, look for link.txt file
+    let filePath = path;
+    if (fs.existsSync(path) && fs.statSync(path).isDirectory()) {
+      filePath = path + '/link.txt';
+    }
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.error(`Link file not found: ${filePath}`);
+      return ''; // Return empty string if file doesn't exist
+    }
+    
+    const data = fs.readFileSync(filePath, 'utf-8');
+    const normalizedData = data.replace(/\r\n/g, '\n');
+    const links = normalizedData.split('\n').filter(link => link.trim().length > 0);
+    
+    if (links.length === 0) {
+      console.error(`No links found in file: ${filePath}`);
+      return ''; // Return empty string if no links
+    }
+    
+    const randomIndex = Math.floor(Math.random() * links.length);
+    return links[randomIndex];
+  } catch (error) {
+    console.error(`Error reading link file: ${path}`, error);
+    return ''; // Return empty string on error
+  }
 }

@@ -6,6 +6,7 @@ import { loadMainConfig, saveReportTxt, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
+import { getRandomCaption, getRandomLink } from "./caption";
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -109,14 +110,16 @@ export const clickPostButton = async ({
   username,
   folder,
   type = 'quote',
+  mode = 'default',
 }: {
   ws: string,
   username: string,
   folder: string,
   type: 'post' | 'quote',
+  mode: 'default' | 'affiliate',
 }, event: IpcMainEvent) => {
   const config = await loadMainConfig();
-  const caption = config?.caption || '';
+  const caption = mode === 'affiliate' ? getRandomCaption(folder) : config?.caption || '';
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -351,11 +354,15 @@ export const clickEditLatestPostButton = async ({
   username,
   reportName,
   id,
+  mode,
+  folder,
 }: {
   ws: string,
   username: string,
   reportName: string,
   id: number,
+  folder: string,
+  mode: 'default' | 'affiliate',
 }, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const browser = await puppeteer.connect({
@@ -425,9 +432,14 @@ export const clickEditLatestPostButton = async ({
     // keyboard link
 
     // link post split \n and random link
-    const links = config?.linkPost?.split('\n') || [];
-    const randomLink = links[Math.floor(Math.random() * links.length)];
-    await page.keyboard.type(randomLink, { delay: 100 });
+    let linkPost = '';
+    if (mode === 'default') {
+      const links = config?.linkPost?.split('\n') || [];
+      linkPost = links[Math.floor(Math.random() * links.length)];
+    } else {
+      linkPost = getRandomLink(folder);
+    }
+    await page.keyboard.type(linkPost, { delay: 100 });
     await waitRandom(1000, 3000);
 
     // press tab

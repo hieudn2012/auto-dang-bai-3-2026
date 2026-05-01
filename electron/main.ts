@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { InvokeChannel } from './types'
 import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
-import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount, threadsPost } from './features/threads-profile'
+import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount } from './features/threads-profile'
 import { getReportByReportName, initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
 // Suppress macOS text input context warnings
@@ -92,10 +92,6 @@ handle(InvokeChannel.MOVE_ALL_FILES_FROM_FOLDER_A_TO_FOLDER_B, async (_event, fr
 
 handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id, index) => {
   return openThreadsProfile(id, index);
-})
-
-handle(InvokeChannel.THREADS_POST, async (event, wsUrl, username, folder) => {
-  await threadsPost({ wsUrl, username, folder, event });
 })
 
 handle(InvokeChannel.SAVE_MAIN_CONFIG, async (_event, config) => {
