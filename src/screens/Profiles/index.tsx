@@ -11,8 +11,10 @@ import { useEffect, useState } from "react";
 import { toast } from "@/components/ToastContainer";
 import { Group } from "./Group";
 import Input from "@/components/Input";
+import Mode from "@/components/Mode";
 import ReportModal from "./Report";
 import ScheduleModal from "./Schedule";
+import LoadingWraper from "@/components/LoadingWraper";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -42,7 +44,7 @@ const waitFor = (timer: number) => {
 
 const Profiles = () => {
   const [group_id, setGroupId] = useState(-1);
-  const [{ data }] = useGetProfiles(group_id);
+  const [{ data, isPending }] = useGetProfiles(group_id);
   const [{ data: openedList, refetch }] = useGetNativeClientProfileOpenedList();
   const { mutate: openProfile } = useOpenProfile();
   const { mutate: closeProfile } = useCloseProfile();
@@ -208,7 +210,7 @@ const Profiles = () => {
 
   useEffect(() => {
     const handleToast = (_event: any, arg: any) => {
-      const { type, message, username } = arg as { type: 'success' | 'error' | 'info', message: string, username?: string };
+      const { message, username } = arg as { type: 'success' | 'error' | 'info', message: string, username?: string };
       const el = document.getElementById(`message-${username}`);
       el && (el.textContent = message);
     }
@@ -221,6 +223,16 @@ const Profiles = () => {
       window.ipcRenderer.off('show-toast', handleToast)
     }
   }, [])
+
+  useEffect(() => {
+    const loadMainConfig = async () => {
+      const mainConfig = await windowInstance.api.loadMainConfig();
+      if (mainConfig?.profile?.groupId) {
+        setGroupId(mainConfig.profile.groupId);
+      }
+    };
+    loadMainConfig();
+  }, []);
 
   return (
     <Layout>
@@ -239,7 +251,7 @@ const Profiles = () => {
             </div>
             <div className="flex items-center gap-4">
               {mode === 'default' ? (
-                <i className="fas fa-heart text-5xl text-red-500"></i>
+                <i className="fas fa-at text-5xl text-black"></i>
               ) : (
                 <i className="fab fa-amazon text-5xl text-orange-500"></i>
               )}
@@ -258,17 +270,18 @@ const Profiles = () => {
                   Refresh
                 </Button>
                 <div className="flex-1 min-w-[200px]">
-                  <Group value={group_id} onChange={setGroupId} />
+                  <Group
+                    value={group_id}
+                    onChange={(value) => {
+                      setGroupId(value);
+                      windowInstance.api.saveMainConfig({ profile: { groupId: value } });
+                    }}
+                  />
                 </div>
                 <div className="flex-1 min-w-[200px]">
-                  <Select
+                  <Mode
                     value={mode}
-                    onChange={(event) => setMode(event.target.value as unknown as 'default' | 'affiliate')}
-                    options={[
-                      { value: 'default', label: 'Mặc định' },
-                      { value: 'affiliate', label: 'Affiliate' },
-                    ]}
-                    className="w-full"
+                    onChange={setMode}
                   />
                 </div>
               </div>
@@ -326,7 +339,9 @@ const Profiles = () => {
                 Batch
               </Button>
               <ReportModal reportName={reportName} />
-              <ScheduleModal onSchedule={() => handleBatch()} />
+              <ScheduleModal onSchedule={(schedules) => {
+                console.log(schedules);
+              }} />
             </div>
           </div>
         </div>
@@ -360,136 +375,138 @@ const Profiles = () => {
           </div>
 
           {/* Profile Grid */}
-          <div className="divide-y divide-gray-200">
-            {map(data?.data?.data?.data, (profile, index) => (
-              <div key={profile.profile_id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                  {/* Selection & ID */}
-                  <div className="lg:col-span-2 flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-blue-600 rounded"
-                      checked={selectedIds.includes(profile.profile_id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedIds([...selectedIds, profile.profile_id]);
-                        } else {
-                          setSelectedIds(selectedIds.filter((id) => id !== profile.profile_id));
-                        }
-                      }}
-                    />
-                    <div>
-                      <div className="font-semibold text-gray-900">#{index + 1}</div>
-                      <div className="text-xs text-gray-500">ID: {profile.profile_id}</div>
+          <LoadingWraper loading={isPending}>
+            <div className="divide-y divide-gray-200">
+              {map(data?.data?.data?.data, (profile, index) => (
+                <div key={profile.profile_id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    {/* Selection & ID */}
+                    <div className="lg:col-span-2 flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 rounded"
+                        checked={selectedIds.includes(profile.profile_id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds([...selectedIds, profile.profile_id]);
+                          } else {
+                            setSelectedIds(selectedIds.filter((id) => id !== profile.profile_id));
+                          }
+                        }}
+                      />
+                      <div>
+                        <div className="font-semibold text-gray-900">#{index + 1}</div>
+                        <div className="text-xs text-gray-500">ID: {profile.profile_id}</div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Profile Info */}
-                  <div className="lg:col-span-3">
-                    <div className="font-medium text-gray-900">{profile.name}</div>
-                    <div className="text-sm text-gray-500">
-                      <i className="fas fa-network-wired mr-1"></i>
-                      {profile.proxy_ip}:{profile.proxy_port}
+                    {/* Profile Info */}
+                    <div className="lg:col-span-3">
+                      <div className="font-medium text-gray-900">{profile.name}</div>
+                      <div className="text-sm text-gray-500">
+                        <i className="fas fa-network-wired mr-1"></i>
+                        {profile.proxy_ip}:{profile.proxy_port}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Status */}
-                  <div className="lg:col-span-2">
-                    <div className="flex items-center gap-2">
-                      {openedList?.[profile.profile_id]?.open_time ? (
-                        <div className="flex items-center text-green-600">
-                          <i className="fa-solid fa-check-circle mr-1"></i>
-                          <span className="text-sm">Active</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-red-600">
-                          <i className="fa-solid fa-times-circle mr-1"></i>
-                          <span className="text-sm">Inactive</span>
-                        </div>
-                      )}
+                    {/* Status */}
+                    <div className="lg:col-span-2">
+                      <div className="flex items-center gap-2">
+                        {openedList?.[profile.profile_id]?.open_time ? (
+                          <div className="flex items-center text-green-600">
+                            <i className="fa-solid fa-check-circle mr-1"></i>
+                            <span className="text-sm">Active</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-red-600">
+                            <i className="fa-solid fa-times-circle mr-1"></i>
+                            <span className="text-sm">Inactive</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
+
+                    {/* Message */}
+                    <div className="lg:col-span-2">
+                      <div id={`message-${profile.name}`} className="text-sm text-gray-600 min-h-[20px]"></div>
                     </div>
-                  </div>
 
-                  {/* Message */}
-                  <div className="lg:col-span-2">
-                    <div id={`message-${profile.name}`} className="text-sm text-gray-600 min-h-[20px]"></div>
-                  </div>
-
-                  {/* Manual Actions */}
-                  <div className="lg:col-span-3">
-                    <div className="flex flex-wrap gap-1">
-                      <OpenProfle id={profile.profile_id} total={totalBrowsers} onOpen={() => setTotalBrowsers(prev => prev + 1)} />
-                      <Button
-                        id={`random-folder-${profile.profile_id}`}
-                        onClick={() => handleRandomFolder(profile.profile_id)}
-                        tooltip="Random folder"
-                        className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
-                      >
-                        <i className="fa-solid fa-arrow-rotate-right"></i>
-                      </Button>
-                      <Button
-                        onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}
-                        tooltip="Show info"
-                        className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
-                      >
-                        <i className="fa-regular fa-eye"></i>
-                      </Button>
-                      <Button
-                        onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}
-                        tooltip="Copy ws"
-                        className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
-                      >
-                        <i className="fa-solid fa-copy"></i>
-                      </Button>
-                      <Button
-                        id={`post-button-${profile.profile_id}`}
-                        tooltip="Post"
-                        onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post', mode })}
-                        className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
-                      >
-                        <i className="fa-solid fa-circle-play"></i>
-                      </Button>
-                      <Button
-                        onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote', mode })}
-                        tooltip="Quote"
-                        className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
-                      >
-                        <i className="fa-solid fa-retweet"></i>
-                      </Button>
-                      <Button
-                        onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)}
-                        tooltip="Setup new account"
-                        className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"
-                      >
-                        <i className="fa-solid fa-user-plus"></i>
-                      </Button>
-                      <Button
-                        id={`edit-folder-${profile.profile_id}`}
-                        tooltip="Edit folder"
-                        onClick={() =>
-                          clickEditLatestPostButton({
-                            ws: openedList?.[profile.profile_id]?.ws,
-                            username: profile.name,
-                            folder: userMap?.[profile.profile_id]?.path,
-                            type: 'post',
-                            id: profile.profile_id,
-                            reportName,
-                            mode,
-                          })
-                        }
-                        className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"
-                      >
-                        <i className="fa-solid fa-pen-to-square"></i>
-                      </Button>
+                    {/* Manual Actions */}
+                    <div className="lg:col-span-3">
+                      <div className="flex flex-wrap gap-1">
+                        <OpenProfle id={profile.profile_id} total={totalBrowsers} onOpen={() => setTotalBrowsers(prev => prev + 1)} />
+                        <Button
+                          id={`random-folder-${profile.profile_id}`}
+                          onClick={() => handleRandomFolder(profile.profile_id)}
+                          tooltip="Random folder"
+                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                        >
+                          <i className="fa-solid fa-arrow-rotate-right"></i>
+                        </Button>
+                        <Button
+                          onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}
+                          tooltip="Show info"
+                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                        >
+                          <i className="fa-regular fa-eye"></i>
+                        </Button>
+                        <Button
+                          onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}
+                          tooltip="Copy ws"
+                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                        >
+                          <i className="fa-solid fa-copy"></i>
+                        </Button>
+                        <Button
+                          id={`post-button-${profile.profile_id}`}
+                          tooltip="Post"
+                          onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post', mode })}
+                          className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
+                        >
+                          <i className="fa-solid fa-circle-play"></i>
+                        </Button>
+                        <Button
+                          onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote', mode })}
+                          tooltip="Quote"
+                          className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
+                        >
+                          <i className="fa-solid fa-retweet"></i>
+                        </Button>
+                        <Button
+                          onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)}
+                          tooltip="Setup new account"
+                          className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"
+                        >
+                          <i className="fa-solid fa-user-plus"></i>
+                        </Button>
+                        <Button
+                          id={`edit-folder-${profile.profile_id}`}
+                          tooltip="Edit folder"
+                          onClick={() =>
+                            clickEditLatestPostButton({
+                              ws: openedList?.[profile.profile_id]?.ws,
+                              username: profile.name,
+                              folder: userMap?.[profile.profile_id]?.path,
+                              type: 'post',
+                              id: profile.profile_id,
+                              reportName,
+                              mode,
+                            })
+                          }
+                          className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"
+                        >
+                          <i className="fa-solid fa-pen-to-square"></i>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </LoadingWraper>
         </div>
       </div>
       <Dialog open={open} onClose={() => setOpen(false)}>

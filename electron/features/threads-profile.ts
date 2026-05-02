@@ -478,8 +478,6 @@ export const clickEditLatestPostButton = async ({
   } finally {
     await browser.disconnect();
   }
-
-
 }
 
 // focus threads tab
@@ -530,55 +528,59 @@ export const checkLiveAccounts = async ({
     defaultViewport: null,
   });
 
-  const liveAccounts: string[] = [];
-  const deadAccounts: string[] = [];
+  try {
+    const liveAccounts: string[] = [];
+    const deadAccounts: string[] = [];
 
-  // chia batch 10 accounts
-  const batches = [];
+    // chia batch 10 accounts
+    const batches = [];
 
-  for (let i = 0; i < accounts.length; i += batchSize) {
-    batches.push(accounts.slice(i, i + batchSize));
-  }
+    for (let i = 0; i < accounts.length; i += batchSize) {
+      batches.push(accounts.slice(i, i + batchSize));
+    }
 
-  // xử lý từng batch
-  for (const batch of batches) {
-    const tasks = batch.map(async (user) => {
-      const page = await browser.newPage();
+    // xử lý từng batch
+    for (const batch of batches) {
+      const tasks = batch.map(async (user) => {
+        const page = await browser.newPage();
 
-      try {
-        await page.goto(`https://threads.com/@${user}`, {
-          waitUntil: "domcontentloaded",
-          timeout: 15000,
-        });
+        try {
+          await page.goto(`https://threads.com/@${user}`, {
+            waitUntil: "domcontentloaded",
+            timeout: 15000,
+          });
 
-        await waitRandom(5000, 10000);
+          await waitRandom(5000, 10000);
 
-        const content = await page.content();
+          const content = await page.content();
 
-        const isLive = !content.includes(
-          "Not all who wander are lost, but this page is"
-        );
+          const isLive = !content.includes(
+            "Not all who wander are lost, but this page is"
+          );
 
-        if (isLive) {
-          liveAccounts.push(user);
-        } else {
-          deadAccounts.push(user);
+          if (isLive) {
+            liveAccounts.push(user);
+          } else {
+            deadAccounts.push(user);
+          }
+        } catch (err) {
+          console.log(`Error with user ${user}`, err);
+        } finally {
+          await page.close();
         }
-      } catch (err) {
-        console.log(`Error with user ${user}`, err);
-      } finally {
-        await page.close();
-      }
-    });
+      });
 
-    // chạy song song trong batch
-    await Promise.all(tasks);
-    console.log(`✅ Done batch (${batch.length} accounts)`);
-  }
+      // chạy song song trong batch
+      await Promise.all(tasks);
+      console.log(`✅ Done batch (${batch.length} accounts)`);
+    }
 
-  return {
-    liveAccounts,
-    deadAccounts,
+    return {
+      liveAccounts,
+      deadAccounts,
+    }
+  } finally {
+    await browser.disconnect();
   }
 }
 

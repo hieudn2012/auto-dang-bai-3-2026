@@ -32,9 +32,13 @@ export enum InvokeChannel {
 }
 
 export type MainConfig = {
-  workingDir: string
-  linkPost: string
-  caption: string
+  workingDir?: string
+  linkPost?: string
+  caption?: string
+  profile?: {
+    groupId?: number
+    mode?: 'default' | 'affiliate'
+  }
 }
 
 export type History = {

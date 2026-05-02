@@ -11,10 +11,11 @@ export const waitRandom = async (from: number, to: number) => {
 
 // save main config
 export const saveMainConfig = async (config: MainConfig) => {
+  const currentConfig = await loadMainConfig() || {};
   // get app config in system
   const appConfig = app.getPath('userData');
   // save config to file config.json
-  fs.writeFileSync(`${appConfig}/config.json`, JSON.stringify(config));
+  fs.writeFileSync(`${appConfig}/config.json`, JSON.stringify({ ...currentConfig, ...config }));
   return true;
 }
 

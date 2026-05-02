@@ -4,21 +4,25 @@ import { useState, useEffect } from 'react';
 import Dialog from '@/components/Dialog';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
+import { Group } from './Group';
+import Mode from '@/components/Mode';
 
 type ScheduleTime = {
   id: string;
   time: string;
   enabled: boolean;
+  groupId: number;
+  mode: 'default' | 'affiliate';
 };
 
 type Props = {
-  onSchedule: (times: string[]) => void;
+  onSchedule: (schedules: { time: string; groupId: number; mode: 'default' | 'affiliate' }[]) => void;
 };
 
 const ScheduleModal = ({ onSchedule }: Props) => {
   const [showModal, setShowModal] = useState(false);
   const [schedules, setSchedules] = useState<ScheduleTime[]>([
-    { id: '1', time: '', enabled: true }
+    { id: '1', time: '', enabled: true, groupId: -1, mode: 'default' }
   ]);
   const [activeSchedules, setActiveSchedules] = useState<{ [key: string]: NodeJS.Timeout }>({});
 
@@ -33,7 +37,9 @@ const ScheduleModal = ({ onSchedule }: Props) => {
     const newSchedule: ScheduleTime = {
       id: Date.now().toString(),
       time: '',
-      enabled: true
+      enabled: true,
+      groupId: -1,
+      mode: 'default'
     };
     setSchedules([...schedules, newSchedule]);
   };
@@ -56,6 +62,18 @@ const ScheduleModal = ({ onSchedule }: Props) => {
     ));
   };
 
+  const updateScheduleGroup = (id: string, groupId: number) => {
+    setSchedules(schedules.map(s =>
+      s.id === id ? { ...s, groupId } : s
+    ));
+  };
+
+  const updateScheduleMode = (id: string, mode: 'default' | 'affiliate') => {
+    setSchedules(schedules.map(s =>
+      s.id === id ? { ...s, mode } : s
+    ));
+  };
+
   const toggleSchedule = (id: string, enabled: boolean) => {
     const schedule = schedules.find(s => s.id === id);
     if (!schedule) return;
@@ -74,11 +92,20 @@ const ScheduleModal = ({ onSchedule }: Props) => {
   };
 
   const startScheduling = () => {
-    const enabledSchedules = schedules.filter(s => s.enabled && s.time);
-    const timesToSchedule = enabledSchedules.map(s => s.time);
+    const enabledSchedules = schedules.filter(s => s.enabled);
+    
+    // Validate each enabled schedule has all required fields
+    const invalidSchedules = enabledSchedules.filter(s => !s.time || s.groupId <= -1);
+    
+    if (invalidSchedules.length > 0) {
+      alert('Vui lòng điền đầy đủ thông tin cho từng lịch hẹn: thời gian, nhóm và chế độ');
+      return;
+    }
+    
+    const schedulesToRun = enabledSchedules.map(s => ({ time: s.time, groupId: s.groupId, mode: s.mode }));
 
-    if (timesToSchedule.length === 0) {
-      alert('Vui lòng chọn ít nhất một thời gian hợp lệ');
+    if (schedulesToRun.length === 0) {
+      alert('Vui lòng chọn ít nhất một lịch hẹn hợp lệ');
       return;
     }
 
@@ -101,10 +128,10 @@ const ScheduleModal = ({ onSchedule }: Props) => {
       console.log(`Setting timeout for ${schedule.time} in ${timeUntilSchedule}ms (${Math.floor(timeUntilSchedule / 1000 / 60)} minutes)`);
 
       const timeout = setTimeout(() => {
-        console.log(`Timeout fired for schedule ${schedule.id} at time ${schedule.time}`);
+        console.log(`Timeout fired for schedule ${schedule.id} at time ${schedule.time} with groupId ${schedule.groupId}`);
 
         // Call the callback function
-        onSchedule([schedule.time]);
+        onSchedule([{ time: schedule.time, groupId: schedule.groupId, mode: schedule.mode }]);
 
         // Remove from active schedules using functional update to avoid stale state
         setActiveSchedules(prev => {
@@ -175,7 +202,7 @@ const ScheduleModal = ({ onSchedule }: Props) => {
           <div className="space-y-6">
             <div className="space-y-3">
               {schedules.map((schedule, index) => (
-                <div key={schedule.id} className="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700/50 backdrop-blur-sm">
+                <div key={schedule.id} className="flex items-center gap-3 p-4 rounded-xl border border-gray-700/50 backdrop-blur-sm">
                   <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
                     <span className="text-amber-600 dark:text-amber-400 font-semibold text-sm">{index + 1}</span>
                   </div>
@@ -185,6 +212,18 @@ const ScheduleModal = ({ onSchedule }: Props) => {
                     onChange={(e) => updateSchedule(schedule.id, e.target.value)}
                     className="flex-1 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm"
                   />
+                  <div className="flex-1 min-w-[200px]">
+                    <Group
+                      value={schedule.groupId}
+                      onChange={(value) => updateScheduleGroup(schedule.id, value)}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <Mode
+                      value={schedule.mode}
+                      onChange={(value) => updateScheduleMode(schedule.id, value)}
+                    />
+                  </div>
                   <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer">
                     <input
                       type="checkbox"
@@ -240,7 +279,7 @@ const ScheduleModal = ({ onSchedule }: Props) => {
               </Button>
             </div>
 
-            <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700/50">
+            <div className="rounded-lg p-4 border border-gray-700/50">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
                 <i className="fa-solid fa-info-circle text-blue-500 dark:text-blue-400 mr-2"></i>
                 Hướng dẫn sử dụng
@@ -252,7 +291,15 @@ const ScheduleModal = ({ onSchedule }: Props) => {
                 </div>
                 <div className="flex items-start gap-2">
                   <i className="fa-solid fa-check text-green-500 dark:text-green-400 mt-0.5 text-xs"></i>
-                  <p>Có thể thêm nhiều mốc thời gian</p>
+                  <p>Chọn nhóm để đăng bài cho tất cả profile trong nhóm đó</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <i className="fa-solid fa-check text-green-500 dark:text-green-400 mt-0.5 text-xs"></i>
+                  <p>Chọn chế độ (Mặc định/Affiliate) cho từng lịch hẹn</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <i className="fa-solid fa-check text-green-500 dark:text-green-400 mt-0.5 text-xs"></i>
+                  <p>Có thể thêm nhiều mốc thời gian với nhóm và chế độ khác nhau</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <i className="fa-solid fa-check text-green-500 dark:text-green-400 mt-0.5 text-xs"></i>
