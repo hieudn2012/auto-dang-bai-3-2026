@@ -34,6 +34,12 @@ const routers = [
     icon: <i className="fa-solid fa-file-alt"></i>,
     description: 'Báo cáo'
   },
+  { 
+    path: routerPath.logs, 
+    name: 'Logs', 
+    icon: <i className="fa-solid fa-terminal"></i>,
+    description: 'Logs hệ thống'
+  },
 ];
 
 const SiderBar = () => {

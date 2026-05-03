@@ -3,16 +3,28 @@ import { windowInstance } from "@/services/window";
 import { useState } from "react";
 
 const CheckValidFolder = () => {
+  const [selectedFolder, setSelectedFolder] = useState('');
   const [results, setResults] = useState({
     captionResult: [],
     linkResult: [],
     captionErrorCount: 0,
     linkErrorCount: 0,
   });
+
+  const handleFolderSelect = async () => {
+    const folderPath = await windowInstance.api.openDialogFolder();
+    if (folderPath) {
+      setSelectedFolder(folderPath);
+    }
+  };
+
   const handleClick = async () => {
-    const results = await windowInstance.api.checkValidCaptionOrLink();
+    if (!selectedFolder) {
+      alert('Vui lòng chọn thư mục trước khi kiểm tra!');
+      return;
+    }
+    const results = await windowInstance.api.checkValidCaptionOrLink(selectedFolder);
     const { captionResult, linkResult, captionErrorCount, linkErrorCount } = results || {};
-    console.log('Kiểm tra thư mục hợp lệ', results);
     setResults({
       captionResult,
       linkResult,
@@ -37,16 +49,85 @@ const CheckValidFolder = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <Button 
-          onClick={handleClick}
-          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-        >
-          <i className="fas fa-check-circle mr-2"></i>
-          Kiểm tra Thư mục Hợp lệ
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center">
+            <i className="fas fa-folder-check text-blue-600 mr-3"></i>
+            Kiểm tra Thư mục Hợp lệ
+          </h1>
+          <p className="text-gray-600">Chọn thư mục và kiểm tra tính hợp lệ của các file caption và link</p>
+        </div>
+
+        {/* Folder Selection Card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <h2 className="text-xl font-semibold text-white flex items-center">
+              <i className="fas fa-folder-open mr-3"></i>
+              Chọn Thư mục Nguồn
+            </h2>
+          </div>
+          
+          <div className="p-6">
+            {!selectedFolder ? (
+              <div className="text-center py-8">
+                <div className="mb-6">
+                  <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i className="fas fa-folder-plus text-3xl text-blue-600"></i>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa chọn thư mục</h3>
+                  <p className="text-gray-600 mb-6">Vui lòng chọn thư mục chứa các file caption.txt và link.txt cần kiểm tra</p>
+                </div>
+                
+                <Button 
+                  onClick={handleFolderSelect}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                >
+                  <i className="fas fa-folder-open mr-2"></i>
+                  Chọn Thư mục
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <i className="fas fa-check text-white"></i>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-green-900 mb-1">Thư mục đã chọn</h4>
+                      <div className="bg-white rounded-md p-3 border border-green-300">
+                        <div className="flex items-center text-sm">
+                          <i className="fas fa-folder text-green-600 mr-2"></i>
+                          <span className="text-green-800 font-mono break-all">{selectedFolder}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <Button 
+                    onClick={handleFolderSelect}
+                    className="px-6 py-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                  >
+                    <i className="fas fa-exchange-alt mr-2"></i>
+                    Đổi Thư mục
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleClick}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                  >
+                    <i className="fas fa-play-circle mr-2"></i>
+                    Bắt đầu Kiểm tra
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
       {results.captionResult.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -276,6 +357,7 @@ const CheckValidFolder = () => {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };

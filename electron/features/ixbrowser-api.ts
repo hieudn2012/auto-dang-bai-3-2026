@@ -101,4 +101,12 @@ export const getOpenedProfileList = async (): Promise<OpenedProfile[]> => {
   return response.data.data;
 };
 
-
+// chang group for profile
+// /api/v2/profile-update
+export const updateProfileGroup = async (profileId: number, groupId: number) => {
+  const response = await axios.post(`${BASE_URL}/api/v2/profile-update`, {
+    profile_id: profileId,
+    group_id: groupId
+  });
+  return response.data;
+};

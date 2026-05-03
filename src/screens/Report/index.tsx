@@ -4,6 +4,8 @@ import Select from '@/components/Select';
 import { toast } from '@/components/ToastContainer';
 import { windowInstance } from '@/services/window';
 import Layout from '@/components/Layout';
+import { Group } from '@/components/Group';
+import { useOpenProfile } from '@/services/profiles';
 
 interface ReportItem {
   id: string;
@@ -26,6 +28,11 @@ const ReportModal = () => {
   const [selectedReportName, setSelectedReportName] = useState<string>('');
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [selectedGroup, setSelectedGroup] = useState<number>(-1);
+  const [isMoving, setIsMoving] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const { mutate: openProfile } = useOpenProfile();
 
   useEffect(() => {
     loadReportNames();
@@ -48,11 +55,80 @@ const ReportModal = () => {
     try {
       const data = await windowInstance.api.getReportByReportName(reportName);
       setReportData(data);
+      setSelectedUsers(new Set()); // Reset selection when loading new report
     } catch (error) {
       console.error('Error loading report data:', error);
       toast.error('Không thể tải dữ liệu báo cáo');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleUserSelection = (username: string) => {
+    setSelectedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(username)) {
+        newSet.delete(username);
+      } else {
+        newSet.add(username);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.size === reportData?.results?.length) {
+      setSelectedUsers(new Set());
+    } else {
+      const allUsernames = reportData?.results?.map((item) => item.username) || [];
+      setSelectedUsers(new Set(allUsernames));
+    }
+  };
+
+  const handleMoveToGroup = async () => {
+    if (selectedGroup === -1) {
+      toast.error('Vui lòng chọn group đích');
+      return;
+    }
+
+    if (selectedUsers.size === 0) {
+      toast.error('Vui lòng chọn ít nhất một user');
+      return;
+    }
+
+    setIsMoving(true);
+    try {
+      const failedUsers: string[] = [];
+      
+      for (const username of selectedUsers) {
+        const user = reportData?.results?.find((item) => item.username === username);
+        if (user && user.id) {
+          try {
+            await windowInstance.api.updateProfileGroup(parseInt(user.id), selectedGroup);
+          } catch (error) {
+            failedUsers.push(username);
+            console.error(`Failed to move user ${username}:`, error);
+          }
+        }
+      }
+
+      if (failedUsers.length === 0) {
+        toast.success(`Đã chuyển ${selectedUsers.size} user sang group mới thành công`);
+      } else {
+        toast.warning(`Đã chuyển ${selectedUsers.size - failedUsers.length} user thành công, ${failedUsers.length} user thất bại`);
+      }
+
+      setSelectedUsers(new Set());
+      setShowMoveModal(false);
+      setSelectedGroup(-1);
+      
+      // Refresh report data
+      await loadReportData(selectedReportName);
+    } catch (error) {
+      toast.error('Có lỗi xảy ra khi chuyển group');
+      console.error('Error moving users:', error);
+    } finally {
+      setIsMoving(false);
     }
   };
 
@@ -194,15 +270,43 @@ const ReportModal = () => {
                 {/* Report Details Table */}
                 <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
                   <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                      <i className="fa-solid fa-table"></i>
-                      Chi tiết báo cáo
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <i className="fa-solid fa-table"></i>
+                        Chi tiết báo cáo
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        {selectedUsers.size > 0 && (
+                          <Button
+                            onClick={() => setShowMoveModal(true)}
+                            className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                            tooltip={`Chuyển ${selectedUsers.size} user đã chọn`}
+                          >
+                            <i className="fa-solid fa-arrow-right-arrow-left mr-2"></i>
+                            Chuyển group ({selectedUsers.size})
+                          </Button>
+                        )}
+                        <button
+                          onClick={() => setShowMoveModal(false)}
+                          className="text-white/80 hover:text-white text-2xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider w-12">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                              checked={selectedUsers.size === reportData?.results?.length && reportData?.results?.length > 0}
+                              onChange={toggleSelectAll}
+                            />
+                          </th>
                           <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                             ID
                           </th>
@@ -218,11 +322,24 @@ const ReportModal = () => {
                           <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                             Ghi chú
                           </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Action
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                         {reportData.results.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-200">
+                          <tr key={index} className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-200 ${
+                            selectedUsers.has(item.username) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                          }`}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                checked={selectedUsers.has(item.username)}
+                                onChange={() => toggleUserSelection(item.username)}
+                              />
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-lg">
                                 #{item.id}
@@ -261,6 +378,16 @@ const ReportModal = () => {
                                 {item.note || 'Không có ghi chú'}
                               </span>
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <button
+                                onClick={() => openProfile({ id: parseInt(item.id), index: 0 })}
+                                className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs font-medium rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-1"
+                                title="Open Profile"
+                              >
+                                <i className="fas fa-external-link-alt"></i>
+                                Open Profile
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -292,6 +419,70 @@ const ReportModal = () => {
           </div>
         </div>
       </div>
+
+      {/* Move to Group Modal */}
+      {showMoveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <i className="fa-solid fa-arrow-right-arrow-left text-blue-400"></i>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Chuyển {selectedUsers.size} user sang group mới
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Chọn group đích:
+                  </label>
+                  <Group 
+                    value={selectedGroup} 
+                    onChange={setSelectedGroup} 
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <i className="fa-solid fa-info-circle text-blue-500"></i>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    {selectedUsers.size} user sẽ được chuyển sang group đã chọn. Hành động này không thể hoàn tác.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowMoveModal(false)}
+                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors duration-200"
+                  disabled={isMoving}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleMoveToGroup}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
+                  disabled={isMoving || selectedGroup === -1}
+                >
+                  {isMoving ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+                      Đang chuyển...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-check mr-2"></i>
+                      Xác nhận chuyển
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

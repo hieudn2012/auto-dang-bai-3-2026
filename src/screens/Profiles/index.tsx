@@ -9,11 +9,10 @@ import { UserInfo } from "electron/types";
 import { find, map, split } from "lodash";
 import { useEffect, useState } from "react";
 import { toast } from "@/components/ToastContainer";
-import { Group } from "./Group";
 import Input from "@/components/Input";
 import Mode from "@/components/Mode";
-import ReportModal from "./Report";
 import LoadingWraper from "@/components/LoadingWraper";
+import { Group } from "@/components/Group";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -186,12 +185,9 @@ const Profiles = () => {
       batches.push(allSelectedIds.slice(i, i + batchSize));
     }
 
-    console.log(`Processing ${allSelectedIds.length} users in ${batches.length} batches of max ${batchSize} users each`);
-
     // Process each batch
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
-      console.log(`Processing batch ${i + 1}/${batches.length} with ${batch.length} users:`, batch);
 
       // Set current batch
       await handleAutoPost(batch);
@@ -199,7 +195,6 @@ const Profiles = () => {
 
       // Wait between batches (optional cooldown)
       if (i < batches.length - 1) {
-        console.log(`Batch ${i + 1} completed, waiting before next batch...`);
         await waitFor(10);
       }
     }
@@ -337,7 +332,6 @@ const Profiles = () => {
                 <i className="fa-solid fa-play mr-2"></i>
                 Batch
               </Button>
-              <ReportModal reportName={reportName} />
             </div>
           </div>
         </div>

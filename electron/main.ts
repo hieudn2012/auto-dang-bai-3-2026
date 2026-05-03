@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { InvokeChannel } from './types'
 import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
+import { updateProfileGroup } from './features/ixbrowser-api'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount } from './features/threads-profile'
 import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
@@ -141,8 +142,8 @@ handle(InvokeChannel.GET_REPORT_BY_REPORT_NAME, async (_event, reportName) => {
   return getReportByReportName(reportName);
 })
 
-handle(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK, async () => {
-  return checkValidCaptionOrLink();
+handle(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK, async (_event, path) => {
+  return checkValidCaptionOrLink(path);
 })
 
 handle(InvokeChannel.ADD_JOBS, async (event, items) => {
@@ -155,6 +156,10 @@ handle(InvokeChannel.CLEAR_JOBS, async () => {
 
 handle(InvokeChannel.GET_QUEUE, async () => {
   return handleGetQueue();
+})
+
+handle(InvokeChannel.UPDATE_PROFILE_GROUP, async (_event, profileId, groupId) => {
+  return updateProfileGroup(profileId, groupId);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -1,7 +1,7 @@
 import Button from "@/components/Button";
 import { windowInstance } from "@/services/window";
 import { useState } from "react";
-import { Group } from "../Profiles/Group";
+import { Group } from "../../components/Group";
 import { useDeleteProfile, useGetProfiles } from "@/services/profiles";
 import Input from "@/components/Input";
 import { toast } from "@/components/ToastContainer";

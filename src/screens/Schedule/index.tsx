@@ -7,7 +7,7 @@ import Select from '@/components/Select';
 import Mode from '@/components/Mode';
 import { windowInstance } from '@/services/window';
 import Layout from '@/components/Layout';
-import { Group } from '../Profiles/Group';
+import { Group } from '../../components/Group';
 import { toast } from '@/components/ToastContainer';
 
 type ScheduleTime = {
@@ -295,19 +295,6 @@ const ScheduleModal = () => {
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-3 cursor-pointer bg-gray-50 dark:bg-gray-700 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={schedule.enabled}
-                        onChange={(e) => toggleSchedule(e.target.checked)}
-                        className="w-5 h-5 text-amber-500 rounded focus:ring-amber-500"
-                      />
-                      <div>
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Kích hoạt lịch trình</span>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Bật/tắt tự động chạy</p>
-                      </div>
-                    </label>
-
                     {schedule.time && schedule.enabled && (
                       <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <i className="fa-solid fa-hourglass-half text-blue-600 dark:text-blue-400"></i>

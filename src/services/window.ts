@@ -1,5 +1,6 @@
 import { ScheduleItem } from "electron/features/job";
 import { MainConfig, UserInfo } from "electron/types";
+import { LogItem } from "electron/features/event";
 
 type WindownInstance = typeof window & {
   api: {
@@ -33,10 +34,13 @@ type WindownInstance = typeof window & {
     sendReportToTelegram: (reportName: string, reportData: any) => Promise<void>,
     testTelegramConnection: () => Promise<boolean>,
     getBotInfo: () => Promise<any>,
-    checkValidCaptionOrLink: () => Promise<any>,
+    checkValidCaptionOrLink: (path: string) => Promise<any>,
     addJobs: (items: ScheduleItem[]) => Promise<any>,
     clearJobs: () => Promise<any>,
     getQueue: () => Promise<any>,
+    onLog: (callback: (log: LogItem) => void) => void,
+    removeLogListener: (callback: (log: LogItem) => void) => void,
+    updateProfileGroup: (profileId: number, groupId: number) => Promise<any>,
   }
 }
 

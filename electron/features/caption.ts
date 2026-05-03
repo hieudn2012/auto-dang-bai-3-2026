@@ -1,10 +1,6 @@
 import * as fs from 'fs';
-import { loadMainConfig } from './common';
 
-export const checkValidCaptionOrLink = async () => {
-  const config = await loadMainConfig();
-  const workingDir = config?.workingDir || '';
-
+export const checkValidCaptionOrLink = async (workingDir: string) => {
   // lấy tất cả thư mục trong workingDir
   const folders = fs.readdirSync(workingDir);
   // bỏ qua '.DS_Store' và 'desktop.ini'
@@ -24,7 +20,6 @@ export const checkValidCaptionOrLink = async () => {
     if (fs.existsSync(captionFile)) {
       try {
         const caption = fs.readFileSync(captionFile, 'utf-8');
-        console.log(caption);
         captionValidation = checkValid(caption, `${workingDir}/${folder}`);
       } catch (error) {
         console.error(`Lỗi khi đọc file caption ${captionFile}:`, error);
@@ -36,7 +31,6 @@ export const checkValidCaptionOrLink = async () => {
         };
       }
     } else {
-      console.log(`File caption không tồn tại: ${captionFile}`);
       captionValidation = {
         isValid: false,
         errors: ["File caption không tồn tại"],
@@ -49,7 +43,6 @@ export const checkValidCaptionOrLink = async () => {
     if (fs.existsSync(linkFile)) {
       try {
         const link = fs.readFileSync(linkFile, 'utf-8');
-        console.log(link);
         linkValidation = checkValid(link, `${workingDir}/${folder}`);
       } catch (error) {
         console.error(`Lỗi khi đọc file link ${linkFile}:`, error);
@@ -61,7 +54,6 @@ export const checkValidCaptionOrLink = async () => {
         };
       }
     } else {
-      console.log(`File link không tồn tại: ${linkFile}`);
       linkValidation = {
         isValid: false,
         errors: ["File link không tồn tại"],

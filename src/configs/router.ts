@@ -5,5 +5,6 @@ export const routerPath = {
   manage_folder: '/manage-folder',
   import_sheet: '/tools',
   schedule: '/schedule',
-  report: '/report'
+  report: '/report',
+  logs: '/logs'
 };

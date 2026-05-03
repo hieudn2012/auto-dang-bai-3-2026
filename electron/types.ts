@@ -32,7 +32,8 @@ export enum InvokeChannel {
   CHECK_VALID_CAPTION_OR_LINK = 'check-valid-caption-or-link',
   ADD_JOBS = 'add-jobs',
   CLEAR_JOBS = 'clear-jobs',
-  GET_QUEUE = 'get-queue'
+  GET_QUEUE = 'get-queue',
+  UPDATE_PROFILE_GROUP = 'update-profile-group'
 }
 
 export type MainConfig = {

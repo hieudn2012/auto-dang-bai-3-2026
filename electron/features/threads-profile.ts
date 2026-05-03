@@ -250,8 +250,6 @@ export const setupNewAccount = async ({
     let continueWithInstagram = null;
     for (const span of spans) {
       const text = await page.evaluate(el => el.textContent?.trim(), span);
-      console.log(text);
-
       if (text === 'Continue with Instagram') {
         continueWithInstagram = span;
         event.sender.send('show-toast', {
@@ -324,12 +322,10 @@ export const uploadMedia = async ({
 
     // find input type = file
     const inputFile = await page.$('input[type="file"]');
-    console.log(inputFile);
 
     // filter only image files
     const images = await fs.readdir(folder);
     const imageFiles = images.filter(image => image.endsWith('.avif') || image.endsWith('.jpg') || image.endsWith('.jpeg') || image.endsWith('.png') || image.endsWith('.webp'));
-    console.log(imageFiles);
     // upload all image files
     for (const image of imageFiles) {
       const imagePath = path.join(folder, image);
@@ -341,8 +337,6 @@ export const uploadMedia = async ({
     const videos = await fs.readdir(folder);
     // filter only video files
     const videoFiles = videos.filter(video => video.endsWith('.mp4') || video.endsWith('.mov') || video.endsWith('.webm'));
-    console.log(folder, 'folder');
-    console.log(videoFiles);
     // upload all video files
 
     for (const video of videoFiles) {
@@ -384,7 +378,6 @@ export const clickEditLatestPostButton = async ({
 
     // logs all urls
     for (const page of pages) {
-      console.log(page.url());
       // find page with url contains threads.com
       if (page.url().includes('threads.com')) {
         targetPage = page;
@@ -505,7 +498,6 @@ export const focusThreadsTab = async ({
 
   // logs all urls
   for (const page of pages) {
-    console.log(page.url());
     // find page with url contains threads.com
     if (page.url().includes('threads.com')) {
       targetPage = page;

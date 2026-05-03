@@ -58,10 +58,17 @@ contextBridge.exposeInMainWorld('api', {
   sendReportToTelegram: (reportName: string, reportData: any) => invoke(InvokeChannel.SEND_REPORT_TO_TELEGRAM, reportName, reportData),
   testTelegramConnection: () => invoke(InvokeChannel.TEST_TELEGRAM_CONNECTION),
   getBotInfo: () => invoke(InvokeChannel.GET_BOT_INFO),
-  checkValidCaptionOrLink: () => invoke(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK),
+  checkValidCaptionOrLink: (path: string) => invoke(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK, path),
   addJobs: (items: ScheduleItem[]) => invoke(InvokeChannel.ADD_JOBS, items),
   clearJobs: () => invoke(InvokeChannel.CLEAR_JOBS),
-  getQueue: () => invoke(InvokeChannel.GET_QUEUE)
+  getQueue: () => invoke(InvokeChannel.GET_QUEUE),
+  onLog: (callback: (log: { username: string, message: string }) => void) => {
+    ipcRenderer.on('log', (_, log) => callback(log))
+  },
+  removeLogListener: (callback: (log: { username: string, message: string }) => void) => {
+    ipcRenderer.removeListener('log', (_, log) => callback(log))
+  },
+  updateProfileGroup: (profileId: number, groupId: number) => invoke(InvokeChannel.UPDATE_PROFILE_GROUP, profileId, groupId)
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
