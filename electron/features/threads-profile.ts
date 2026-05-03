@@ -105,19 +105,21 @@ export const openThreadsProfile = async (id: number, index: number) => {
   return true
 }
 
+export interface PostParams {
+  ws: string,
+  username: string,
+  folder: string,
+  type: 'post' | 'quote',
+  mode: 'default' | 'affiliate',
+}
+
 export const clickPostButton = async ({
   ws,
   username,
   folder,
   type = 'quote',
   mode = 'default',
-}: {
-  ws: string,
-  username: string,
-  folder: string,
-  type: 'post' | 'quote',
-  mode: 'default' | 'affiliate',
-}, event: IpcMainEvent) => {
+}: PostParams, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const caption = mode === 'affiliate' ? getRandomCaption(folder) : config?.caption || '';
   const browser = await puppeteer.connect({
@@ -217,13 +219,15 @@ export const clickPostButton = async ({
   }
 }
 
+export interface SetupNewAccountParams {
+  ws: string,
+  username: string,
+}
+
 export const setupNewAccount = async ({
   ws,
   username,
-}: {
-  ws: string,
-  username: string,
-}, event: IpcMainEvent) => {
+}: SetupNewAccountParams, event: IpcMainEvent) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -349,6 +353,16 @@ export const uploadMedia = async ({
   }
 }
 
+
+interface ClickEditLatestPostButtonParams {
+  ws: string,
+  username: string,
+  reportName: string,
+  id: number,
+  folder: string,
+  mode: 'default' | 'affiliate',
+}
+
 export const clickEditLatestPostButton = async ({
   ws,
   username,
@@ -356,14 +370,7 @@ export const clickEditLatestPostButton = async ({
   id,
   mode,
   folder,
-}: {
-  ws: string,
-  username: string,
-  reportName: string,
-  id: number,
-  folder: string,
-  mode: 'default' | 'affiliate',
-}, event: IpcMainEvent) => {
+}: ClickEditLatestPostButtonParams, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,

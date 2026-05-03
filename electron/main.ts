@@ -139,8 +139,8 @@ handle(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK, async () => {
   return checkValidCaptionOrLink();
 })
 
-handle(InvokeChannel.ADD_JOBS, async (_event, items) => {
-  return addJobs(items);
+handle(InvokeChannel.ADD_JOBS, async (event, items) => {
+  return addJobs(items, event);
 })
 
 handle(InvokeChannel.CLEAR_JOBS, async () => {

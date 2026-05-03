@@ -1,18 +1,25 @@
+import { IpcMainEvent } from "electron";
 import { handleRunJob } from "./job";
 
 interface Job {
   id: string;
   runAt: number;
   data: any;
+  event?: IpcMainEvent;
 }
 
 class JobQueue {
   private queue: Job[] = [];
   private timer: NodeJS.Timeout | null = null;
+  private currentEvent: IpcMainEvent | null = null;
 
   constructor() {
     this.queue = [];
     this.timer = null;
+  }
+
+  setEvent(event: IpcMainEvent): void {
+    this.currentEvent = event;
   }
 
   add(job: Job): void {
@@ -38,7 +45,14 @@ class JobQueue {
   }
 
   private async runJob(job: Job): Promise<void> {
-    handleRunJob(job.data);
+    // Use job's event if available, otherwise use currentEvent
+    const event = job.event || this.currentEvent;
+    
+    if (event) {
+      handleRunJob(job.data, event);
+    } else {
+      console.warn('No event available for job:', job.id);
+    }
 
     // remove job
     this.queue.shift();
@@ -47,8 +61,8 @@ class JobQueue {
     this.scheduleNext();
   }
 
-  getQueue(): Job[] {
-    return [...this.queue];
+  getQueue(): Omit<Job, 'event'>[] {
+    return this.queue.map(({ event, ...job }) => job);
   }
 
   clear(): void {

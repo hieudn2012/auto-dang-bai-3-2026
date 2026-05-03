@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
+import Select from '@/components/Select';
 import Mode from '@/components/Mode';
 import { windowInstance } from '@/services/window';
 import Layout from '@/components/Layout';
 import { Group } from '../Profiles/Group';
+import { toast } from '@/components/ToastContainer';
 
 type ScheduleTime = {
   id: string;
@@ -15,94 +17,52 @@ type ScheduleTime = {
   groupId: number;
   mode: 'default' | 'affiliate';
   folder: string;
+  batchSize: number;
 };
 
 const ScheduleModal = () => {
-  const [schedules, setSchedules] = useState<ScheduleTime[]>([
-    { id: '1', time: '', enabled: true, groupId: -1, mode: 'default', folder: '' }
-  ]);
-  const [activeSchedules, setActiveSchedules] = useState<{ [key: string]: NodeJS.Timeout }>({});
+  const [schedule, setSchedule] = useState<ScheduleTime>({
+    id: '1',
+    time: '',
+    enabled: true,
+    groupId: -1,
+    mode: 'default',
+    folder: '',
+    batchSize: 10
+  });
   const [jobs, setJobs] = useState<any[]>([]);
-
-  useEffect(() => {
-    // Cleanup all timeouts only when component unmounts
-    return () => {
-      Object.values(activeSchedules).forEach(timeout => clearTimeout(timeout));
-    };
-  }, []);
 
   useEffect(() => {
     handleLoadJobs();
   }, []);
 
-  const addSchedule = () => {
-    const newSchedule: ScheduleTime = {
-      id: Date.now().toString(),
-      time: '',
-      enabled: true,
-      groupId: -1,
-      mode: 'default',
-      folder: ''
-    };
-    setSchedules([...schedules, newSchedule]);
+  const updateSchedule = (time: string) => {
+    setSchedule(prev => ({ ...prev, time }));
   };
 
-  const removeSchedule = (id: string) => {
-    // Clear timeout if exists
-    if (activeSchedules[id]) {
-      clearTimeout(activeSchedules[id]);
-      const newActiveSchedules = { ...activeSchedules };
-      delete newActiveSchedules[id];
-      setActiveSchedules(newActiveSchedules);
-    }
-
-    setSchedules(schedules.filter(s => s.id !== id));
+  const updateScheduleGroup = (groupId: number) => {
+    setSchedule(prev => ({ ...prev, groupId }));
   };
 
-  const updateSchedule = (id: string, time: string) => {
-    setSchedules(schedules.map(s =>
-      s.id === id ? { ...s, time } : s
-    ));
+  const updateScheduleMode = (mode: 'default' | 'affiliate') => {
+    setSchedule(prev => ({ ...prev, mode }));
   };
 
-  const updateScheduleGroup = (id: string, groupId: number) => {
-    setSchedules(schedules.map(s =>
-      s.id === id ? { ...s, groupId } : s
-    ));
+  const updateScheduleFolder = (folder: string) => {
+    setSchedule(prev => ({ ...prev, folder }));
   };
 
-  const updateScheduleMode = (id: string, mode: 'default' | 'affiliate') => {
-    setSchedules(schedules.map(s =>
-      s.id === id ? { ...s, mode } : s
-    ));
+  const updateScheduleBatchSize = (batchSize: number) => {
+    setSchedule(prev => ({ ...prev, batchSize }));
   };
 
-  const updateScheduleFolder = (id: string, folder: string) => {
-    setSchedules(schedules.map(s =>
-      s.id === id ? { ...s, folder } : s
-    ));
-  };
-
-  const handleSelectFolder = async (id: string) => {
+  const handleSelectFolder = async () => {
     const folderPath = await windowInstance.api.openDialogFolder();
-    updateScheduleFolder(id, folderPath);
+    updateScheduleFolder(folderPath);
   };
 
-  const toggleSchedule = (id: string, enabled: boolean) => {
-    const schedule = schedules.find(s => s.id === id);
-    if (!schedule) return;
-
-    // Clear existing timeout if disabling
-    if (!enabled && activeSchedules[id]) {
-      clearTimeout(activeSchedules[id]);
-      const newActiveSchedules = { ...activeSchedules };
-      delete newActiveSchedules[id];
-      setActiveSchedules(newActiveSchedules);
-    }
-
-    setSchedules(schedules.map(s =>
-      s.id === id ? { ...s, enabled } : s
-    ));
+  const toggleSchedule = (enabled: boolean) => {
+    setSchedule(prev => ({ ...prev, enabled }));
   };
 
   const getTimeUntilSchedule = (time: string) => {
@@ -123,44 +83,38 @@ const ScheduleModal = () => {
   };
 
   const startScheduling = () => {
-    const enabledSchedules = schedules.filter(s => s.enabled);
-
-    // Validate each enabled schedule has all required fields
-    const invalidSchedules = enabledSchedules.filter(s => !s.time || s.groupId <= -1 || !s.folder);
-
-    if (invalidSchedules.length > 0) {
-      alert('Vui lòng điền đầy đủ thông tin cho từng lịch hẹn: thời gian, nhóm, thư mục và chế độ');
+    // Validate schedule has all required fields
+    if (!schedule.time || schedule.groupId <= -1 || !schedule.folder) {
+      toast.error('Vui lòng điền đầy đủ thông tin: thời gian, nhóm, thư mục và chế độ');
       return;
     }
 
-    // Convert schedules to jobs with timestamps
-    const jobs = enabledSchedules.map(schedule => {
-      const [hours, minutes] = schedule.time.split(':').map(Number);
-      const now = new Date();
-      const scheduledTime = new Date();
-      scheduledTime.setHours(hours, minutes, 0, 0);
+    const [hours, minutes] = schedule.time.split(':').map(Number);
+    const now = new Date();
+    const scheduledTime = new Date();
+    scheduledTime.setHours(hours, minutes, 0, 0);
 
-      // If scheduled time is in the past, schedule for tomorrow
-      if (scheduledTime <= now) {
-        scheduledTime.setDate(scheduledTime.getDate() + 1);
-      }
+    // If scheduled time is in the past, schedule for tomorrow
+    if (scheduledTime <= now) {
+      scheduledTime.setDate(scheduledTime.getDate() + 1);
+    }
 
-      // Convert directly from time to runAt timestamp
-      const runAt = scheduledTime.getTime();
+    // Convert directly from time to runAt timestamp
+    const runAt = scheduledTime.getTime();
 
-      return {
-        id: schedule.id,
-        runAt: runAt, // Direct timestamp from time picker
-        enabled: schedule.enabled,
-        groupId: schedule.groupId,
-        mode: schedule.mode,
-        folder: schedule.folder,
-        jobType: 'post' as const
-      };
-    });
+    const job = {
+      id: schedule.id,
+      runAt: runAt,
+      enabled: schedule.enabled,
+      groupId: schedule.groupId,
+      mode: schedule.mode,
+      folder: schedule.folder,
+      jobType: 'auto-post' as const,
+      batchSize: schedule.batchSize
+    };
 
-    // Gửi jobs đến electron main process
-    windowInstance.api.addJobs(jobs);
+    // Gửi job đến electron main process
+    windowInstance.api.addJobs([job]);
     handleLoadJobs();
   };
 
@@ -214,101 +168,146 @@ const ScheduleModal = () => {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="space-y-3">
-            {schedules.map((schedule, index) => (
-              <div key={schedule.id} className="flex items-center gap-3 p-4 rounded-xl border border-gray-700/50 backdrop-blur-sm">
-                <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold text-sm">{index + 1}</span>
+        <div className="space-y-8">
+          {/* Schedule Settings Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {/* Card Header */}
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500 dark:bg-amber-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <i className="fa-solid fa-clock text-white text-sm"></i>
                 </div>
-                <Input
-                  type="time"
-                  value={schedule.time}
-                  onChange={(e) => updateSchedule(schedule.id, e.target.value)}
-                  className="flex-shrink-0 w-[110px] bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm"
-                />
-                <div className="flex-1 min-w-[200px]">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Cài đặt lịch trình</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Thiết lập thời gian và thông tin đăng bài tự động</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Card Body */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Time Input */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-clock text-amber-500"></i>
+                    Thời gian chạy
+                  </label>
+                  <Input
+                    type="time"
+                    value={schedule.time}
+                    onChange={(e) => updateSchedule(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+
+                {/* Group Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-users text-blue-500"></i>
+                    Nhóm profiles
+                  </label>
                   <Group
                     value={schedule.groupId}
-                    onChange={(value) => updateScheduleGroup(schedule.id, value)}
+                    onChange={(value) => updateScheduleGroup(value)}
                   />
                 </div>
-                <div className="w-[200px]">
+
+                {/* Mode Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-cog text-purple-500"></i>
+                    Chế độ
+                  </label>
                   <Mode
                     value={schedule.mode}
-                    onChange={(value) => updateScheduleMode(schedule.id, value)}
+                    onChange={(value) => updateScheduleMode(value)}
                   />
                 </div>
-                <div className="flex-1 min-w-[350px]">
+
+                {/* Batch Size */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-layer-group text-green-500"></i>
+                    Batch Size
+                  </label>
+                  <Select
+                    value={schedule.batchSize}
+                    onChange={(e) => updateScheduleBatchSize(Number(e.target.value))}
+                    options={[
+                      { value: 5, label: '5 profiles' },
+                      { value: 10, label: '10 profiles' },
+                      { value: 20, label: '20 profiles' },
+                      { value: 30, label: '30 profiles' },
+                      { value: 50, label: '50 profiles' },
+                      { value: 100, label: '100 profiles' },
+                    ]}
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+
+                {/* Folder Selection */}
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-folder text-indigo-500"></i>
+                    Thư mục nội dung
+                  </label>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Chọn thư mục"
+                      placeholder="Chọn thư mục chứa file nội dung..."
                       value={schedule.folder}
-                      onChange={(e) => updateScheduleFolder(schedule.id, e.target.value)}
-                      className="flex-1 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm"
+                      onChange={(e) => updateScheduleFolder(e.target.value)}
+                      className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                     />
                     <Button
-                      onClick={() => handleSelectFolder(schedule.id)}
-                      className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+                      onClick={handleSelectFolder}
+                      className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white"
                       tooltip="Chọn thư mục từ hệ thống"
                     >
                       <i className="fas fa-folder-open"></i>
                     </Button>
                   </div>
                 </div>
-                <label className="flex items-center gap-2 text-gray-700 dark:text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={schedule.enabled}
-                    onChange={(e) => toggleSchedule(schedule.id, e.target.checked)}
-                    className="rounded w-4 h-4 text-amber-500 focus:ring-amber-500"
-                  />
-                  <span className="text-sm whitespace-nowrap">Kích hoạt</span>
-                </label>
-                {schedule.time && schedule.enabled && (
-                  <div className="px-3 py-1 bg-blue-500/20 rounded-lg border border-blue-500/30">
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">
-                      {getTimeUntilSchedule(schedule.time)}
-                    </span>
-                  </div>
-                )}
-                {schedules.length > 1 && (
-                  <button
-                    onClick={() => removeSchedule(schedule.id)}
-                    className="w-8 h-8 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200 flex items-center justify-center"
-                    title="Xóa"
-                  >
-                    <i className="fa-solid fa-trash text-sm"></i>
-                  </button>
-                )}
               </div>
-            ))}
-            {schedules.length === 0 && (
-              <div className="text-center py-8 text-gray-600 dark:text-gray-400">
-                <i className="fa-solid fa-clock text-4xl mb-3 opacity-50 text-gray-500 dark:text-gray-400"></i>
-                <p>Chưa có lịch hẹn nào</p>
-                <p className="text-sm mt-1">Nhấn "Thêm thời gian" để tạo lịch mới</p>
-              </div>
-            )}
-          </div>
 
-          <div className="flex gap-3 py-4 border-t border-gray-700/50">
-            <Button
-              onClick={addSchedule}
-              tooltip="Thêm thời gian"
-              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            >
-              <i className="fa-solid fa-plus mr-2"></i>
-              Thêm thời gian
-            </Button>
-            <Button
-              onClick={startScheduling}
-              tooltip="Bắt đầu hẹn giờ"
-              className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-            >
-              <i className="fa-solid fa-play mr-2"></i>
-              Bắt đầu hẹn giờ
-            </Button>
+              {/* Status and Actions */}
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-3 cursor-pointer bg-gray-50 dark:bg-gray-700 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={schedule.enabled}
+                        onChange={(e) => toggleSchedule(e.target.checked)}
+                        className="w-5 h-5 text-amber-500 rounded focus:ring-amber-500"
+                      />
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">Kích hoạt lịch trình</span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Bật/tắt tự động chạy</p>
+                      </div>
+                    </label>
+
+                    {schedule.time && schedule.enabled && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <i className="fa-solid fa-hourglass-half text-blue-600 dark:text-blue-400"></i>
+                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                          {getTimeUntilSchedule(schedule.time)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    onClick={startScheduling}
+                    disabled={!schedule.time || !schedule.folder || schedule.groupId <= -1}
+                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed"
+                  >
+                    <i className="fa-solid fa-play mr-2"></i>
+                    Bắt đầu hẹn giờ
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

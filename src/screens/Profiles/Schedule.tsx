@@ -158,7 +158,8 @@ const ScheduleModal = () => {
         groupId: schedule.groupId,
         mode: schedule.mode,
         folder: schedule.folder,
-        jobType: 'post' as const
+        jobType: 'auto-post' as const,
+        batchSize: 10
       };
     });
 

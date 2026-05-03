@@ -1,3 +1,5 @@
+import { IpcMainEvent } from "electron";
+import { autoPost } from "./auto";
 import jobQueue from "./job-queue";
 
 export interface ScheduleItem {
@@ -7,32 +9,34 @@ export interface ScheduleItem {
   groupId: number;
   mode: 'default' | 'affiliate';
   folder: string;
-  jobType: 'post' | 'comment' | 'like' | 'share';
+  jobType: 'auto-post' | 'auto-comment' | 'auto-like' | 'auto-share';
+  batchSize: number;
 }
 
-export const addJobs = (items: ScheduleItem[]) => {
+export const addJobs = (items: ScheduleItem[], event: IpcMainEvent) => {
   for (const item of items) {
     jobQueue.add({
       id: item.id,
       runAt: item.runAt,
-      data: item
+      data: item,
+      event: event
     });
   }
 };
 
-export const handleRunJob = (job: ScheduleItem) => {
+export const handleRunJob = (job: ScheduleItem, event: IpcMainEvent) => {
   // TODO: xử lý job theo jobType
   switch (job.jobType) {
-    case 'post':
-      // TODO: post bài
+    case 'auto-post':
+      autoPost(job, event);
       break;
-    case 'comment':
+    case 'auto-comment':
       // TODO: comment
       break;
-    case 'like':
+    case 'auto-like':
       // TODO: like
       break;
-    case 'share':
+    case 'auto-share':
       // TODO: share
       break;
   }
