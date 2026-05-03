@@ -569,8 +569,11 @@ export const checkLiveAccounts = async ({
         }
       });
 
-      // chạy song song trong batch
-      await Promise.all(tasks);
+      // chạy tuần tự trong batch
+      for (const task of tasks) {
+        await task;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
       console.log(`✅ Done batch (${batch.length} accounts)`);
     }
 
