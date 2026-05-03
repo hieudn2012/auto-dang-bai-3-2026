@@ -53,7 +53,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
           username: profile.username,
           folder: getRandomFolder(item.folder),
           mode: item.mode,
-          reportName: '',
+          reportName: item.reportName,
           id: profile.profile_id,
         }, event);
         await waitRandom(500, 2000);

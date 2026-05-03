@@ -18,6 +18,7 @@ type ScheduleTime = {
   mode: 'default' | 'affiliate';
   folder: string;
   batchSize: number;
+  reportName: string;
 };
 
 const ScheduleModal = () => {
@@ -28,7 +29,8 @@ const ScheduleModal = () => {
     groupId: -1,
     mode: 'default',
     folder: '',
-    batchSize: 10
+    batchSize: 10,
+    reportName: ''
   });
   const [jobs, setJobs] = useState<any[]>([]);
 
@@ -54,6 +56,10 @@ const ScheduleModal = () => {
 
   const updateScheduleBatchSize = (batchSize: number) => {
     setSchedule(prev => ({ ...prev, batchSize }));
+  };
+
+  const updateScheduleReportName = (reportName: string) => {
+    setSchedule(prev => ({ ...prev, reportName }));
   };
 
   const handleSelectFolder = async () => {
@@ -84,8 +90,8 @@ const ScheduleModal = () => {
 
   const startScheduling = () => {
     // Validate schedule has all required fields
-    if (!schedule.time || schedule.groupId <= -1 || !schedule.folder) {
-      toast.error('Vui lòng điền đầy đủ thông tin: thời gian, nhóm, thư mục và chế độ');
+    if (!schedule.time || schedule.groupId <= -1 || !schedule.folder || !schedule.reportName) {
+      toast.error('Vui lòng điền đầy đủ thông tin: thời gian, nhóm, thư mục và tên báo cáo');
       return;
     }
 
@@ -110,7 +116,8 @@ const ScheduleModal = () => {
       mode: schedule.mode,
       folder: schedule.folder,
       jobType: 'auto-post' as const,
-      batchSize: schedule.batchSize
+      batchSize: schedule.batchSize,
+      reportName: schedule.reportName
     };
 
     // Gửi job đến electron main process
@@ -246,8 +253,22 @@ const ScheduleModal = () => {
                   />
                 </div>
 
+                {/* Report Name */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-file-alt text-orange-500"></i>
+                    Tên báo cáo
+                  </label>
+                  <Input
+                    placeholder="Nhập tên báo cáo"
+                    value={schedule.reportName}
+                    onChange={(e) => updateScheduleReportName(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+
                 {/* Folder Selection */}
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                     <i className="fa-solid fa-folder text-indigo-500"></i>
                     Thư mục nội dung

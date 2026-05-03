@@ -11,6 +11,7 @@ export interface ScheduleItem {
   folder: string;
   jobType: 'auto-post' | 'auto-comment' | 'auto-like' | 'auto-share';
   batchSize: number;
+  reportName: string;
 }
 
 export const addJobs = (items: ScheduleItem[], event: IpcMainEvent) => {
