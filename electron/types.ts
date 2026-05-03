@@ -29,6 +29,9 @@ export enum InvokeChannel {
   TEST_TELEGRAM_CONNECTION = 'test-telegram-connection',
   GET_BOT_INFO = 'get-bot-info',
   CHECK_VALID_CAPTION_OR_LINK = 'check-valid-caption-or-link',
+  ADD_JOBS = 'add-jobs',
+  CLEAR_JOBS = 'clear-jobs',
+  GET_QUEUE = 'get-queue'
 }
 
 export type MainConfig = {

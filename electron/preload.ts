@@ -1,5 +1,6 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import { History, InvokeChannel, MainConfig, UserInfo } from './types'
+import { ScheduleItem } from './features/job'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -57,6 +58,9 @@ contextBridge.exposeInMainWorld('api', {
   testTelegramConnection: () => invoke(InvokeChannel.TEST_TELEGRAM_CONNECTION),
   getBotInfo: () => invoke(InvokeChannel.GET_BOT_INFO),
   checkValidCaptionOrLink: () => invoke(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK),
+  addJobs: (items: ScheduleItem[]) => invoke(InvokeChannel.ADD_JOBS, items),
+  clearJobs: () => invoke(InvokeChannel.CLEAR_JOBS),
+  getQueue: () => invoke(InvokeChannel.GET_QUEUE)
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

@@ -6,6 +6,7 @@ import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFo
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount } from './features/threads-profile'
 import { getReportByReportName, initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
+import { addJobs, handleClearJob, handleGetQueue } from './features/job'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -136,6 +137,18 @@ handle(InvokeChannel.GET_REPORT_BY_REPORT_NAME, async (_event, reportName) => {
 
 handle(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK, async () => {
   return checkValidCaptionOrLink();
+})
+
+handle(InvokeChannel.ADD_JOBS, async (_event, items) => {
+  return addJobs(items);
+})
+
+handle(InvokeChannel.CLEAR_JOBS, async () => {
+  return handleClearJob();
+})
+
+handle(InvokeChannel.GET_QUEUE, async () => {
+  return handleGetQueue();
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

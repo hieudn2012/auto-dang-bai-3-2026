@@ -1,3 +1,4 @@
+import { ScheduleItem } from "electron/features/job";
 import { MainConfig, UserInfo } from "electron/types";
 
 type WindownInstance = typeof window & {
@@ -32,6 +33,9 @@ type WindownInstance = typeof window & {
     testTelegramConnection: () => Promise<boolean>,
     getBotInfo: () => Promise<any>,
     checkValidCaptionOrLink: () => Promise<any>,
+    addJobs: (items: ScheduleItem[]) => Promise<any>,
+    clearJobs: () => Promise<any>,
+    getQueue: () => Promise<any>,
   }
 }
 
