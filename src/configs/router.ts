@@ -3,5 +3,6 @@ export const routerPath = {
   profiles: '/profiles',
   tools: '/tools',
   manage_folder: '/manage-folder',
-  import_sheet: '/tools'
+  import_sheet: '/tools',
+  schedule: '/schedule'
 };

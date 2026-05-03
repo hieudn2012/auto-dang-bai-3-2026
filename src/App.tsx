@@ -8,6 +8,7 @@ import { routerPath } from './configs/router'
 import ManageFolder from './screens/ManageFolder'
 import Profiles from './screens/Profiles'
 import ImportSheet from './screens/ImportSheet'
+import Schedule from './screens/Schedule'
 import { DarkModeProvider } from './contexts/DarkModeContext'
 
 const queryClient = new QueryClient({
@@ -29,6 +30,7 @@ function App() {
             <Route path={routerPath.manage_folder} element={<ManageFolder />} />
             <Route path={routerPath.profiles} element={<Profiles />} />
             <Route path={routerPath.import_sheet} element={<ImportSheet />} />
+            <Route path={routerPath.schedule} element={<Schedule />} />
           </Routes>
         </Router>
       </QueryClientProvider>

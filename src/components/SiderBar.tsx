@@ -22,6 +22,12 @@ const routers = [
     icon: <i className="fa-solid fa-toolbox"></i>,
     description: 'Công cụ'
   },
+  { 
+    path: routerPath.schedule, 
+    name: 'Schedule', 
+    icon: <i className="fa-solid fa-calendar"></i>,
+    description: 'Lịch trình'
+  },
 ];
 
 const SiderBar = () => {

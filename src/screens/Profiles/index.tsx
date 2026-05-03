@@ -13,7 +13,6 @@ import { Group } from "./Group";
 import Input from "@/components/Input";
 import Mode from "@/components/Mode";
 import ReportModal from "./Report";
-import ScheduleModal from "./Schedule";
 import LoadingWraper from "@/components/LoadingWraper";
 
 const shortName = (name: string) => {
@@ -339,9 +338,6 @@ const Profiles = () => {
                 Batch
               </Button>
               <ReportModal reportName={reportName} />
-              <ScheduleModal onSchedule={(schedules) => {
-                console.log(schedules);
-              }} />
             </div>
           </div>
         </div>
