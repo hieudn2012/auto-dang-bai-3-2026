@@ -4,9 +4,10 @@ import path from 'node:path'
 import { InvokeChannel } from './types'
 import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount } from './features/threads-profile'
-import { getReportByReportName, initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
+import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
+import { getReportByReportName, getReportNames } from './features/report'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -130,6 +131,11 @@ handle(InvokeChannel.SETUP_NEW_ACCOUNT, async (event, info) => {
 handle(InvokeChannel.CHECK_LIVE_ACCOUNTS, async (_event, accounts) => {
   return checkLiveAccounts(accounts);
 })
+
+handle(InvokeChannel.GET_REPORT_NAMES, async () => {
+  return getReportNames();
+})
+
 
 handle(InvokeChannel.GET_REPORT_BY_REPORT_NAME, async (_event, reportName) => {
   return getReportByReportName(reportName);

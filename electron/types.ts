@@ -19,6 +19,7 @@ export enum InvokeChannel {
   SAVE_HISTORY_TXT = 'save-history-txt',
   SETUP_NEW_ACCOUNT = 'setup-new-account',
   CHECK_LIVE_ACCOUNTS = 'check-live-accounts',
+  GET_REPORT_NAMES = 'get-report-names',
   GET_REPORT_BY_REPORT_NAME = 'get-report-by-report-name',
   SAVE_TELEGRAM_TOKEN = 'save-telegram-token',
   GET_TELEGRAM_TOKEN = 'get-telegram-token',

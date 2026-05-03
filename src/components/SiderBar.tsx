@@ -28,6 +28,12 @@ const routers = [
     icon: <i className="fa-solid fa-calendar"></i>,
     description: 'Lịch trình'
   },
+  { 
+    path: routerPath.report, 
+    name: 'Report', 
+    icon: <i className="fa-solid fa-file-alt"></i>,
+    description: 'Báo cáo'
+  },
 ];
 
 const SiderBar = () => {
