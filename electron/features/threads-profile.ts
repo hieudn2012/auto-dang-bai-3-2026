@@ -6,7 +6,7 @@ import { loadMainConfig, saveReportTxt, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
-import { getRandomCaption, getRandomLink } from "./caption";
+import { getRandomCap, getRandomCaption, getRandomLink } from "./caption";
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -121,7 +121,7 @@ export const clickPostButton = async ({
   mode = 'default',
 }: PostParams, event: IpcMainEvent) => {
   const config = await loadMainConfig();
-  const caption = mode === 'affiliate' ? getRandomCaption(folder) : config?.caption || '';
+  const caption = mode === 'affiliate' ? getRandomCaption(folder) : getRandomCap(config?.caption || '') || '';
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,

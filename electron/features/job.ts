@@ -7,6 +7,7 @@ export interface ScheduleItem {
   runAt: number;
   enabled: boolean;
   groupId: number;
+  groupName: string;
   mode: 'default' | 'affiliate';
   folder: string;
   jobType: 'auto-post' | 'auto-comment' | 'auto-like' | 'auto-share';

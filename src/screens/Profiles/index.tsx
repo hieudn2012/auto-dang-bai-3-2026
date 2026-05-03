@@ -150,6 +150,15 @@ const Profiles = () => {
     }
   }
 
+  const handleBulkSetupNewAccount = async (ids: number[], openedList: any) => {
+    for (const id of ids) {
+      if (!!openedList?.[id]?.ws) {
+        document.getElementById(`setup-new-account-${id}`)?.click();
+        await waitFor(1);
+      }
+    }
+  }
+
 
   const handleAutoPost = async (ids: number[]) => {
     await handleBulkOpenProfile(ids);
@@ -296,6 +305,10 @@ const Profiles = () => {
                 <Button onClick={() => handleBulkEdit(selectedIds, openedList)} tooltip="Edit" className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm">
                   <i className="fa-solid fa-pen-to-square mr-1"></i>
                   Edit
+                </Button>
+                <Button onClick={() => handleBulkSetupNewAccount(selectedIds, openedList)} tooltip="Setup New Account" className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm">
+                  <i className="fa-solid fa-user-plus mr-1"></i>
+                  Setup
                 </Button>
                 <Button onClick={() => handleBulkClose(selectedIds, openedList)} tooltip="Close" className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm">
                   <i className="fa-solid fa-xmark mr-1"></i>
@@ -468,6 +481,7 @@ const Profiles = () => {
                         <Button
                           onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)}
                           tooltip="Setup new account"
+                          id={`setup-new-account-${profile.profile_id}`}
                           className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"
                         >
                           <i className="fa-solid fa-user-plus"></i>

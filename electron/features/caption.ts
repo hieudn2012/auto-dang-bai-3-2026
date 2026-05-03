@@ -129,6 +129,18 @@ export const getRandomCaption = (path: string) => {
   }
 }
 
+export const getRandomCap = (data: string) => {
+  const normalizedData = data.replace(/\r\n/g, '\n');
+  const captions = normalizedData.split('\n\n\n').filter(caption => caption.trim().length > 0);
+  
+  if (captions.length === 0) {
+    return ''; // Return empty string if no captions
+  }
+  
+  const randomIndex = Math.floor(Math.random() * captions.length);
+  return captions[randomIndex];
+} 
+
 export const getRandomLink = (path: string) => {
   try {
     // Check if path is a directory, if so, look for link.txt file

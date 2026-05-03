@@ -2,6 +2,7 @@ import Button from "@/components/Button";
 import Input from "@/components/Input";
 import Layout from "@/components/Layout";
 import TextArea from "@/components/TextArea";
+import { toast } from "@/components/ToastContainer";
 import { windowInstance } from "@/services/window";
 import { useEffect, useState } from "react";
 
@@ -16,6 +17,7 @@ const ManageFolder = () => {
   }
   const handleSaveMainConfig = async () => {
     await windowInstance.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption });
+    toast.success('Lưu cấu hình thành công');
   }
 
   const handleLoadMainConfig = async () => {
@@ -93,7 +95,10 @@ const ManageFolder = () => {
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t border-gray-200">
               <Button 
-                onClick={handleLoadMainConfig}
+                onClick={() => {
+                  handleLoadMainConfig();
+                  toast.info('Đã tải cấu hình');
+                }}
                 className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white"
               >
                 <i className="fas fa-download mr-2"></i>

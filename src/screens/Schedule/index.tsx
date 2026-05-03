@@ -67,10 +67,6 @@ const ScheduleModal = () => {
     updateScheduleFolder(folderPath);
   };
 
-  const toggleSchedule = (enabled: boolean) => {
-    setSchedule(prev => ({ ...prev, enabled }));
-  };
-
   const getTimeUntilSchedule = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
     const now = new Date();
@@ -117,7 +113,8 @@ const ScheduleModal = () => {
       folder: schedule.folder,
       jobType: 'auto-post' as const,
       batchSize: schedule.batchSize,
-      reportName: schedule.reportName
+      reportName: schedule.reportName,
+      groupName: '',  
     };
 
     // Gửi job đến electron main process
