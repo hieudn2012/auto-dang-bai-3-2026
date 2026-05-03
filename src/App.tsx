@@ -10,7 +10,7 @@ import Profiles from './screens/Profiles'
 import ImportSheet from './screens/ImportSheet'
 import Schedule from './screens/Schedule'
 import Report from './screens/Report'
-import Logs from './screens/Logs'
+import Logs from './screens/LogsD'
 import { DarkModeProvider } from './contexts/DarkModeContext'
 
 const queryClient = new QueryClient({
