@@ -9,6 +9,7 @@ import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from '
 import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
 import { getReportByReportName, getReportNames } from './features/report'
+import { updateProfileProxy } from './features/proxy'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -160,6 +161,10 @@ handle(InvokeChannel.GET_QUEUE, async () => {
 
 handle(InvokeChannel.UPDATE_PROFILE_GROUP, async (_event, profileId, groupId) => {
   return updateProfileGroup(profileId, groupId);
+})
+
+handle(InvokeChannel.UPDATE_PROFILE_PROXY, async (_event, profileIds, data) => {
+  return updateProfileProxy(profileIds, data);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -13,6 +13,7 @@ import Input from "@/components/Input";
 import Mode from "@/components/Mode";
 import LoadingWraper from "@/components/LoadingWraper";
 import { Group } from "@/components/Group";
+import ProxyModal from "./ProxyModal";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -42,8 +43,8 @@ const waitFor = (timer: number) => {
 
 const Profiles = () => {
   const [group_id, setGroupId] = useState(-1);
-  const [{ data, isPending }] = useGetProfiles(group_id);
-  const [{ data: openedList, refetch }] = useGetNativeClientProfileOpenedList();
+  const [{ data, isPending, refetch: refetchProfiles }] = useGetProfiles(group_id);
+  const [{ data: openedList, refetch: refetchOpenedList }] = useGetNativeClientProfileOpenedList();
   const { mutate: openProfile } = useOpenProfile();
   const { mutate: closeProfile } = useCloseProfile();
   const [userMap, setUserMap] = useState<UserMap>({});
@@ -54,6 +55,7 @@ const Profiles = () => {
   const [batchSize, setBatchSize] = useState(20);
   const [reportName, setReportName] = useState('');
   const [mode, setMode] = useState<'default' | 'affiliate'>('default');
+  const [showProxyModal, setShowProxyModal] = useState(false);
 
   const handleRandomFolder = async (profile_id: number) => {
     const currentPaths = map(userMap, (item) => item.path);
@@ -159,13 +161,12 @@ const Profiles = () => {
     }
   }
 
-
   const handleAutoPost = async (ids: number[]) => {
     await handleBulkOpenProfile(ids);
     await waitFor(10);
     toast.success('Đã mở profile.');
 
-    const { data } = await refetch();
+    const { data } = await refetchOpenedList();
     await waitFor(5);
     toast.success('Đã refetch.');
 
@@ -268,7 +269,7 @@ const Profiles = () => {
             {/* Left Controls */}
             <div className="space-y-4">
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => refetch()} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white">
+                <Button onClick={() => refetchOpenedList()} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white">
                   <i className="fa-solid fa-arrows-rotate mr-2"></i>
                   Refresh
                 </Button>
@@ -309,6 +310,15 @@ const Profiles = () => {
                 <Button onClick={() => handleBulkSetupNewAccount(selectedIds, openedList)} tooltip="Setup New Account" className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm">
                   <i className="fa-solid fa-user-plus mr-1"></i>
                   Setup
+                </Button>
+                <Button 
+                  onClick={() => setShowProxyModal(true)} 
+                  tooltip="Update Proxy" 
+                  className="px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm"
+                  disabled={selectedIds.length === 0}
+                >
+                  <i className="fa-solid fa-shield-alt mr-1"></i>
+                  Proxy
                 </Button>
                 <Button onClick={() => handleBulkClose(selectedIds, openedList)} tooltip="Close" className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm">
                   <i className="fa-solid fa-xmark mr-1"></i>
@@ -526,6 +536,17 @@ const Profiles = () => {
           </div>
         </div>
       </Dialog>
+      
+      {/* Proxy Modal */}
+      <ProxyModal
+        isOpen={showProxyModal}
+        onClose={() => setShowProxyModal(false)}
+        selectedIds={selectedIds}
+        selectedCount={selectedIds.length}
+        onSuccess={() => {
+          refetchProfiles();
+        }}
+      />
     </Layout>
   )
 }

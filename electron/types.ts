@@ -33,7 +33,8 @@ export enum InvokeChannel {
   ADD_JOBS = 'add-jobs',
   CLEAR_JOBS = 'clear-jobs',
   GET_QUEUE = 'get-queue',
-  UPDATE_PROFILE_GROUP = 'update-profile-group'
+  UPDATE_PROFILE_GROUP = 'update-profile-group',
+  UPDATE_PROFILE_PROXY = 'update-profile-proxy'
 }
 
 export type MainConfig = {

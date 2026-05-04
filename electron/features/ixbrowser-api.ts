@@ -56,6 +56,16 @@ interface ProfileData {
   cache_path: string;
 }
 
+export interface ProxyInfo {
+  proxy_mode: number;
+  proxy_check_line: string;
+  proxy_type: string;
+  proxy_ip: string;
+  proxy_port: string;
+  proxy_user: string;
+  proxy_password: string;
+}
+
 // get group list
 export const getGroupList = async (): Promise<Group[]> => {
   const response = await axios.post(`${BASE_URL}/api/v2/group-list`, PAGINATIONS);
@@ -107,6 +117,15 @@ export const updateProfileGroup = async (profileId: number, groupId: number) => 
   const response = await axios.post(`${BASE_URL}/api/v2/profile-update`, {
     profile_id: profileId,
     group_id: groupId
+  });
+  return response.data;
+};
+
+// /api/v2/profile-update-proxy-for-custom-proxy
+export const updateProfileProxyForCustomProxy = async (profileId: number, proxyInfo: ProxyInfo) => {
+  const response = await axios.post(`${BASE_URL}/api/v2/profile-update-proxy-for-custom-proxy`, {
+    profile_id: profileId,
+    proxy_info: proxyInfo
   });
   return response.data;
 };

@@ -41,6 +41,7 @@ type WindownInstance = typeof window & {
     onLog: (callback: (log: LogItem) => void) => void,
     removeLogListener: (callback: (log: LogItem) => void) => void,
     updateProfileGroup: (profileId: number, groupId: number) => Promise<any>,
+    updateProfileProxy: (profileIds: number[], data: string) => Promise<any>,
   }
 }
 

@@ -68,7 +68,8 @@ contextBridge.exposeInMainWorld('api', {
   removeLogListener: (callback: (log: { username: string, message: string }) => void) => {
     ipcRenderer.removeListener('log', (_, log) => callback(log))
   },
-  updateProfileGroup: (profileId: number, groupId: number) => invoke(InvokeChannel.UPDATE_PROFILE_GROUP, profileId, groupId)
+  updateProfileGroup: (profileId: number, groupId: number) => invoke(InvokeChannel.UPDATE_PROFILE_GROUP, profileId, groupId),
+  updateProfileProxy: (profileIds: number[], data: string) => invoke(InvokeChannel.UPDATE_PROFILE_PROXY, profileIds, data)
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
