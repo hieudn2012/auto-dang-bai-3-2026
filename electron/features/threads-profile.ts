@@ -540,7 +540,13 @@ export const checkLiveAccounts = async ({
 
     // xử lý từng batch
     for (const batch of batches) {
-      const tasks = batch.map(async (user) => {
+      // tạo các tasks với staggered start times
+      const tasks = batch.map(async (user, index) => {
+        // delay staggered: mỗi user cách nhau 1s
+        if (index > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500 * index));
+        }
+        
         const page = await browser.newPage();
 
         try {
@@ -569,11 +575,8 @@ export const checkLiveAccounts = async ({
         }
       });
 
-      // chạy tuần tự trong batch
-      for (const task of tasks) {
-        await task;
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
+      // chạy tất cả tasks song song
+      await Promise.all(tasks);
       console.log(`✅ Done batch (${batch.length} accounts)`);
     }
 
