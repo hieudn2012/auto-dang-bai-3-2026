@@ -56,6 +56,12 @@ const Profiles = () => {
   const [reportName, setReportName] = useState('');
   const [mode, setMode] = useState<'default' | 'affiliate'>('default');
   const [showProxyModal, setShowProxyModal] = useState(false);
+  const [showRangeModal, setShowRangeModal] = useState(false);
+  const [rangeStart, setRangeStart] = useState('');
+  const [rangeEnd, setRangeEnd] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const itemsPerPage = 30;
 
   const handleRandomFolder = async (profile_id: number) => {
     const currentPaths = map(userMap, (item) => item.path);
@@ -65,6 +71,25 @@ const Profiles = () => {
 
   const handleOpenFolder = async (path: string) => {
     await windowInstance.api.openFolder(path);
+  }
+
+  const handleRangeSelect = () => {
+    const start = parseInt(rangeStart);
+    const end = parseInt(rangeEnd);
+    const allProfiles = data?.data?.data?.data || [];
+    
+    if (isNaN(start) || isNaN(end) || start < 1 || end > allProfiles.length || start > end) {
+      toast.error('Invalid range. Please enter valid numbers.');
+      return;
+    }
+    
+    const rangeProfiles = allProfiles.slice(start - 1, end);
+    const rangeIds = rangeProfiles.map((profile: any) => profile.profile_id);
+    setSelectedIds(prev => [...new Set([...prev, ...rangeIds])]);
+    setShowRangeModal(false);
+    setRangeStart('');
+    setRangeEnd('');
+    toast.success(`Selected ${rangeIds.length} profiles from range ${start}-${end}`);
   }
 
   const handleShowInfo = async (path: string, profile_id: number) => {
@@ -278,6 +303,7 @@ const Profiles = () => {
                     value={group_id}
                     onChange={(value) => {
                       setGroupId(value);
+                      setCurrentPage(1);
                       windowInstance.api.saveMainConfig({ profile: { groupId: value } });
                     }}
                   />
@@ -368,10 +394,10 @@ const Profiles = () => {
                 <input
                   type="checkbox"
                   className="w-4 h-4 text-blue-600 rounded"
-                  checked={selectedIds.length === data?.data?.data?.data?.length}
+                  checked={selectedIds.length === (data?.data?.data?.data?.length || 0)}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setSelectedIds(map(data?.data?.data?.data, (profile) => profile.profile_id));
+                      setSelectedIds(map(data?.data?.data?.data || [], (profile) => profile.profile_id));
                     } else {
                       setSelectedIds([]);
                     }
@@ -380,6 +406,13 @@ const Profiles = () => {
                 <span className="font-medium text-gray-700">
                   Select All ({selectedIds.length} selected)
                 </span>
+                <Button
+                  onClick={() => setShowRangeModal(true)}
+                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700"
+                >
+                  <i className="fa-solid fa-list-ol mr-1"></i>
+                  Select Range
+                </Button>
               </div>
               <div className="text-sm text-gray-500">
                 Total: {data?.data?.data?.data?.length || 0} profiles
@@ -389,8 +422,17 @@ const Profiles = () => {
 
           {/* Profile Grid */}
           <LoadingWraper loading={isPending}>
-            <div className="divide-y divide-gray-200">
-              {map(data?.data?.data?.data, (profile, index) => (
+            {(() => {
+              const allProfiles = data?.data?.data?.data || [];
+              const totalPages = Math.ceil(allProfiles.length / itemsPerPage);
+              const startIndex = (currentPage - 1) * itemsPerPage;
+              const endIndex = startIndex + itemsPerPage;
+              const currentProfiles = allProfiles.slice(startIndex, endIndex);
+              
+              return (
+                <>
+                  <div className="divide-y divide-gray-200">
+                    {map(currentProfiles, (profile, index) => (
                 <div key={profile.profile_id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                     {/* Selection & ID */}
@@ -519,7 +561,40 @@ const Profiles = () => {
                   </div>
                 </div>
               ))}
-            </div>
+                  </div>
+                  
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-700">
+                          Showing {startIndex + 1} to {Math.min(endIndex, allProfiles.length)} of {allProfiles.length} profiles
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Previous
+                          </button>
+                          <span className="px-3 py-1 text-sm">
+                            Page {currentPage} of {totalPages}
+                          </span>
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </LoadingWraper>
         </div>
       </div>
@@ -533,6 +608,66 @@ const Profiles = () => {
             <Button onClick={() => handleOpenFolder(currentFolder.path)}>Mở folder</Button>
             <Button onClick={() => handleCopyLink(currentFolder.link)}>Copy link</Button>
             <Button onClick={() => saveHistoryTxt({ profile_id: currentFolder.profile_id, folder: currentFolder.path })}>Đánh dấu lịch sử</Button>
+          </div>
+        </div>
+      </Dialog>
+      
+      {/* Range Selection Modal */}
+      <Dialog open={showRangeModal} onClose={() => setShowRangeModal(false)} className="!max-w-md">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Profiles by Range</h3>
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  From (profile number)
+                </label>
+                <Input
+                  type="number"
+                  value={rangeStart}
+                  onChange={(e) => setRangeStart(e.target.value)}
+                  placeholder="e.g., 1"
+                  min="1"
+                  max={data?.data?.data?.data?.length || 0}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  To (profile number)
+                </label>
+                <Input
+                  type="number"
+                  value={rangeEnd}
+                  onChange={(e) => setRangeEnd(e.target.value)}
+                  placeholder="e.g., 10"
+                  min="1"
+                  max={data?.data?.data?.data?.length || 0}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            <div className="text-sm text-gray-600">
+              Total profiles available: {data?.data?.data?.data?.length || 0}
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={handleRangeSelect}
+                className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                Select Range
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowRangeModal(false);
+                  setRangeStart('');
+                  setRangeEnd('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </div>
       </Dialog>
