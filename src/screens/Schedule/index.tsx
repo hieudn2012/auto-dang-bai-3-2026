@@ -9,6 +9,7 @@ import { windowInstance } from '@/services/window';
 import Layout from '@/components/Layout';
 import { Group } from '../../components/Group';
 import { toast } from '@/components/ToastContainer';
+import { useGetGroupList } from '@/services/profiles';
 
 type ScheduleTime = {
   id: string;
@@ -19,24 +20,45 @@ type ScheduleTime = {
   folder: string;
   batchSize: number;
   reportName: string;
+  captionLabel: string;
+};
+
+const generateRandomId = () => {
+  return Math.random().toString(36).substr(2, 9);
 };
 
 const ScheduleModal = () => {
   const [schedule, setSchedule] = useState<ScheduleTime>({
-    id: '1',
+    id: generateRandomId(),
     time: '',
     enabled: true,
     groupId: -1,
     mode: 'default',
     folder: '',
     batchSize: 10,
-    reportName: ''
+    reportName: '',
+    captionLabel: '',
   });
   const [jobs, setJobs] = useState<any[]>([]);
+  const [captions, setCaptions] = useState<any[]>([]);
+  const [{ data: groupListData }] = useGetGroupList();
+  const groups = groupListData?.data?.data?.data || [];
 
   useEffect(() => {
     handleLoadJobs();
+    loadCaptions();
   }, []);
+
+  const loadCaptions = async () => {
+    try {
+      const config = await windowInstance.api.loadMainConfig();
+      const captionsData = config?.captions || [];
+      setCaptions(captionsData);
+    } catch (error) {
+      console.error('Failed to load captions:', error);
+    }
+  };
+
 
   const updateSchedule = (time: string) => {
     setSchedule(prev => ({ ...prev, time }));
@@ -60,6 +82,10 @@ const ScheduleModal = () => {
 
   const updateScheduleReportName = (reportName: string) => {
     setSchedule(prev => ({ ...prev, reportName }));
+  };
+
+  const updateScheduleCaptionLabel = (captionLabel: string) => {
+    setSchedule(prev => ({ ...prev, captionLabel }));
   };
 
   const handleSelectFolder = async () => {
@@ -86,8 +112,8 @@ const ScheduleModal = () => {
 
   const startScheduling = () => {
     // Validate schedule has all required fields
-    if (!schedule.time || schedule.groupId <= -1 || !schedule.folder || !schedule.reportName) {
-      toast.error('Vui lòng điền đầy đủ thông tin: thời gian, nhóm, thư mục và tên báo cáo');
+    if (!schedule.time || schedule.groupId <= -1 || !schedule.folder || !schedule.reportName || !schedule.captionLabel) {
+      toast.error('Vui lòng điền đầy đủ thông tin: thời gian, nhóm, thư mục, tên báo cáo và caption label');
       return;
     }
 
@@ -104,21 +130,22 @@ const ScheduleModal = () => {
     // Convert directly from time to runAt timestamp
     const runAt = scheduledTime.getTime();
 
-    const job = {
-      id: schedule.id,
-      runAt: runAt,
-      enabled: schedule.enabled,
-      groupId: schedule.groupId,
-      mode: schedule.mode,
-      folder: schedule.folder,
+    const jobData = {
+      id: `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      runAt,
+      enabled: true,
       jobType: 'auto-post' as const,
       batchSize: schedule.batchSize,
       reportName: schedule.reportName,
-      groupName: '',  
+      groupName: '',
+      groupId: schedule.groupId,
+      mode: schedule.mode,
+      folder: schedule.folder,
+      captionLabel: schedule.captionLabel,
     };
 
     // Gửi job đến electron main process
-    windowInstance.api.addJobs([job]);
+    windowInstance.api.addJobs([jobData]);
     handleLoadJobs();
   };
 
@@ -143,6 +170,11 @@ const ScheduleModal = () => {
   const formatJobTime = (runAt: number) => {
     const date = new Date(runAt);
     return date.toLocaleString('vi-VN');
+  };
+
+  const getGroupName = (groupId: number) => {
+    const group = groups.find((g: any) => g.id === groupId);
+    return group?.title || `Group ${groupId}`;
   };
 
   const getTimeUntilJob = (runAt: number) => {
@@ -264,6 +296,23 @@ const ScheduleModal = () => {
                   />
                 </div>
 
+                {/* Caption Label Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-tag text-purple-500"></i>
+                    Caption Label
+                  </label>
+                  <Select
+                    value={schedule.captionLabel}
+                    onChange={(e) => updateScheduleCaptionLabel(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    options={[
+                      { value: "", label: "Chọn caption label" },
+                      ...captions.map(cap => ({ value: cap.label, label: cap.label }))
+                    ]}
+                  />
+                </div>
+
                 {/* Folder Selection */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -286,6 +335,7 @@ const ScheduleModal = () => {
                     </Button>
                   </div>
                 </div>
+
               </div>
 
               {/* Status and Actions */}
@@ -346,25 +396,101 @@ const ScheduleModal = () => {
                 <p>Không có jobs nào trong hàng đợi</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="grid gap-3">
                 {jobs.map((job, index) => (
-                  <div key={job.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-500/50">
-                    <div className="w-6 h-6 bg-blue-500/20 rounded flex items-center justify-center">
-                      <span className="text-blue-600 dark:text-blue-400 font-semibold text-xs">{index + 1}</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900 dark:text-white text-sm">Job: {job.id}</span>
-                        <span className="px-2 py-0.5 bg-blue-500/20 rounded text-xs text-blue-600 dark:text-blue-400">
-                          {job.data?.jobType || 'post'}
-                        </span>
+                  <div key={job.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                    {/* Job Header */}
+                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                            <span className="text-white font-bold text-xs">{index + 1}</span>
+                          </div>
+                          <div className="text-white">
+                            <div className="font-bold text-xl">Job #{getGroupName(job.data?.groupId)}</div>
+                          </div>
+                        </div>
+                        <div className="bg-white/20 backdrop-blur-sm px-3 py-[1px] rounded-full">
+                          <span className="text-white text-sm font-medium">
+                            {getTimeUntilJob(job.runAt)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 grid grid-cols-2 gap-1">
-                        <div>Chạy: {formatJobTime(job.runAt)}</div>
-                        <div>Còn lại: {getTimeUntilJob(job.runAt)}</div>
-                        <div>Group: {job.data?.groupId}</div>
-                        <div>Mode: {job.data?.mode}</div>
-                        <div className="col-span-2">Folder: {job.data?.folder || 'N/A'}</div>
+                    </div>
+
+                    {/* Job Details */}
+                    <div className="p-4 bg-gray-50 dark:bg-gray-900/50">
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Left Column */}
+                        <div className="space-y-3">
+                          {/* Time */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                              <i className="fas fa-clock text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Thời gian</div>
+                              <div className="text-sm text-gray-900 dark:text-white font-medium">
+                                {formatJobTime(job.runAt)}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Group */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                              <i className="fas fa-users text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                            <div>
+                              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Nhóm</div>
+                              <div className="text-sm text-gray-900 dark:text-white font-medium">
+                                {getGroupName(job.data?.groupId)}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Mode */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                              <i className="fas fa-cog text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <div>
+                              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Chế độ</div>
+                              <div className="text-sm text-gray-900 dark:text-white font-medium">
+                                {job.data?.mode}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column */}
+                        <div className="space-y-3">
+                          {/* Caption */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                              <i className="fas fa-tag text-orange-600 dark:text-orange-400"></i>
+                            </div>
+                            <div>
+                              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Caption</div>
+                              <div className="text-sm text-gray-900 dark:text-white font-medium">
+                                {job.data?.captionLabel || 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Folder */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                              <i className="fas fa-folder text-gray-600 dark:text-gray-400"></i>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Thư mục</div>
+                              <div className="text-sm text-gray-900 dark:text-white font-medium break-all">
+                                {job.data?.folder || 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -111,6 +111,7 @@ export interface PostParams {
   folder: string,
   type: 'post' | 'quote',
   mode: 'default' | 'affiliate',
+  captionData: string;
 }
 
 export const clickPostButton = async ({
@@ -119,9 +120,10 @@ export const clickPostButton = async ({
   folder,
   type = 'quote',
   mode = 'default',
+  captionData,
 }: PostParams, event: IpcMainEvent) => {
   const config = await loadMainConfig();
-  const caption = mode === 'affiliate' ? getRandomCaption(folder) : getRandomCap(config?.caption || '') || '';
+  const caption = mode === 'affiliate' ? getRandomCaption(folder) : getRandomCap(captionData || config?.caption || '') || '';
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,

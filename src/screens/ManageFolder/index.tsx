@@ -1,22 +1,30 @@
 import Button from "@/components/Button";
-import Input from "@/components/Input";
 import Layout from "@/components/Layout";
-import TextArea from "@/components/TextArea";
 import { toast } from "@/components/ToastContainer";
 import { windowInstance } from "@/services/window";
 import { useEffect, useState } from "react";
+import GlobalConfig from "./GlobalConfig";
+import CaptionConfig from "./CaptionConfig";
+import MultipleCaption from "./MultipleCaption";
+
+interface Caption {
+  label: string;
+  value: string;
+}
 
 const ManageFolder = () => {
   const [workingFolder, setWorkingFolder] = useState('');
   const [linkPost, setLinkPost] = useState('');
   const [caption, setCaption] = useState('');
+  const [captions, setCaptions] = useState<Caption[]>([]);
+  const [activeTab, setActiveTab] = useState('global');
 
   const handleOpenDialogFolder = async () => {
     const folderPath = await windowInstance.api.openDialogFolder();
     setWorkingFolder(folderPath);
   }
   const handleSaveMainConfig = async () => {
-    await windowInstance.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption });
+    await windowInstance.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption, captions });
     toast.success('Lưu cấu hình thành công');
   }
 
@@ -25,6 +33,7 @@ const ManageFolder = () => {
     setWorkingFolder(config?.workingDir || '');
     setLinkPost(config?.linkPost || '');
     setCaption(config?.caption || '');
+    setCaptions(config?.captions || []);
   }
 
   useEffect(() => {
@@ -34,66 +43,82 @@ const ManageFolder = () => {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-            <i className="fas fa-cog text-blue-500 mr-2"></i>
-            Cấu Hình Thư Mục Làm Việc
-          </h2>
-          
-          <div className="space-y-6">
-            {/* Working Folder Section */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                <i className="fas fa-folder text-blue-400 mr-1"></i>
-                Thư Mục Làm Việc
-              </label>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Nhập tên thư mục làm việc" 
-                  value={workingFolder} 
-                  onChange={(e) => setWorkingFolder(e.target.value)}
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={handleOpenDialogFolder}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  <i className="fas fa-folder-open mr-2"></i>
-                  Chọn Folder
-                </Button>
-              </div>
-            </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <i className="fas fa-cog text-blue-500 mr-2"></i>
+              Cấu Hình
+            </h2>
+          </div>
 
-            {/* Link Post Section */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                <i className="fas fa-link text-green-400 mr-1"></i>
-                Link Post Mặc Định
-              </label>
-              <TextArea 
-                placeholder="Nhập link post" 
-                value={linkPost} 
-                onChange={(e) => setLinkPost(e.target.value)}
-                className="min-h-[100px]"
-              />
-            </div>
+          {/* Tabs */}
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px">
+              <button
+                onClick={() => setActiveTab('global')}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${
+                  activeTab === 'global'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <i className="fas fa-globe mr-2"></i>
+                Global config
+              </button>
+              <button
+                onClick={() => setActiveTab('caption')}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${
+                  activeTab === 'caption'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <i className="fas fa-closed-captioning mr-2"></i>
+                Caption config
+              </button>
+              <button
+                onClick={() => setActiveTab('multiple')}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${
+                  activeTab === 'multiple'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <i className="fas fa-list mr-2"></i>
+                MultipleCaption
+              </button>
+            </nav>
+          </div>
 
-            {/* Caption Section */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                <i className="fas fa-closed-captioning text-purple-400 mr-1"></i>
-                Caption Mặc Định
-              </label>
-              <TextArea 
-                placeholder="Nhập caption" 
-                value={caption} 
-                onChange={(e) => setCaption(e.target.value)}
-                className="min-h-[120px]"
+          {/* Tab Content */}
+          <div className="p-6">
+            {activeTab === 'global' && (
+              <GlobalConfig
+                workingFolder={workingFolder}
+                setWorkingFolder={setWorkingFolder}
+                linkPost={linkPost}
+                setLinkPost={setLinkPost}
+                handleOpenDialogFolder={handleOpenDialogFolder}
               />
-            </div>
+            )}
+
+            {activeTab === 'caption' && (
+              <CaptionConfig
+                caption={caption}
+                setCaption={setCaption}
+              />
+            )}
+
+            {activeTab === 'multiple' && (
+              <MultipleCaption
+                captions={captions}
+                setCaptions={setCaptions}
+              />
+            )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <div className="flex gap-3 pt-6 mt-6 border-t border-gray-200">
               <Button 
                 onClick={() => {
                   handleLoadMainConfig();

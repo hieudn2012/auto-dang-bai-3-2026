@@ -41,6 +41,10 @@ export type MainConfig = {
   workingDir?: string
   linkPost?: string
   caption?: string
+  captions?: {
+    label: string
+    value: string
+  }[]
   profile?: {
     groupId?: number
     mode?: 'default' | 'affiliate'

@@ -1,6 +1,6 @@
 import { ScheduleItem } from "./job";
 import { closeProfile, getOpenedProfileList, getProfileList, openProfile } from "./ixbrowser-api";
-import { waitRandom } from "./common";
+import { loadMainConfig, waitRandom } from "./common";
 import { clickEditLatestPostButton, clickPostButton } from "./threads-profile";
 import { IpcMainEvent } from "electron";
 import { getRandomFolder } from "./foder";
@@ -8,6 +8,9 @@ import { sendLog } from "./event";
 
 // auto post
 export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
+  const config = await loadMainConfig();
+  const captions = config?.captions || [];
+
   // get profile list
   const profiles = await getProfileList(item.groupId);
   sendLog(event, {
@@ -75,6 +78,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
             folder: getRandomFolder(item.folder),
             type: 'post',
             mode: item.mode,
+            captionData: captions.find(cap => cap.label === item.captionLabel)?.value || '',
           }, event);
           postCount++;
           sendLog(event, {

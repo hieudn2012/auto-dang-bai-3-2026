@@ -13,6 +13,7 @@ export interface ScheduleItem {
   jobType: 'auto-post' | 'auto-comment' | 'auto-like' | 'auto-share';
   batchSize: number;
   reportName: string;
+  captionLabel: string;
 }
 
 export const addJobs = (items: ScheduleItem[], event: IpcMainEvent) => {
