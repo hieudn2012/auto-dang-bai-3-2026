@@ -6,10 +6,17 @@ import { toast } from "@/components/ToastContainer";
 
 // format UID|Pass|2FA|Cookie|Email|Phone
 // return UIDs, Cookies
-const extractUIDsAndCookies = (accString: string) => {
+
+const extractUIDsAndCookies = (accString: string, template: string) => {
   const lines = accString.split('\n');
+  const templateFields = template.split('|');
+  const uidIndex = templateFields.indexOf('UID');
+  const cookieIndex = templateFields.indexOf('Cookie');
+  
   const result = lines.map(line => {
-    const [uid, _pass, _twoFa, cookie] = line.split('|');
+    const parts = line.split('|');
+    const uid = parts[uidIndex] || '';
+    const cookie = parts[cookieIndex] || '';
     return { uid, cookie: JSON.stringify(parseCookiesFromRawLine(cookie)) };
   });
   return result;
@@ -17,16 +24,17 @@ const extractUIDsAndCookies = (accString: string) => {
 
 const SetupAcc = () => {
   const [accString, setAccString] = useState('');
+  const [template, setTemplate] = useState('UID|Pass|2FA|Cookie|Email|Phone');
 
   const handleCopyNames = () => {
-    const result = extractUIDsAndCookies(accString);
+    const result = extractUIDsAndCookies(accString, template);
     const names = result.map(item => item.uid).join('\n');
     navigator.clipboard.writeText(names);
     toast.success('Copied names');
   };
 
   const handleCopyCookies = () => {
-    const result = extractUIDsAndCookies(accString);
+    const result = extractUIDsAndCookies(accString, template);
     const cookies = result.map(item => item.cookie).join('\n');
     navigator.clipboard.writeText(cookies);
     toast.success('Copied cookies');
@@ -49,6 +57,19 @@ const SetupAcc = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         {/* Input Section */}
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i className="fas fa-list text-gray-400 mr-1"></i>
+              Template Format
+            </label>
+            <TextArea 
+              placeholder="Nhập template format&#10;Ví dụ: UID|Pass|2FA|Cookie|Email|Phone&#10;Hoặc: UID|Pass|Cookie"
+              value={template} 
+              onChange={(e) => setTemplate(e.target.value)}
+              className="min-h-[80px] font-mono text-sm"
+            />
+          </div>
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <i className="fas fa-file-alt text-gray-400 mr-1"></i>
@@ -102,13 +123,13 @@ const SetupAcc = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {extractUIDsAndCookies(accString).length}
+                    {extractUIDsAndCookies(accString, template).length}
                   </div>
                   <div className="text-gray-600 dark:text-gray-400">Total Accounts</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {extractUIDsAndCookies(accString).filter(item => item.uid && item.cookie).length}
+                    {extractUIDsAndCookies(accString, template).filter(item => item.uid && item.cookie).length}
                   </div>
                   <div className="text-gray-600 dark:text-gray-400">Valid Accounts</div>
                 </div>
