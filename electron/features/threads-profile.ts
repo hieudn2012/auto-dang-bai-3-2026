@@ -90,21 +90,6 @@ export function calcFlowPosition(index: number) {
   }
 }
 
-export const openThreadsProfile = async (id: number, index: number) => {
-  // const { x, y, width, height } = calcFlowPosition(index)
-  await axios.post(`http://127.0.0.1:53200/api/v2/profile-open`, {
-    profile_id: id,
-    // args: [
-    //   `--window-size=${width},${height}`,
-    //   `--window-position=${x},${y}`,
-    //   '--no-first-run',
-    //   '--disable-infobars',
-    //   '--disable-gpu',
-    // ]
-  })
-  return true
-}
-
 export interface PostParams {
   ws: string,
   username: string,

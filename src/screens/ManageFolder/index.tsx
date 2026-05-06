@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import GlobalConfig from "./GlobalConfig";
 import CaptionConfig from "./CaptionConfig";
 import MultipleCaption from "./MultipleCaption";
+import ProxyConfig from "./ProxyConfig";
 
 interface Caption {
   label: string;
@@ -17,6 +18,7 @@ const ManageFolder = () => {
   const [linkPost, setLinkPost] = useState('');
   const [caption, setCaption] = useState('');
   const [captions, setCaptions] = useState<Caption[]>([]);
+  const [proxy, setProxy] = useState('');
   const [activeTab, setActiveTab] = useState('global');
 
   const handleOpenDialogFolder = async () => {
@@ -24,7 +26,7 @@ const ManageFolder = () => {
     setWorkingFolder(folderPath);
   }
   const handleSaveMainConfig = async () => {
-    await windowInstance.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption, captions });
+    await windowInstance.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption, captions, proxy });
     toast.success('Lưu cấu hình thành công');
   }
 
@@ -34,6 +36,7 @@ const ManageFolder = () => {
     setLinkPost(config?.linkPost || '');
     setCaption(config?.caption || '');
     setCaptions(config?.captions || []);
+    setProxy(config?.proxy || '');
   }
 
   useEffect(() => {
@@ -88,6 +91,17 @@ const ManageFolder = () => {
                 <i className="fas fa-list mr-2"></i>
                 MultipleCaption
               </button>
+              <button
+                onClick={() => setActiveTab('proxy')}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${
+                  activeTab === 'proxy'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <i className="fas fa-network-wired mr-2"></i>
+                Proxy config
+              </button>
             </nav>
           </div>
 
@@ -114,6 +128,13 @@ const ManageFolder = () => {
               <MultipleCaption
                 captions={captions}
                 setCaptions={setCaptions}
+              />
+            )}
+
+            {activeTab === 'proxy' && (
+              <ProxyConfig
+                proxy={proxy}
+                setProxy={setProxy}
               />
             )}
 

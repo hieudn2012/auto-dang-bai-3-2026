@@ -1,7 +1,6 @@
 import Button from "@/components/Button";
 import Layout from "@/components/Layout";
 import TextArea from "@/components/TextArea";
-import OpenProfile from "@/features/OpenProfile";
 import { useGlobalStore } from "@/store/global";
 import { map } from "lodash";
 import { useState } from "react";
@@ -56,7 +55,6 @@ const Home = () => {
             ))}
           </tbody>
         </table>
-        <OpenProfile id={124} />
       </div>
     </Layout>
   )

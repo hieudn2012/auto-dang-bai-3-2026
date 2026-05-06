@@ -42,6 +42,7 @@ export type MainConfig = {
   workingDir?: string
   linkPost?: string
   caption?: string
+  proxy?: string
   captions?: {
     label: string
     value: string

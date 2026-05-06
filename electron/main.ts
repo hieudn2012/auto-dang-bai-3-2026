@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { InvokeChannel } from './types'
 import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
-import { updateProfileGroup } from './features/ixbrowser-api'
-import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, openThreadsProfile, setupNewAccount } from './features/threads-profile'
+import { openProfile, updateProfileGroup } from './features/ixbrowser-api'
+import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNewAccount } from './features/threads-profile'
 import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
@@ -95,8 +95,8 @@ handle(InvokeChannel.MOVE_ALL_FILES_FROM_FOLDER_A_TO_FOLDER_B, async (_event, fr
   return moveAllFilesFromFolderAtoFolderB(from, to);
 })
 
-handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id, index) => {
-  return openThreadsProfile(id, index);
+handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id) => {
+  return openProfile(id);
 })
 
 handle(InvokeChannel.SAVE_MAIN_CONFIG, async (_event, config) => {
