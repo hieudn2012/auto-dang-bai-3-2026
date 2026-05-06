@@ -34,7 +34,8 @@ export enum InvokeChannel {
   CLEAR_JOBS = 'clear-jobs',
   GET_QUEUE = 'get-queue',
   UPDATE_PROFILE_GROUP = 'update-profile-group',
-  UPDATE_PROFILE_PROXY = 'update-profile-proxy'
+  UPDATE_PROFILE_PROXY = 'update-profile-proxy',
+  BULK_TOGGLE_DISMISS_BUTTON = 'bulk-toggle-dismiss-button'
 }
 
 export type MainConfig = {

@@ -10,6 +10,7 @@ import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
 import { getReportByReportName, getReportNames } from './features/report'
 import { updateProfileProxy } from './features/proxy'
+import { bulkToggleDismissButton } from './features/instagram'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -165,6 +166,10 @@ handle(InvokeChannel.UPDATE_PROFILE_GROUP, async (_event, profileId, groupId) =>
 
 handle(InvokeChannel.UPDATE_PROFILE_PROXY, async (_event, profileIds, data) => {
   return updateProfileProxy(profileIds, data);
+})
+
+handle(InvokeChannel.BULK_TOGGLE_DISMISS_BUTTON, async (_event, wss) => {
+  return bulkToggleDismissButton(wss);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -69,7 +69,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.removeListener('log', (_, log) => callback(log))
   },
   updateProfileGroup: (profileId: number, groupId: number) => invoke(InvokeChannel.UPDATE_PROFILE_GROUP, profileId, groupId),
-  updateProfileProxy: (profileIds: number[], data: string) => invoke(InvokeChannel.UPDATE_PROFILE_PROXY, profileIds, data)
+  updateProfileProxy: (profileIds: number[], data: string) => invoke(InvokeChannel.UPDATE_PROFILE_PROXY, profileIds, data),
+  bulkToggleDismissButton: (wss: string[]) => invoke(InvokeChannel.BULK_TOGGLE_DISMISS_BUTTON, wss)
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

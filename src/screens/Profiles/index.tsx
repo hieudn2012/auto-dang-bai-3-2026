@@ -181,8 +181,20 @@ const Profiles = () => {
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
         document.getElementById(`setup-new-account-${id}`)?.click();
-        await waitFor(1);
+        await waitFor(3);
       }
+    }
+  }
+
+  const handleBulkToggleDismissButton = async (ids: number[], openedList: any) => {
+    const wss = ids.map(id => openedList?.[id]?.ws).filter(ws => !!ws) || [];
+    console.log(wss,'wss');
+    
+    if (wss.length > 0) {
+      await windowInstance.api.bulkToggleDismissButton({ wss: wss.map(ws => ({ ws })) });
+      toast.success('Đã xử lý dismiss button cho các profile được chọn.');
+    } else {
+      toast.error('Không có profile nào đang mở để xử lý.');
     }
   }
 
@@ -349,6 +361,10 @@ const Profiles = () => {
                 <Button onClick={() => handleBulkClose(selectedIds, openedList)} tooltip="Close" className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm">
                   <i className="fa-solid fa-xmark mr-1"></i>
                   Close
+                </Button>
+                <Button onClick={() => handleBulkToggleDismissButton(selectedIds, openedList)} tooltip="Toggle Dismiss Button" className="px-3 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm">
+                  <i className="fa-solid fa-hand mr-1"></i>
+                  Dismiss
                 </Button>
               </div>
             </div>

@@ -237,9 +237,66 @@ export const setupNewAccount = async ({
 
   try {
     // open new tab
-    const page = await browser.newPage();
+    let page = await browser.newPage();
     await page.goto(`https://threads.com/login`);
     await waitRandom(5000, 10000);
+
+    // check page
+    let pageContent = '';
+    let retryCount = 0;
+    let currentPage = page;
+    
+    while (retryCount < 3) {
+      try {
+        pageContent = await currentPage.content();
+        
+        // Kiểm tra mất kết nối hoặc content rỗng
+        if (!pageContent || pageContent.trim() === '') {
+          console.log('Page content is empty, possible internet connection issue');
+          throw new Error('Empty page content');
+        }
+        
+        // Kiểm tra lỗi 429
+        if (pageContent.includes('HTTP ERROR 429')) {
+          console.log('HTTP ERROR 429 detected, retrying...');
+          throw new Error('HTTP ERROR 429');
+        }
+        
+        // Nếu không có lỗi, break ra khỏi vòng lặp
+        break;
+        
+      } catch (error: any) {
+        console.log(`Retry ${retryCount + 1}: ${error.message}`);
+        
+        // Đóng tab hiện tại nếu có
+        if (currentPage && currentPage !== page) {
+          await currentPage.close();
+        }
+        
+        // Tạo tab mới và thử lại
+        currentPage = await browser.newPage();
+        await currentPage.goto(`https://threads.com/login`);
+        await waitRandom(5000, 10000);
+        
+        retryCount++;
+        
+        // Nếu đã thử 3 lần vẫn thất bại
+        if (retryCount >= 3) {
+          console.error('Failed to load page after 3 retries');
+          event.sender.send('show-toast', {
+            message: 'Không thể tải trang sau 3 lần thử lại',
+            type: 'error',
+            username,
+          });
+          return;
+        }
+      }
+    }
+    
+    // Gán lại page nếu đã tạo page mới
+    if (currentPage !== page) {
+      page = currentPage;
+    }
 
     event.sender.send('show-toast', {
       message: 'Đang setup account...',
@@ -264,6 +321,13 @@ export const setupNewAccount = async ({
 
     if (continueWithInstagram) {
       await continueWithInstagram.click();
+      await waitRandom(20000, 30000);
+    }
+
+    // find div with class x6s0dn4 x78zum5 x1iyjqo2 xyqm7xq x109j2v6 x1hhzuzn x1x5flf6
+    const divWithClass = await page.$('div.x6s0dn4.x78zum5.x1iyjqo2.xyqm7xq.x109j2v6.x1hhzuzn.x1x5flf6');
+    if (divWithClass) {
+      await divWithClass.click();
       await waitRandom(20000, 30000);
     }
 
