@@ -1,4 +1,6 @@
 export const routerPath = {
+  splash: '/splash',
+  login: '/login',
   home: '/',
   profiles: '/profiles',
   tools: '/tools',
