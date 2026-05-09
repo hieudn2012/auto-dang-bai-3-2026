@@ -1,6 +1,5 @@
 import axios from "axios";
 import { get } from "lodash";
-import { updateRandomProxyForProfile } from "./proxy";
 
 const BASE_URL = 'http://127.0.0.1:53200';
 
@@ -80,7 +79,6 @@ export const openProfile = async (profileId: number): Promise<OpenedProfileData>
       profile_id: profileId
     });
     if (response.data.error.code === 1003) {
-      await updateRandomProxyForProfile(profileId);
       throw new Error('Proxy detection failed');
     }
     return response.data;

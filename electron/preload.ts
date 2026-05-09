@@ -1,6 +1,7 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import { History, InvokeChannel, MainConfig, UserInfo } from './types'
 import { ScheduleItem } from './features/job'
+import { RegisterNewAccountParams } from './features/register'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -70,7 +71,8 @@ contextBridge.exposeInMainWorld('api', {
   },
   updateProfileGroup: (profileId: number, groupId: number) => invoke(InvokeChannel.UPDATE_PROFILE_GROUP, profileId, groupId),
   updateProfileProxy: (profileIds: number[], data: string) => invoke(InvokeChannel.UPDATE_PROFILE_PROXY, profileIds, data),
-  bulkToggleDismissButton: (wss: string[]) => invoke(InvokeChannel.BULK_TOGGLE_DISMISS_BUTTON, wss)
+  bulkToggleDismissButton: (wss: string[]) => invoke(InvokeChannel.BULK_TOGGLE_DISMISS_BUTTON, wss),
+  registerNewAccounts: (params: RegisterNewAccountParams) => invoke(InvokeChannel.REGISTER_NEW_ACCOUNTS, params),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

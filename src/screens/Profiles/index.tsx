@@ -7,7 +7,7 @@ import { useCloseProfile, useGetNativeClientProfileOpenedList, useGetProfiles, u
 import { windowInstance } from "@/services/window";
 import { UserInfo } from "electron/types";
 import { find, map, split } from "lodash";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "@/components/ToastContainer";
 import Input from "@/components/Input";
 import Mode from "@/components/Mode";
@@ -41,6 +41,18 @@ const waitFor = (timer: number) => {
   })
 }
 
+interface Profile {
+  profile_id: number;
+  name: string;
+}
+const profilesObj = (data: Profile[]) => {
+  const dataObj: Record<string, Profile> = {};
+  data.forEach((item) => {
+    dataObj[`${item.profile_id}`] = item;
+  });
+  return dataObj;
+}
+
 const Profiles = () => {
   const [group_id, setGroupId] = useState(-1);
   const [{ data, isPending, refetch: refetchProfiles }] = useGetProfiles(group_id);
@@ -62,6 +74,7 @@ const Profiles = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const itemsPerPage = 30;
+  const profilesMap = useMemo(() => profilesObj(data?.data?.data?.data || []), [data]);
 
   const handleRandomFolder = async (profile_id: number) => {
     const currentPaths = map(userMap, (item) => item.path);
@@ -249,6 +262,14 @@ const Profiles = () => {
     toast.success(`Đã hoàn thành tất cả ${batches.length} batches với ${allSelectedIds.length} users`);
   }
 
+  const handleRegisterAccounts = () => {
+    windowInstance.api.registerNewAccounts({
+      profiles: map(selectedIds, (id) => ({ id, username: profilesMap[id]?.name || '' })),
+      batch: 10,
+      reportName
+    });
+  }
+
   useEffect(() => {
     const handleToast = (_event: any, arg: any) => {
       const { message, username } = arg as { type: 'success' | 'error' | 'info', message: string, username?: string };
@@ -365,6 +386,10 @@ const Profiles = () => {
                 <Button onClick={() => handleBulkToggleDismissButton(selectedIds, openedList)} tooltip="Toggle Dismiss Button" className="px-3 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm">
                   <i className="fa-solid fa-hand mr-1"></i>
                   Dismiss
+                </Button>
+                <Button onClick={handleRegisterAccounts} tooltip="Register Accounts" className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm">
+                  <i className="fa-solid fa-user-plus mr-1"></i>
+                  Register
                 </Button>
               </div>
             </div>

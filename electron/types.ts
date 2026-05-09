@@ -35,7 +35,8 @@ export enum InvokeChannel {
   GET_QUEUE = 'get-queue',
   UPDATE_PROFILE_GROUP = 'update-profile-group',
   UPDATE_PROFILE_PROXY = 'update-profile-proxy',
-  BULK_TOGGLE_DISMISS_BUTTON = 'bulk-toggle-dismiss-button'
+  BULK_TOGGLE_DISMISS_BUTTON = 'bulk-toggle-dismiss-button',
+  REGISTER_NEW_ACCOUNTS = 'register-new-accounts'
 }
 
 export type MainConfig = {

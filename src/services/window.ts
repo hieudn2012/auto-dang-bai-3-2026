@@ -2,6 +2,7 @@ import { ScheduleItem } from "electron/features/job";
 import { MainConfig, UserInfo } from "electron/types";
 import { LogItem } from "electron/features/event";
 import { BulkToggleDismissButtonParams } from "electron/features/instagram";
+import { RegisterNewAccountParams } from "electron/features/register";
 
 type WindownInstance = typeof window & {
   api: {
@@ -44,6 +45,7 @@ type WindownInstance = typeof window & {
     updateProfileGroup: (profileId: number, groupId: number) => Promise<any>,
     updateProfileProxy: (profileIds: number[], data: string) => Promise<any>,
     bulkToggleDismissButton: (params: BulkToggleDismissButtonParams) => Promise<any>,
+    registerNewAccounts: (params: RegisterNewAccountParams) => Promise<any>,
   }
 }
 
