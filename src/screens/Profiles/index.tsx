@@ -90,12 +90,12 @@ const Profiles = () => {
     const start = parseInt(rangeStart);
     const end = parseInt(rangeEnd);
     const allProfiles = data?.data?.data?.data || [];
-    
+
     if (isNaN(start) || isNaN(end) || start < 1 || end > allProfiles.length || start > end) {
       toast.error('Invalid range. Please enter valid numbers.');
       return;
     }
-    
+
     const rangeProfiles = allProfiles.slice(start - 1, end);
     const rangeIds = rangeProfiles.map((profile: any) => profile.profile_id);
     setSelectedIds(prev => [...new Set([...prev, ...rangeIds])]);
@@ -201,8 +201,6 @@ const Profiles = () => {
 
   const handleBulkToggleDismissButton = async (ids: number[], openedList: any) => {
     const wss = ids.map(id => openedList?.[id]?.ws).filter(ws => !!ws) || [];
-    console.log(wss,'wss');
-    
     if (wss.length > 0) {
       await windowInstance.api.bulkToggleDismissButton({ wss: wss.map(ws => ({ ws })) });
       toast.success('Đã xử lý dismiss button cho các profile được chọn.');
@@ -272,8 +270,8 @@ const Profiles = () => {
 
   useEffect(() => {
     const handleToast = (_event: any, arg: any) => {
-      const { message, username } = arg as { type: 'success' | 'error' | 'info', message: string, username?: string };
-      const el = document.getElementById(`message-${username}`);
+      const { message, id } = arg as { type: 'success' | 'error' | 'info', message: string, id?: number };
+      const el = document.getElementById(`message-${id}`);
       el && (el.textContent = message);
     }
 
@@ -370,9 +368,9 @@ const Profiles = () => {
                   <i className="fa-solid fa-user-plus mr-1"></i>
                   Setup
                 </Button>
-                <Button 
-                  onClick={() => setShowProxyModal(true)} 
-                  tooltip="Update Proxy" 
+                <Button
+                  onClick={() => setShowProxyModal(true)}
+                  tooltip="Update Proxy"
                   className="px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm"
                   disabled={selectedIds.length === 0}
                 >
@@ -469,141 +467,141 @@ const Profiles = () => {
               const startIndex = (currentPage - 1) * itemsPerPage;
               const endIndex = startIndex + itemsPerPage;
               const currentProfiles = allProfiles.slice(startIndex, endIndex);
-              
+
               return (
                 <>
                   <div className="divide-y divide-gray-200">
                     {map(currentProfiles, (profile, index) => (
-                <div key={profile.profile_id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                    {/* Selection & ID */}
-                    <div className="lg:col-span-2 flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 rounded"
-                        checked={selectedIds.includes(profile.profile_id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedIds([...selectedIds, profile.profile_id]);
-                          } else {
-                            setSelectedIds(selectedIds.filter((id) => id !== profile.profile_id));
-                          }
-                        }}
-                      />
-                      <div>
-                        <div className="font-semibold text-gray-900">#{index + 1}</div>
-                        <div className="text-xs text-gray-500">ID: {profile.profile_id}</div>
-                      </div>
-                    </div>
-
-                    {/* Profile Info */}
-                    <div className="lg:col-span-3">
-                      <div className="font-medium text-gray-900">{profile.name}</div>
-                      <div className="text-sm text-gray-500">
-                        <i className="fas fa-network-wired mr-1"></i>
-                        {profile.proxy_ip}:{profile.proxy_port}
-                      </div>
-                    </div>
-
-                    {/* Status */}
-                    <div className="lg:col-span-2">
-                      <div className="flex items-center gap-2">
-                        {openedList?.[profile.profile_id]?.open_time ? (
-                          <div className="flex items-center text-green-600">
-                            <i className="fa-solid fa-check-circle mr-1"></i>
-                            <span className="text-sm">Active</span>
+                      <div key={profile.profile_id} className="p-6 hover:bg-gray-50 transition-colors">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                          {/* Selection & ID */}
+                          <div className="lg:col-span-2 flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 text-blue-600 rounded"
+                              checked={selectedIds.includes(profile.profile_id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedIds([...selectedIds, profile.profile_id]);
+                                } else {
+                                  setSelectedIds(selectedIds.filter((id) => id !== profile.profile_id));
+                                }
+                              }}
+                            />
+                            <div>
+                              <div className="font-semibold text-gray-900">#{startIndex + index + 1}</div>
+                              <div className="text-xs text-gray-500">ID: {profile.profile_id}</div>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="flex items-center text-red-600">
-                            <i className="fa-solid fa-times-circle mr-1"></i>
-                            <span className="text-sm">Inactive</span>
+
+                          {/* Profile Info */}
+                          <div className="lg:col-span-3">
+                            <div className="font-medium text-gray-900">{profile.name}</div>
+                            <div className="text-sm text-gray-500">
+                              <i className="fas fa-network-wired mr-1"></i>
+                              {profile.proxy_ip}:{profile.proxy_port}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
-                      </div>
-                    </div>
 
-                    {/* Message */}
-                    <div className="lg:col-span-2">
-                      <div id={`message-${profile.name}`} className="text-sm text-gray-600 min-h-[20px]"></div>
-                    </div>
+                          {/* Status */}
+                          <div className="lg:col-span-2">
+                            <div className="flex items-center gap-2">
+                              {openedList?.[profile.profile_id]?.open_time ? (
+                                <div className="flex items-center text-green-600">
+                                  <i className="fa-solid fa-check-circle mr-1"></i>
+                                  <span className="text-sm">Active</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center text-red-600">
+                                  <i className="fa-solid fa-times-circle mr-1"></i>
+                                  <span className="text-sm">Inactive</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
+                            </div>
+                          </div>
 
-                    {/* Manual Actions */}
-                    <div className="lg:col-span-3">
-                      <div className="flex flex-wrap gap-1">
-                        <OpenProfle id={profile.profile_id} total={totalBrowsers} onOpen={() => setTotalBrowsers(prev => prev + 1)} />
-                        <Button
-                          id={`random-folder-${profile.profile_id}`}
-                          onClick={() => handleRandomFolder(profile.profile_id)}
-                          tooltip="Random folder"
-                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
-                        >
-                          <i className="fa-solid fa-arrow-rotate-right"></i>
-                        </Button>
-                        <Button
-                          onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}
-                          tooltip="Show info"
-                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
-                        >
-                          <i className="fa-regular fa-eye"></i>
-                        </Button>
-                        <Button
-                          onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}
-                          tooltip="Copy ws"
-                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
-                        >
-                          <i className="fa-solid fa-copy"></i>
-                        </Button>
-                        <Button
-                          id={`post-button-${profile.profile_id}`}
-                          tooltip="Post"
-                          onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post', mode })}
-                          className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
-                        >
-                          <i className="fa-solid fa-circle-play"></i>
-                        </Button>
-                        <Button
-                          onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote', mode })}
-                          tooltip="Quote"
-                          className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
-                        >
-                          <i className="fa-solid fa-retweet"></i>
-                        </Button>
-                        <Button
-                          onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)}
-                          tooltip="Setup new account"
-                          id={`setup-new-account-${profile.profile_id}`}
-                          className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"
-                        >
-                          <i className="fa-solid fa-user-plus"></i>
-                        </Button>
-                        <Button
-                          id={`edit-folder-${profile.profile_id}`}
-                          tooltip="Edit folder"
-                          onClick={() =>
-                            clickEditLatestPostButton({
-                              ws: openedList?.[profile.profile_id]?.ws,
-                              username: profile.name,
-                              folder: userMap?.[profile.profile_id]?.path,
-                              type: 'post',
-                              id: profile.profile_id,
-                              reportName,
-                              mode,
-                            })
-                          }
-                          className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"
-                        >
-                          <i className="fa-solid fa-pen-to-square"></i>
-                        </Button>
+                          {/* Message */}
+                          <div className="lg:col-span-2">
+                            <div id={`message-${profile.profile_id}`} className="text-sm text-gray-600 min-h-[20px]"></div>
+                          </div>
+
+                          {/* Manual Actions */}
+                          <div className="lg:col-span-3">
+                            <div className="flex flex-wrap gap-1">
+                              <OpenProfle id={profile.profile_id} total={totalBrowsers} onOpen={() => setTotalBrowsers(prev => prev + 1)} />
+                              <Button
+                                id={`random-folder-${profile.profile_id}`}
+                                onClick={() => handleRandomFolder(profile.profile_id)}
+                                tooltip="Random folder"
+                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                              >
+                                <i className="fa-solid fa-arrow-rotate-right"></i>
+                              </Button>
+                              <Button
+                                onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}
+                                tooltip="Show info"
+                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                              >
+                                <i className="fa-regular fa-eye"></i>
+                              </Button>
+                              <Button
+                                onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}
+                                tooltip="Copy ws"
+                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                              >
+                                <i className="fa-solid fa-copy"></i>
+                              </Button>
+                              <Button
+                                id={`post-button-${profile.profile_id}`}
+                                tooltip="Post"
+                                onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'post', mode, id: profile.profile_id })}
+                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
+                              >
+                                <i className="fa-solid fa-circle-play"></i>
+                              </Button>
+                              <Button
+                                onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote', mode, id: profile.profile_id })}
+                                tooltip="Quote"
+                                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
+                              >
+                                <i className="fa-solid fa-retweet"></i>
+                              </Button>
+                              <Button
+                                onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)}
+                                tooltip="Setup new account"
+                                id={`setup-new-account-${profile.profile_id}`}
+                                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"
+                              >
+                                <i className="fa-solid fa-user-plus"></i>
+                              </Button>
+                              <Button
+                                id={`edit-folder-${profile.profile_id}`}
+                                tooltip="Edit folder"
+                                onClick={() =>
+                                  clickEditLatestPostButton({
+                                    ws: openedList?.[profile.profile_id]?.ws,
+                                    username: profile.name,
+                                    folder: userMap?.[profile.profile_id]?.path,
+                                    type: 'post',
+                                    id: profile.profile_id,
+                                    reportName,
+                                    mode,
+                                  })
+                                }
+                                className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"
+                              >
+                                <i className="fa-solid fa-pen-to-square"></i>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                </div>
-              ))}
-                  </div>
-                  
+
                   {/* Pagination Controls */}
                   {totalPages > 1 && (
                     <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
@@ -652,7 +650,7 @@ const Profiles = () => {
           </div>
         </div>
       </Dialog>
-      
+
       {/* Range Selection Modal */}
       <Dialog open={showRangeModal} onClose={() => setShowRangeModal(false)} className="!max-w-md">
         <div className="p-6">
@@ -712,7 +710,7 @@ const Profiles = () => {
           </div>
         </div>
       </Dialog>
-      
+
       {/* Proxy Modal */}
       <ProxyModal
         isOpen={showProxyModal}

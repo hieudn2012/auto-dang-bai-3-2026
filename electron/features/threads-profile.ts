@@ -7,6 +7,7 @@ import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
 import { getRandomCap, getRandomCaption, getRandomLink } from "./caption";
+import { showToast } from "./event";
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -91,6 +92,7 @@ export function calcFlowPosition(index: number) {
 }
 
 export interface PostParams {
+  id: number,
   ws: string,
   username: string,
   folder: string,
@@ -100,6 +102,7 @@ export interface PostParams {
 }
 
 export const clickPostButton = async ({
+  id,
   ws,
   username,
   folder,
@@ -116,7 +119,7 @@ export const clickPostButton = async ({
 
   try {
     // send event to renderer
-    event.sender.send('show-toast', { type: 'info', message: 'Đang đăng bài...', username });
+    showToast(event, { id, username, message: 'Đang đăng bài...' });
 
     // open new tab
     const page = await browser.newPage();
@@ -165,7 +168,7 @@ export const clickPostButton = async ({
       }
     }
 
-    event.sender.send('show-toast', { type: 'info', message: 'Đang tải media...', username });
+    showToast(event, { id, username, message: 'Đang tải media...' });
     await uploadMedia({ page, username, folder });
     await waitRandom(3000, 5000);
 
@@ -174,7 +177,7 @@ export const clickPostButton = async ({
     if (textArea) {
       await textArea.click();
       await waitRandom(1000, 2000);
-      event.sender.send('show-toast', { type: 'info', message: 'Đang nhập caption...', username });
+      showToast(event, { id, username, message: 'Đang nhập caption...' });
       await page.keyboard.type(caption, { delay: 100 });
     }
 
@@ -187,31 +190,25 @@ export const clickPostButton = async ({
         await postButton.click();
         await waitRandom(5000, 10000);
         // send event to main process
-        event.sender.send('show-toast', {
-          message: 'Post completed ✅',
-          type: 'success',
-          username,
-        });
+        showToast(event, { id, username, message: 'Post completed ✅' });
       }
     }
   } catch (error) {
     console.error(error);
-    event.sender.send('show-toast', {
-      message: 'Post failed ❌',
-      type: 'error',
-      username,
-    });
+    showToast(event, { id, username, message: 'Post failed ❌' });
   } finally {
     await browser.disconnect();
   }
 }
 
 export interface SetupNewAccountParams {
+  id: number,
   ws: string,
   username: string,
 }
 
 export const setupNewAccount = async ({
+  id,
   ws,
   username,
 }: SetupNewAccountParams, event: IpcMainEvent) => {
@@ -268,11 +265,7 @@ export const setupNewAccount = async ({
         // Nếu đã thử 3 lần vẫn thất bại
         if (retryCount >= 3) {
           console.error('Failed to load page after 3 retries');
-          event.sender.send('show-toast', {
-            message: 'Không thể tải trang sau 3 lần thử lại',
-            type: 'error',
-            username,
-          });
+          showToast(event, { id, username, message: 'Không thể tải trang sau 3 lần thử lại' });
           return;
         }
       }
@@ -283,11 +276,7 @@ export const setupNewAccount = async ({
       page = currentPage;
     }
 
-    event.sender.send('show-toast', {
-      message: 'Đang setup account...',
-      type: 'info',
-      username,
-    });
+    showToast(event, { id, username, message: 'Đang setup account...' });
 
     // find span with "Continue with Instagram"
     const spans = await page.$$('span');
@@ -296,11 +285,7 @@ export const setupNewAccount = async ({
       const text = await page.evaluate(el => el.textContent?.trim(), span);
       if (text === 'Continue with Instagram') {
         continueWithInstagram = span;
-        event.sender.send('show-toast', {
-          message: 'Đang click "Continue with Instagram"...',
-          type: 'info',
-          username,
-        });
+        showToast(event, { id, username, message: 'Đang click "Continue with Instagram"...' });
       }
     }
 
@@ -322,11 +307,7 @@ export const setupNewAccount = async ({
     if (nextButton) {
       await nextButton.click();
       await waitRandom(20000, 30000);
-      event.sender.send('show-toast', {
-        message: 'Đang click "Next" lần 1...',
-        type: 'info',
-        username,
-      });
+      showToast(event, { id, username, message: 'Đang click "Next" lần 1...' });
     }
 
     // find divs with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
@@ -338,20 +319,12 @@ export const setupNewAccount = async ({
       if (text === 'Join Threads') {
         await div.click();
         await waitRandom(5000, 10000);
-        event.sender.send('show-toast', {
-          message: 'Setup new account success ✅',
-          type: 'success',
-          username,
-        });
+        showToast(event, { id, username, message: 'Setup new account success ✅' });
       }
     }
   } catch (error) {
     console.error(error);
-    event.sender.send('show-toast', {
-      message: 'Setup new account failed ❌',
-      type: 'error',
-      username,
-    });
+    showToast(event, { id, username, message: 'Setup new account failed ❌' });
   } finally {
     await browser.disconnect();
   }
@@ -458,11 +431,7 @@ export const clickEditLatestPostButton = async ({
     await page.waitForSelector('div.x17zd0t2');
 
 
-    event.sender.send('show-toast', {
-      message: 'Đang edit...',
-      type: 'info',
-      username,
-    });
+    showToast(event, { id, username, message: 'Đang edit...' });
     const editBtn = await page.evaluateHandle(() => {
       const divs = document.querySelectorAll('div.x17zd0t2');
 
@@ -500,11 +469,7 @@ export const clickEditLatestPostButton = async ({
     await page.keyboard.press('Enter');
     await waitRandom(1000, 3000);
 
-    event.sender.send('show-toast', {
-      message: 'Edit completed ✅',
-      type: 'success',
-      username,
-    });
+    showToast(event, { id, username, message: 'Edit completed ✅' });
 
     if (reportName) {
       saveReportTxt({
@@ -517,6 +482,7 @@ export const clickEditLatestPostButton = async ({
     }
   } catch (error) {
     console.log(error);
+    showToast(event, { id, username, message: 'Edit failed ❌' });
     if (reportName) {
       saveReportTxt({
         reportName,
@@ -639,6 +605,3 @@ export const checkLiveAccounts = async ({
     await browser.disconnect();
   }
 }
-
-
-

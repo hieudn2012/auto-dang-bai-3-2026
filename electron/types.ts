@@ -65,11 +65,11 @@ export type FolderInfo = {
 }
 
 export type UserInfo = {
+  id: number,
   ws: string;
   username: string;
   folder: string;
   type: 'post' | 'quote';
-  id?: number;
   reportName?: string;
   mode?: 'default' | 'affiliate';
 }

@@ -26,6 +26,8 @@ const Splash: React.FC = () => {
         // Check if login is required
         if (allFlags.REQUIRED_LOGIN) {
           navigate(routerPath.login);
+        } else {
+          navigate(routerPath.profiles);
         }
       } catch (error) {
         console.error('Error checking authentication:', error);

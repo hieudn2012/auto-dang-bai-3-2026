@@ -133,6 +133,7 @@ export const registerNewAccounts = async ({ profiles, batch, reportName }: Regis
       const currentBatch = batches[batchIndex];
 
       sendLog(event, {
+        id: 0,
         username: '',
         message: `Đang xử lý batch ${batchIndex + 1}/${batches.length} với ${currentBatch.length} tài khoản`,
       });
@@ -194,6 +195,7 @@ export const registerNewAccounts = async ({ profiles, batch, reportName }: Regis
       // Đợi giữa các batch để tránh rate limit
       if (batchIndex < batches.length - 1) {
         sendLog(event, {
+          id: 0,
           username: '',
           message: `Batch ${batchIndex + 1} hoàn thành, đợi 10 giây trước batch tiếp theo...`,
         });
@@ -203,6 +205,7 @@ export const registerNewAccounts = async ({ profiles, batch, reportName }: Regis
 
     console.log('Bulk registration completed', profiles.length);
     sendLog(event, {
+      id: 0,
       username: '',
       message: `Đăng ký hàng loạt hoàn thành! Đã xử lý ${profiles.length} tài khoản`,
     });
@@ -210,6 +213,7 @@ export const registerNewAccounts = async ({ profiles, batch, reportName }: Regis
   } catch (error) {
     console.error('Bulk registration error:', error);
     sendLog(event, {
+      id: 0,
       username: '',
       message: 'Đăng ký hàng loạt thất bại',
     });

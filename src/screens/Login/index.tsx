@@ -31,9 +31,6 @@ const Login: React.FC = () => {
       // Get authentication credentials from LaunchDarkly flags
       const authCredentials = allFlags.AUTHENTICATION;
 
-      console.log(authCredentials,'authCredentials');
-      
-
       // Validate credentials
       if (username === authCredentials.user && password === authCredentials.password) {
         // Navigate to profiles page

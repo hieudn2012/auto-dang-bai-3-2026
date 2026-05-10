@@ -2,8 +2,18 @@ import { useMutation, useQueries } from "@tanstack/react-query"
 import axios from "axios"
 import { windowInstance } from "./window"
 
-const getProfiles = (group_id: number) => {
-  return axios.post(`/api/v2/profile-list`, { group_id, limit: 1000 })
+interface Pagination {
+  page: number
+  limit: number
+}
+
+const defaultPagination: Pagination = {
+  page: 1,
+  limit: 1000
+}
+
+const getProfiles = (group_id: number, pagination: Pagination) => {
+  return axios.post(`/api/v2/profile-list`, { group_id, ...defaultPagination, ...pagination })
 }
 
 const getGroupList = () => {
@@ -41,7 +51,7 @@ export const useCloseProfile = () => {
 export const useGetProfiles = (group_id: number) => {
   return useQueries({
     queries: [
-      { queryKey: ['profiles', group_id], queryFn: () => getProfiles(group_id), enabled: group_id !== -1 }
+      { queryKey: ['profiles', group_id], queryFn: () => getProfiles(group_id, defaultPagination), enabled: group_id !== -1 }
     ]
   })
 }

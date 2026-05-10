@@ -12,6 +12,7 @@ import { getReportByReportName, getReportNames } from './features/report'
 import { updateProfileProxy } from './features/proxy'
 import { bulkToggleDismissButton } from './features/instagram'
 import { registerNewAccounts } from './features/register'
+import { showToast } from './features/event'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -97,7 +98,15 @@ handle(InvokeChannel.MOVE_ALL_FILES_FROM_FOLDER_A_TO_FOLDER_B, async (_event, fr
 })
 
 handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id) => {
-  return openProfile(id);
+  try {
+    await openProfile(id);
+  } catch (error) {
+    showToast(_event, {
+      id,
+      username: '',
+      message: 'Open profile failed',
+    });
+  }
 })
 
 handle(InvokeChannel.SAVE_MAIN_CONFIG, async (_event, config) => {
