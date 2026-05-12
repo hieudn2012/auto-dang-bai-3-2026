@@ -16,15 +16,15 @@ const Splash: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         const allFlags = (ldClient?.allFlags() || {
-          REQUIRED_LOGIN: false,
-          AUTHENTICATION: {
+          required_login: false,
+          authentication: {
             password: '',
             user: ''
           }
         }) as Flags;
 
         // Check if login is required
-        if (allFlags.REQUIRED_LOGIN) {
+        if (allFlags.required_login) {
           navigate(routerPath.login);
         } else {
           navigate(routerPath.profiles);

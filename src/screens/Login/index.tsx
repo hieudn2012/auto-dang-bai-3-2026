@@ -15,8 +15,8 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const allFlags = (ldClient?.allFlags() || {
-    REQUIRED_LOGIN: false,
-    AUTHENTICATION: {
+    required_login: false,
+    authentication: {
       user: '',
       password: ''
     }
@@ -29,7 +29,7 @@ const Login: React.FC = () => {
 
     try {
       // Get authentication credentials from LaunchDarkly flags
-      const authCredentials = allFlags.AUTHENTICATION;
+      const authCredentials = allFlags.authentication;
 
       // Validate credentials
       if (username === authCredentials.user && password === authCredentials.password) {

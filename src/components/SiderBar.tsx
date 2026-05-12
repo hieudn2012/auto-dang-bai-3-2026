@@ -2,49 +2,82 @@ import { map } from "lodash";
 import { routerPath } from "@/configs/router";
 import { Link } from "react-router-dom";
 import DarkModeToggle from "./DarkModeToggle";
+import { Flags } from "@/configs/LDProvider";
+import { useLDFlags } from "@/hooks/useLDFlags";
 
-const routers = [
-  { 
-    path: routerPath.manage_folder, 
-    name: 'Thư mục', 
-    icon: <i className="fa-solid fa-folder"></i>,
-    description: 'Quản lý thư mục'
-  },
-  { 
-    path: routerPath.profiles, 
-    name: 'Hồ sơ', 
-    icon: <i className="fa-solid fa-user"></i>,
-    description: 'Quản lý profiles'
-  },
-  { 
-    path: routerPath.import_sheet, 
-    name: 'Tools', 
-    icon: <i className="fa-solid fa-toolbox"></i>,
-    description: 'Công cụ'
-  },
-  { 
-    path: routerPath.schedule, 
-    name: 'Schedule', 
-    icon: <i className="fa-solid fa-calendar"></i>,
-    description: 'Lịch trình'
-  },
-  { 
-    path: routerPath.report, 
-    name: 'Report', 
-    icon: <i className="fa-solid fa-file-alt"></i>,
-    description: 'Báo cáo'
-  },
-  { 
-    path: routerPath.logs, 
-    name: 'Logs', 
-    icon: <i className="fa-solid fa-terminal"></i>,
-    description: 'Logs hệ thống'
-  },
-];
+const getRouters = (flags: Flags) => {
+  const result = [];
+
+  const hasConfig = flags.config;
+  const hasProfile = flags.profile;
+  const hasTools = flags.tools;
+  const hasSchedule = flags.schedule;
+  const hasReport = flags.report;
+  const hasLogs = flags.logs;
+
+  if (hasConfig) {
+    result.push({
+      path: routerPath.manage_folder,
+      name: 'Thư mục',
+      icon: <i className="fa-solid fa-folder"></i>,
+      description: 'Quản lý thư mục'
+    });
+  }
+
+  if (hasProfile) {
+    result.push({
+      path: routerPath.profiles,
+      name: 'Hồ sơ',
+      icon: <i className="fa-solid fa-user"></i>,
+      description: 'Quản lý profiles'
+    });
+  }
+
+  if (hasTools) {
+    result.push({
+      path: routerPath.import_sheet,
+      name: 'Tools',
+      icon: <i className="fa-solid fa-toolbox"></i>,
+      description: 'Công cụ'
+    });
+  }
+
+  if (hasSchedule) {
+    result.push({
+      path: routerPath.schedule,
+      name: 'Schedule',
+      icon: <i className="fa-solid fa-calendar"></i>,
+      description: 'Lịch trình'
+    });
+  }
+
+  if (hasReport) {
+    result.push({
+      path: routerPath.report,
+      name: 'Report',
+      icon: <i className="fa-solid fa-file-alt"></i>,
+      description: 'Báo cáo'
+    });
+  }
+
+  if (hasLogs) {
+    result.push({
+      path: routerPath.logs,
+      name: 'Logs',
+      icon: <i className="fa-solid fa-terminal"></i>,
+      description: 'Logs hệ thống'
+    });
+  }
+
+  return result;
+};
 
 const SiderBar = () => {
   const currentPath = window.location.pathname;
+  const { flags } = useLDFlags();
   
+  const routers = getRouters(flags as Flags);
+
   return (
     <div className="flex flex-col h-full">
       {/* Logo/Brand Section */}
@@ -60,15 +93,14 @@ const SiderBar = () => {
       <div className="flex-1 py-6 px-3 space-y-2">
         {map(routers, (router) => {
           const isActive = currentPath === router.path;
-          
+
           return (
-            <Link 
-              to={router.path} 
-              className={`group relative flex items-center justify-center p-3 rounded-xl transition-all duration-300 transform ${
-                isActive 
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-500 text-white shadow-xl shadow-blue-500/30 dark:shadow-blue-400/30 scale-105' 
-                  : 'text-gray-600 dark:text-dark-textSecondary hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200 dark:hover:from-dark-bgTertiary dark:hover:to-dark-bgSecondary hover:scale-110 hover:shadow-lg'
-              }`} 
+            <Link
+              to={router.path}
+              className={`group relative flex items-center justify-center p-3 rounded-xl transition-all duration-300 transform ${isActive
+                ? 'bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-500 text-white shadow-xl shadow-blue-500/30 dark:shadow-blue-400/30 scale-105'
+                : 'text-gray-600 dark:text-dark-textSecondary hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-200 dark:hover:from-dark-bgTertiary dark:hover:to-dark-bgSecondary hover:scale-110 hover:shadow-lg'
+                }`}
               key={router.name}
               title={router.name}
             >
@@ -76,16 +108,15 @@ const SiderBar = () => {
               {isActive && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-gradient-to-b from-white to-blue-200 dark:from-white dark:to-blue-300 rounded-r-full shadow-lg"></div>
               )}
-              
+
               {/* Icon */}
               <div className={`text-lg transition-all duration-300 ${isActive ? 'text-white drop-shadow-lg' : 'group-hover:text-blue-500 dark:group-hover:text-blue-400 group-hover:drop-shadow-md'}`}>
                 {router.icon}
               </div>
-              
+
               {/* Tooltip */}
-              <div className={`absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-dark-bgTertiary text-white dark:text-dark-text rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-50 shadow-xl transform scale-95 group-hover:scale-100 ${
-                isActive ? 'hidden' : ''
-              }`}>
+              <div className={`absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-dark-bgTertiary text-white dark:text-dark-text rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-50 shadow-xl transform scale-95 group-hover:scale-100 ${isActive ? 'hidden' : ''
+                }`}>
                 {router.name}
                 <div className="absolute top-1/2 -translate-y-1/2 -left-2 w-2 h-2 bg-gray-900 dark:bg-dark-bgTertiary rotate-45"></div>
               </div>

@@ -7,11 +7,17 @@ const context = {
 };
 
 export interface Flags {
-  REQUIRED_LOGIN: boolean,
-  AUTHENTICATION: {
+  required_login: boolean,
+  authentication: {
     password: string,
     user: string
-  }
+  },
+  config: boolean,
+  profile: boolean,
+  tools: boolean,
+  schedule: boolean,
+  report: boolean,
+  logs: boolean,
 }
 
 export const LDProvider = ({ children }: { children: React.ReactNode }) => {

@@ -5,8 +5,8 @@ import { Flags } from '@/configs/LDProvider';
 const LDFlagsViewer: React.FC = () => {
   const ldClient = useLDClient();
   const allFlags = (ldClient?.allFlags() || {
-    REQUIRED_LOGIN: false,
-    AUTHENTICATION: {
+    required_login: false,
+    authentication: {
       password: '',
       user: ''
     }
