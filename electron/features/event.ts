@@ -1,7 +1,7 @@
 import { IpcMainEvent } from "electron";
 
 export interface LogItem {
-  id: number;
+  id?: number;
   username: string;
   message: string;
 }

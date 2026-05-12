@@ -1,4 +1,3 @@
-import axios from "axios";
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
@@ -169,7 +168,7 @@ export const clickPostButton = async ({
     }
 
     showToast(event, { id, username, message: 'Đang tải media...' });
-    await uploadMedia({ page, username, folder });
+    await uploadMedia({ page, username, folder, mode });
     await waitRandom(3000, 5000);
 
     // find div with class x6s0dn4 x17zd0t2 x78zum5 x47corl x10l6tqk x13vifvy
@@ -227,41 +226,41 @@ export const setupNewAccount = async ({
     let pageContent = '';
     let retryCount = 0;
     let currentPage = page;
-    
+
     while (retryCount < 3) {
       try {
         pageContent = await currentPage.content();
-        
+
         // Kiểm tra mất kết nối hoặc content rỗng
         if (!pageContent || pageContent.trim() === '') {
           console.log('Page content is empty, possible internet connection issue');
           throw new Error('Empty page content');
         }
-        
+
         // Kiểm tra lỗi 429
         if (pageContent.includes('HTTP ERROR 429')) {
           console.log('HTTP ERROR 429 detected, retrying...');
           throw new Error('HTTP ERROR 429');
         }
-        
+
         // Nếu không có lỗi, break ra khỏi vòng lặp
         break;
-        
+
       } catch (error: any) {
         console.log(`Retry ${retryCount + 1}: ${error.message}`);
-        
+
         // Đóng tab hiện tại nếu có
         if (currentPage && currentPage !== page) {
           await currentPage.close();
         }
-        
+
         // Tạo tab mới và thử lại
         currentPage = await browser.newPage();
         await currentPage.goto(`https://threads.com/login`);
         await waitRandom(5000, 10000);
-        
+
         retryCount++;
-        
+
         // Nếu đã thử 3 lần vẫn thất bại
         if (retryCount >= 3) {
           console.error('Failed to load page after 3 retries');
@@ -270,7 +269,7 @@ export const setupNewAccount = async ({
         }
       }
     }
-    
+
     // Gán lại page nếu đã tạo page mới
     if (currentPage !== page) {
       page = currentPage;
@@ -335,10 +334,12 @@ export const uploadMedia = async ({
   page,
   username,
   folder,
+  mode,
 }: {
   page: Page,
   username: string,
   folder: string,
+  mode: 'default' | 'affiliate'
 }) => {
   if (page) {
     await page.bringToFront();
@@ -347,26 +348,40 @@ export const uploadMedia = async ({
     // find input type = file
     const inputFile = await page.$('input[type="file"]');
 
-    // filter only image files
-    const images = await fs.readdir(folder);
-    const imageFiles = images.filter(image => image.endsWith('.avif') || image.endsWith('.jpg') || image.endsWith('.jpeg') || image.endsWith('.png') || image.endsWith('.webp'));
-    // upload all image files
-    for (const image of imageFiles) {
-      const imagePath = path.join(folder, image);
-      await (inputFile as any).uploadFile(imagePath);
-      await waitRandom(3000, 5000);
+    const uploadImage = async () => {
+      // filter only image files
+      const images = await fs.readdir(folder);
+      const imageFiles = images.filter(image => image.endsWith('.avif') || image.endsWith('.jpg') || image.endsWith('.jpeg') || image.endsWith('.png') || image.endsWith('.webp'));
+      // upload all image files
+      for (const image of imageFiles) {
+        const imagePath = path.join(folder, image);
+        await (inputFile as any).uploadFile(imagePath);
+        await waitRandom(3000, 5000);
+      }
     }
 
-    // get all videos in folder
-    const videos = await fs.readdir(folder);
-    // filter only video files
-    const videoFiles = videos.filter(video => video.endsWith('.mp4') || video.endsWith('.mov') || video.endsWith('.webm'));
-    // upload all video files
+    const uploadVideo = async () => {
+      // get all videos in folder
+      const videos = await fs.readdir(folder);
+      // filter only video files
+      const videoFiles = videos.filter(video => video.endsWith('.mp4') || video.endsWith('.mov') || video.endsWith('.webm'));
+      // upload all video files
 
-    for (const video of videoFiles) {
-      const filePath = path.join(folder, video);
-      await (inputFile as any).uploadFile(filePath);
-      await waitRandom(3000, 5000);
+      for (const video of videoFiles) {
+        const filePath = path.join(folder, video);
+        await (inputFile as any).uploadFile(filePath);
+        await waitRandom(3000, 5000);
+      }
+    }
+
+    if (mode === 'default') {
+      await uploadImage();
+      await uploadVideo();
+    }
+
+    if (mode === 'affiliate') {
+      await uploadVideo();
+      await uploadImage();
     }
   }
 }
@@ -462,11 +477,10 @@ export const clickEditLatestPostButton = async ({
     await page.keyboard.type(linkPost, { delay: 100 });
     await waitRandom(1000, 3000);
 
-    // press tab
-    await page.keyboard.press('Tab');
-    await waitRandom(1000, 3000);
-    // press enter
-    await page.keyboard.press('Enter');
+    // find div second with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
+    const divs = await page.$$('div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5');
+    const secondDiv = divs[1];
+    await secondDiv?.click();
     await waitRandom(1000, 3000);
 
     showToast(event, { id, username, message: 'Edit completed ✅' });
@@ -563,7 +577,7 @@ export const checkLiveAccounts = async ({
         if (index > 0) {
           await new Promise(resolve => setTimeout(resolve, 500 * index));
         }
-        
+
         const page = await browser.newPage();
 
         try {

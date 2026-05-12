@@ -27,11 +27,11 @@ export const addJobs = (items: ScheduleItem[], event: IpcMainEvent) => {
   }
 };
 
-export const handleRunJob = (job: ScheduleItem, event: IpcMainEvent) => {
+export const handleRunJob = async (job: ScheduleItem, event: IpcMainEvent) => {
   // TODO: xử lý job theo jobType
   switch (job.jobType) {
     case 'auto-post':
-      autoPost(job, event);
+      await autoPost(job, event);
       break;
     case 'auto-comment':
       // TODO: comment
