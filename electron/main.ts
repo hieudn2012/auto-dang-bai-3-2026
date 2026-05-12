@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { spawn } from 'child_process'
 import { InvokeChannel } from './types'
 import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
 import { openProfile, updateProfileGroup } from './features/ixbrowser-api'
@@ -37,12 +38,32 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
 let win: BrowserWindow | null
+let serverProcess: any = null
+
+function startServer() {
+  const serverPath = path.join(__dirname, '..', 'server', 'index.ts')
+  console.log('Starting server from:', serverPath)
+  
+  serverProcess = spawn('npx', ['tsx', serverPath], {
+    stdio: 'inherit',
+    shell: true,
+    cwd: path.join(__dirname, '..')
+  })
+  
+  serverProcess.on('error', (error: any) => {
+    console.error('Failed to start server:', error)
+  })
+  
+  serverProcess.on('close', (code: any) => {
+    console.log(`Server process exited with code ${code}`)
+  })
+}
 
 function createWindow() {
   win = new BrowserWindow({
     width: 1440,
     height: 900,
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    icon: path.join(process.env.VITE_PUBLIC || '', 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
     },
@@ -191,6 +212,9 @@ handle(InvokeChannel.REGISTER_NEW_ACCOUNTS, async (_event, params) => {
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    if (serverProcess) {
+      serverProcess.kill()
+    }
     app.quit()
     win = null
   }
@@ -204,6 +228,12 @@ app.on('activate', () => {
   }
 })
 
+app.on('before-quit', () => {
+  if (serverProcess) {
+    serverProcess.kill()
+  }
+})
+
 export function sendToRenderer<T>(channel: string, data: T) {
   if (win && win.webContents) {
     win.webContents.send(channel, data);
@@ -212,5 +242,6 @@ export function sendToRenderer<T>(channel: string, data: T) {
 
 app.whenReady().then(async () => {
   await initConfigFile();
+  startServer();
   createWindow();
 })
