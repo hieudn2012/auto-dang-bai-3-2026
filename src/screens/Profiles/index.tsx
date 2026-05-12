@@ -71,9 +71,6 @@ const Profiles = () => {
   const [showRangeModal, setShowRangeModal] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const itemsPerPage = 30;
   const profilesMap = useMemo(() => profilesObj(data?.data?.data?.data || []), [data]);
 
   const handleRandomFolder = async (profile_id: number) => {
@@ -334,7 +331,6 @@ const Profiles = () => {
                     value={group_id}
                     onChange={(value) => {
                       setGroupId(value);
-                      setCurrentPage(1);
                       windowInstance.api.saveMainConfig({ profile: { groupId: value } });
                     }}
                   />
@@ -463,33 +459,29 @@ const Profiles = () => {
           <LoadingWraper loading={isPending}>
             {(() => {
               const allProfiles = data?.data?.data?.data || [];
-              const totalPages = Math.ceil(allProfiles.length / itemsPerPage);
-              const startIndex = (currentPage - 1) * itemsPerPage;
-              const endIndex = startIndex + itemsPerPage;
-              const currentProfiles = allProfiles.slice(startIndex, endIndex);
 
               return (
                 <>
                   <div className="divide-y divide-gray-200">
-                    {map(currentProfiles, (profile, index) => (
+                    {map(allProfiles, (profile, index) => (
                       <div key={profile.profile_id} className="p-6 hover:bg-gray-50 transition-colors">
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                           {/* Selection & ID */}
                           <div className="lg:col-span-2 flex items-center gap-3">
                             <input
                               type="checkbox"
-                              className="w-4 h-4 text-blue-600 rounded"
                               checked={selectedIds.includes(profile.profile_id)}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedIds([...selectedIds, profile.profile_id]);
+                                  setSelectedIds(prev => [...prev, profile.profile_id]);
                                 } else {
-                                  setSelectedIds(selectedIds.filter((id) => id !== profile.profile_id));
+                                  setSelectedIds(prev => prev.filter(id => id !== profile.profile_id));
                                 }
                               }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <div>
-                              <div className="font-semibold text-gray-900">#{startIndex + index + 1}</div>
+                              <div className="font-semibold text-gray-900">#{index + 1}</div>
                               <div className="text-xs text-gray-500">ID: {profile.profile_id}</div>
                             </div>
                           </div>
@@ -601,36 +593,6 @@ const Profiles = () => {
                       </div>
                     ))}
                   </div>
-
-                  {/* Pagination Controls */}
-                  {totalPages > 1 && (
-                    <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-700">
-                          Showing {startIndex + 1} to {Math.min(endIndex, allProfiles.length)} of {allProfiles.length} profiles
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Previous
-                          </button>
-                          <span className="px-3 py-1 text-sm">
-                            Page {currentPage} of {totalPages}
-                          </span>
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </>
               );
             })()}
