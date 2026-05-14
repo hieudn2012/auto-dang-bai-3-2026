@@ -472,9 +472,9 @@ export const clickEditLatestPostButton = async ({
       const links = config?.linkPost?.split('\n') || [];
       linkPost = links[Math.floor(Math.random() * links.length)];
     } else {
-      linkPost = getRandomLink(folder);
+      linkPost = `Product link: ${getRandomLink(folder)}`;
     }
-    await page.keyboard.type(`Product link 👉: ${linkPost}`, { delay: 100 });
+    await page.keyboard.type(linkPost, { delay: 100 });
     await waitRandom(1000, 3000);
 
     // find div second with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
