@@ -10,6 +10,7 @@ import { sendLog } from "./event";
 export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const captions = config?.captions || [];
+  const mapFolder: Record<string, string> = {};
 
   // get profile list
   const profiles = await getProfileList(item.groupId);
@@ -72,12 +73,14 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
         const isOpened = profileOpened.some((p) => p.profile_id === profile.profile_id);
         const profileInfo = profileOpened.find((p) => p.profile_id === profile.profile_id);
         if (isOpened && profileInfo) {
+          const randomFolder = getRandomFolder(item.folder);
+          mapFolder[profile.profile_id] = randomFolder;
           try {
             clickPostButton({
               id: profile.profile_id,
               ws: profileInfo.ws,
               username: profile.name,
-              folder: getRandomFolder(item.folder),
+              folder: randomFolder,
               type: type,
               mode: item.mode,
               captionData: captions.find(cap => cap.label === item.captionLabel)?.value || '',
@@ -124,7 +127,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
             clickEditLatestPostButton({
               ws: profileInfo.ws,
               username: profile.name,
-              folder: getRandomFolder(item.folder),
+              folder: mapFolder[profile.profile_id],
               mode: item.mode,
               reportName: item.reportName,
               id: profile.profile_id,
