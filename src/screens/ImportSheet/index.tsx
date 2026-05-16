@@ -4,14 +4,16 @@ import ConvertCookie from "./ConvertCookie";
 import SetupAcc from "./SetupAcc";
 import CheckLive from "./CheckLive";
 import CheckValidFolder from "./CheckValidFolder";
+import Product from "./Product";
 
 const ImportSheet = () => {
-  const [tab, setTab] = useState<'cookie' | 'setup' | 'check-live' | 'check-valid-folder'>('setup');
+  const [tab, setTab] = useState<'cookie' | 'setup' | 'check-live' | 'check-valid-folder' | 'product'>('setup');
   const tabs = [
     { id: 'setup', label: 'Setup', icon: 'fas fa-cog' },
     { id: 'cookie', label: 'Cookie', icon: 'fas fa-cookie' },
     { id: 'check-live', label: 'Check Live', icon: 'fas fa-signal' },
     { id: 'check-valid-folder', label: 'Check Valid Folder', icon: 'fas fa-check-circle' },
+    { id: 'product', label: 'Product', icon: 'fas fa-box' },
   ] as const;
 
   return (
@@ -54,42 +56,7 @@ const ImportSheet = () => {
               {tab === 'setup' && <SetupAcc />}
               {tab === 'check-live' && <CheckLive />}
               {tab === 'check-valid-folder' && <CheckValidFolder />}
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions Card */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
-            <i className="fas fa-info-circle text-blue-500 mr-2"></i>
-            Quick Guide
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
-            <div className="space-y-2">
-              <h4 className="font-medium text-blue-900">Bắt đầu:</h4>
-              <ul className="space-y-1 ml-4">
-                <li className="flex items-center">
-                  <i className="fas fa-check text-blue-500 mr-2 text-xs"></i>
-                  <span>Setup - Cấu hình tài khoản</span>
-                </li>
-                <li className="flex items-center">
-                  <i className="fas fa-check text-blue-500 mr-2 text-xs"></i>
-                  <span>Cookie - Quản lý cookie</span>
-                </li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-blue-900">Kiểm tra:</h4>
-              <ul className="space-y-1 ml-4">
-                <li className="flex items-center">
-                  <i className="fas fa-check text-blue-500 mr-2 text-xs"></i>
-                  <span>Check Live - Kiểm tra tài khoản</span>
-                </li>
-                <li className="flex items-center">
-                  <i className="fas fa-check text-blue-500 mr-2 text-xs"></i>
-                  <span>Check Valid Folder - Kiểm tra dữ liệu</span>
-                </li>
-              </ul>
+              {tab === 'product' && <Product />}
             </div>
           </div>
         </div>

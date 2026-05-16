@@ -37,7 +37,10 @@ export enum InvokeChannel {
   UPDATE_PROFILE_PROXY = 'update-profile-proxy',
   BULK_TOGGLE_DISMISS_BUTTON = 'bulk-toggle-dismiss-button',
   REGISTER_NEW_ACCOUNTS = 'register-new-accounts',
-  OPEN_PROFILE_FOLDER = 'open-profile-folder'
+  OPEN_PROFILE_FOLDER = 'open-profile-folder',
+  CREATE_EMPTY_PRODUCT = 'create-empty-product',
+  SAVE_PRODUCT = 'save-product',
+  GET_PRODUCT_FOLDER = 'get-product-folder',
 }
 
 export type MainConfig = {

@@ -1,4 +1,4 @@
-import { ipcRenderer, contextBridge } from 'electron'
+import { ipcRenderer, contextBridge, Product } from 'electron'
 import { History, InvokeChannel, MainConfig, UserInfo } from './types'
 import { ScheduleItem } from './features/job'
 import { RegisterNewAccountParams } from './features/register'
@@ -74,6 +74,9 @@ contextBridge.exposeInMainWorld('api', {
   bulkToggleDismissButton: (wss: string[]) => invoke(InvokeChannel.BULK_TOGGLE_DISMISS_BUTTON, wss),
   registerNewAccounts: (params: RegisterNewAccountParams) => invoke(InvokeChannel.REGISTER_NEW_ACCOUNTS, params),
   openProfileFolder: (profileId: number) => invoke(InvokeChannel.OPEN_PROFILE_FOLDER, profileId),
+  createEmptyProduct: () => invoke(InvokeChannel.CREATE_EMPTY_PRODUCT),
+  saveProduct: (product: Product) => invoke(InvokeChannel.SAVE_PRODUCT, product),
+  getProductFolder: (folderPath: string) => invoke(InvokeChannel.GET_PRODUCT_FOLDER, folderPath),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

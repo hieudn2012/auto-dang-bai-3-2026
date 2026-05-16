@@ -3,6 +3,7 @@ import { MainConfig, UserInfo } from "electron/types";
 import { LogItem } from "electron/features/event";
 import { BulkToggleDismissButtonParams } from "electron/features/instagram";
 import { RegisterNewAccountParams } from "electron/features/register";
+import { Product } from "electron/features/product";
 
 type WindownInstance = typeof window & {
   api: {
@@ -47,6 +48,9 @@ type WindownInstance = typeof window & {
     bulkToggleDismissButton: (params: BulkToggleDismissButtonParams) => Promise<any>,
     registerNewAccounts: (params: RegisterNewAccountParams) => Promise<any>,
     openProfileFolder: (profileId: number) => Promise<any>,
+    createEmptyProduct: () => Promise<Product>,
+    saveProduct: (product: Product) => Promise<any>,
+    getProductFolder: (folderPath: string) => Promise<Product>,
   }
 }
 

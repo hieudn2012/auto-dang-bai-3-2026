@@ -14,6 +14,7 @@ import { updateProfileProxy } from './features/proxy'
 import { bulkToggleDismissButton } from './features/instagram'
 import { registerNewAccounts } from './features/register'
 import { showToast } from './features/event'
+import { createEmptyProduct, getProductFolder, saveProduct } from './features/product'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -209,6 +210,18 @@ handle(InvokeChannel.REGISTER_NEW_ACCOUNTS, async (_event, params) => {
 
 handle(InvokeChannel.OPEN_PROFILE_FOLDER, async (_event, profileId) => {
   return openProfileFolder(profileId);
+})
+
+handle(InvokeChannel.CREATE_EMPTY_PRODUCT, async () => {
+  return createEmptyProduct();
+})
+
+handle(InvokeChannel.SAVE_PRODUCT, async (_event, product) => {
+  return saveProduct(product);
+})
+
+handle(InvokeChannel.GET_PRODUCT_FOLDER, async (_event, folderPath) => {
+  return getProductFolder(folderPath);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
