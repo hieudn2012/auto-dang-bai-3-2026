@@ -3,6 +3,7 @@ import { dialog, shell } from 'electron';
 import fs from 'node:fs';
 import { getHistoryTxt, loadMainConfig } from './common';
 import { FolderInfo } from 'electron/types';
+import nodePath from 'node:path';
 
 export const openDialogFolder = async () => {
   const folderPath = dialog.showOpenDialogSync({
@@ -13,22 +14,22 @@ export const openDialogFolder = async () => {
 
 // create product folder
 export const createProductFolder = async (parentFolder: string, productName: string) => {
-  const productFolderPath = `${parentFolder}/${productName}`;
+  const productFolderPath = nodePath.join(parentFolder, productName);
   fs.mkdirSync(productFolderPath);
 
   // create cap.txt
-  fs.writeFileSync(`${productFolderPath}/cap.txt`, '');
+  fs.writeFileSync(nodePath.join(productFolderPath, 'cap.txt'), '');
 
   // create link.txt
-  fs.writeFileSync(`${productFolderPath}/link.txt`, '');
+  fs.writeFileSync(nodePath.join(productFolderPath, 'link.txt'), '');
 
   return productFolderPath;
 };
 
 // load product info
 export const loadProductInfo = async (productFolderPath: string) => {
-  const cap = fs.readFileSync(`${productFolderPath}/cap.txt`, 'utf-8');
-  const link = fs.readFileSync(`${productFolderPath}/link.txt`, 'utf-8');
+  const cap = fs.readFileSync(nodePath.join(productFolderPath, 'cap.txt'), 'utf-8');
+  const link = fs.readFileSync(nodePath.join(productFolderPath, 'link.txt'), 'utf-8');
   return { cap, link };
 }
 
@@ -37,10 +38,19 @@ export const openFolder = async (folderPath: string) => {
   shell.openPath(folderPath);
 }
 
+export const openProfileFolder = async (profileId: number) => {
+  const config = await loadMainConfig();
+  const profilePath = nodePath.join(config?.profileDir || '', String(profileId));
+  if (!fs.existsSync(profilePath)) {
+    await fs.promises.mkdir(profilePath, { recursive: true });
+  }
+  shell.openPath(profilePath);
+}
+
 // save product info
 export const saveProductInfo = async ({ cap, link, path }: { path: string, cap: string, link: string }) => {
-  fs.writeFileSync(`${path}/cap.txt`, cap);
-  fs.writeFileSync(`${path}/link.txt`, link);
+  fs.writeFileSync(nodePath.join(path, 'cap.txt'), cap);
+  fs.writeFileSync(nodePath.join(path, 'link.txt'), link);
 }
 
 // move all file from folder A to folder B
@@ -84,10 +94,8 @@ export const randomFolderNotUsed = async (exclude: string[] = []): Promise<{ nam
 
 // get folder info
 export const getFolderInfo = async (path: string): Promise<FolderInfo> => {
-  const isMac = process.platform === 'darwin';
-  const matchPath = isMac ? '/' : '\\';
-  const cap = fs.readFileSync(`${path}${matchPath}cap.txt`, 'utf8');
-  const link = fs.readFileSync(`${path}${matchPath}link.txt`, 'utf8');
+  const cap = fs.readFileSync(nodePath.join(path, 'cap.txt'), 'utf8');
+  const link = fs.readFileSync(nodePath.join(path, 'link.txt'), 'utf8');
 
   return {
     cap,

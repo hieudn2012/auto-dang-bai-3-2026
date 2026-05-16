@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import path from 'node:path';
 
 export const checkValidCaptionOrLink = async (workingDir: string) => {
   // lấy tất cả thư mục trong workingDir
@@ -10,8 +11,8 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
 
 
   for (const folder of filteredFolders) {
-    const captionFile = `${workingDir}/${folder}/cap.txt`;
-    const linkFile = `${workingDir}/${folder}/link.txt`;
+    const captionFile = path.join(workingDir, folder, 'cap.txt');
+    const linkFile = path.join(workingDir, folder, 'link.txt');
     
     let captionValidation;
     let linkValidation;
@@ -19,14 +20,14 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
     // Kiểm tra và xử lý file caption
     if (fs.existsSync(captionFile)) {
       try {
-        const caption = fs.readFileSync(captionFile, 'utf-8');
-        captionValidation = checkValid(caption, `${workingDir}/${folder}`);
+        const caption = fs.readFileSync(captionFile, 'utf-8').trim();
+        captionValidation = checkValid(caption, path.join(workingDir, folder));
       } catch (error) {
         console.error(`Lỗi khi đọc file caption ${captionFile}:`, error);
         captionValidation = {
           isValid: false,
           errors: [`Không thể đọc file caption: ${error instanceof Error ? error.message : String(error)}`],
-          path: `${workingDir}/${folder}`,
+          path: path.join(workingDir, folder),
           totalItems: 0
         };
       }
@@ -34,7 +35,7 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
       captionValidation = {
         isValid: false,
         errors: ["File caption không tồn tại"],
-        path: `${workingDir}/${folder}`,
+        path: path.join(workingDir, folder),
         totalItems: 0
       };
     }
@@ -42,14 +43,14 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
     // Kiểm tra và xử lý file link
     if (fs.existsSync(linkFile)) {
       try {
-        const link = fs.readFileSync(linkFile, 'utf-8');
-        linkValidation = checkValid(link, `${workingDir}/${folder}`);
+        const link = fs.readFileSync(linkFile, 'utf-8').trim();
+        linkValidation = checkValid(link, path.join(workingDir, folder));
       } catch (error) {
         console.error(`Lỗi khi đọc file link ${linkFile}:`, error);
         linkValidation = {
           isValid: false,
           errors: [`Không thể đọc file link: ${error instanceof Error ? error.message : String(error)}`],
-          path: `${workingDir}/${folder}`,
+          path: path.join(workingDir, folder),
           totalItems: 0
         };
       }
@@ -57,7 +58,7 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
       linkValidation = {
         isValid: false,
         errors: ["File link không tồn tại"],
-        path: `${workingDir}/${folder}`,
+        path: path.join(workingDir, folder),
         totalItems: 0
       };
     }
@@ -98,12 +99,12 @@ const checkValid = (data: string, path: string) => {
   };
 }
 
-export const getRandomCaption = (path: string) => {
+export const getRandomCaption = (p: string) => {
   try {
     // Check if path is a directory, if so, look for caption.txt file
-    let filePath = path;
-    if (fs.existsSync(path) && fs.statSync(path).isDirectory()) {
-      filePath = path + '/cap.txt';
+    let filePath = p;
+    if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
+      filePath = path.join(p, 'cap.txt');
     }
     
     // Check if file exists
@@ -124,7 +125,7 @@ export const getRandomCaption = (path: string) => {
     const randomIndex = Math.floor(Math.random() * captions.length);
     return captions[randomIndex];
   } catch (error) {
-    console.error(`Error reading caption file: ${path}`, error);
+    console.error(`Error reading caption file: ${p}`, error);
     return ''; // Return empty string on error
   }
 }
@@ -141,12 +142,12 @@ export const getRandomCap = (data: string) => {
   return captions[randomIndex];
 } 
 
-export const getRandomLink = (path: string) => {
+export const getRandomLink = (p: string) => {
   try {
     // Check if path is a directory, if so, look for link.txt file
-    let filePath = path;
-    if (fs.existsSync(path) && fs.statSync(path).isDirectory()) {
-      filePath = path + '/link.txt';
+    let filePath = p;
+    if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
+      filePath = path.join(p, 'link.txt');
     }
     
     // Check if file exists
@@ -167,7 +168,7 @@ export const getRandomLink = (path: string) => {
     const randomIndex = Math.floor(Math.random() * links.length);
     return links[randomIndex];
   } catch (error) {
-    console.error(`Error reading link file: ${path}`, error);
+    console.error(`Error reading link file: ${p}`, error);
     return ''; // Return empty string on error
   }
 }

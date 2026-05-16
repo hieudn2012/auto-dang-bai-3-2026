@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { spawn } from 'child_process'
 import { InvokeChannel } from './types'
-import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
+import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, openProfileFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
 import { openProfile, updateProfileGroup } from './features/ixbrowser-api'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNewAccount } from './features/threads-profile'
 import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
@@ -205,6 +205,10 @@ handle(InvokeChannel.BULK_TOGGLE_DISMISS_BUTTON, async (_event, wss) => {
 
 handle(InvokeChannel.REGISTER_NEW_ACCOUNTS, async (_event, params) => {
   return registerNewAccounts(params, _event);
+})
+
+handle(InvokeChannel.OPEN_PROFILE_FOLDER, async (_event, profileId) => {
+  return openProfileFolder(profileId);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

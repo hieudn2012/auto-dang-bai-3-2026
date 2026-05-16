@@ -73,6 +73,7 @@ contextBridge.exposeInMainWorld('api', {
   updateProfileProxy: (profileIds: number[], data: string) => invoke(InvokeChannel.UPDATE_PROFILE_PROXY, profileIds, data),
   bulkToggleDismissButton: (wss: string[]) => invoke(InvokeChannel.BULK_TOGGLE_DISMISS_BUTTON, wss),
   registerNewAccounts: (params: RegisterNewAccountParams) => invoke(InvokeChannel.REGISTER_NEW_ACCOUNTS, params),
+  openProfileFolder: (profileId: number) => invoke(InvokeChannel.OPEN_PROFILE_FOLDER, profileId),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

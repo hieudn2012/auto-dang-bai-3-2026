@@ -36,11 +36,13 @@ export enum InvokeChannel {
   UPDATE_PROFILE_GROUP = 'update-profile-group',
   UPDATE_PROFILE_PROXY = 'update-profile-proxy',
   BULK_TOGGLE_DISMISS_BUTTON = 'bulk-toggle-dismiss-button',
-  REGISTER_NEW_ACCOUNTS = 'register-new-accounts'
+  REGISTER_NEW_ACCOUNTS = 'register-new-accounts',
+  OPEN_PROFILE_FOLDER = 'open-profile-folder'
 }
 
 export type MainConfig = {
   workingDir?: string
+  profileDir?: string
   linkPost?: string
   caption?: string
   proxy?: string

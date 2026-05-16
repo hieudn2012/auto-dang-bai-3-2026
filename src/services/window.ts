@@ -46,6 +46,7 @@ type WindownInstance = typeof window & {
     updateProfileProxy: (profileIds: number[], data: string) => Promise<any>,
     bulkToggleDismissButton: (params: BulkToggleDismissButtonParams) => Promise<any>,
     registerNewAccounts: (params: RegisterNewAccountParams) => Promise<any>,
+    openProfileFolder: (profileId: number) => Promise<any>,
   }
 }
 

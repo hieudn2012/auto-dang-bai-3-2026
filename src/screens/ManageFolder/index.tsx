@@ -15,24 +15,39 @@ interface Caption {
 
 const ManageFolder = () => {
   const [workingFolder, setWorkingFolder] = useState('');
+  const [profileFolder, setProfileFolder] = useState('');
   const [linkPost, setLinkPost] = useState('');
   const [caption, setCaption] = useState('');
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [proxy, setProxy] = useState('');
   const [activeTab, setActiveTab] = useState('global');
 
-  const handleOpenDialogFolder = async () => {
+  const handleOpenWorkingFolder = async () => {
     const folderPath = await windowInstance.api.openDialogFolder();
     setWorkingFolder(folderPath);
   }
+
+  const handleOpenProfileFolder = async () => {
+    const folderPath = await windowInstance.api.openDialogFolder();
+    setProfileFolder(folderPath);
+  }
+
   const handleSaveMainConfig = async () => {
-    await windowInstance.api.saveMainConfig({ workingDir: workingFolder, linkPost, caption, captions, proxy });
+    await windowInstance.api.saveMainConfig({
+      workingDir: workingFolder,
+      profileDir: profileFolder,
+      linkPost,
+      caption,
+      captions,
+      proxy
+    });
     toast.success('Lưu cấu hình thành công');
   }
 
   const handleLoadMainConfig = async () => {
     const config = await windowInstance.api.loadMainConfig();
     setWorkingFolder(config?.workingDir || '');
+    setProfileFolder(config?.profileDir || '');
     setLinkPost(config?.linkPost || '');
     setCaption(config?.caption || '');
     setCaptions(config?.captions || []);
@@ -60,44 +75,40 @@ const ManageFolder = () => {
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('global')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'global'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'global'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <i className="fas fa-globe mr-2"></i>
                 Global config
               </button>
               <button
                 onClick={() => setActiveTab('caption')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'caption'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'caption'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <i className="fas fa-closed-captioning mr-2"></i>
                 Caption config
               </button>
               <button
                 onClick={() => setActiveTab('multiple')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'multiple'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'multiple'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <i className="fas fa-list mr-2"></i>
                 MultipleCaption
               </button>
               <button
                 onClick={() => setActiveTab('proxy')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${
-                  activeTab === 'proxy'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'proxy'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <i className="fas fa-network-wired mr-2"></i>
                 Proxy config
@@ -111,9 +122,12 @@ const ManageFolder = () => {
               <GlobalConfig
                 workingFolder={workingFolder}
                 setWorkingFolder={setWorkingFolder}
+                profileFolder={profileFolder}
+                setProfileFolder={setProfileFolder}
                 linkPost={linkPost}
                 setLinkPost={setLinkPost}
-                handleOpenDialogFolder={handleOpenDialogFolder}
+                onChangeWorkingFolder={handleOpenWorkingFolder}
+                onChangeProfileFolder={handleOpenProfileFolder}
               />
             )}
 
@@ -140,7 +154,7 @@ const ManageFolder = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-6 mt-6 border-t border-gray-200">
-              <Button 
+              <Button
                 onClick={() => {
                   handleLoadMainConfig();
                   toast.info('Đã tải cấu hình');
@@ -150,7 +164,7 @@ const ManageFolder = () => {
                 <i className="fas fa-download mr-2"></i>
                 Load Config
               </Button>
-              <Button 
+              <Button
                 onClick={handleSaveMainConfig}
                 className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white"
               >
@@ -168,7 +182,7 @@ const ManageFolder = () => {
             <div className="text-sm text-blue-800">
               <h3 className="font-medium mb-1">Thông tin cấu hình</h3>
               <p className="text-blue-700">
-                Cấu hình này sẽ được sử dụng làm mặc định cho các chức năng khác trong ứng dụng. 
+                Cấu hình này sẽ được sử dụng làm mặc định cho các chức năng khác trong ứng dụng.
                 Thư mục làm việc là nơi chứa các folder sản phẩm của bạn.
               </p>
             </div>

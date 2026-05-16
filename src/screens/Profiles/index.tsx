@@ -567,6 +567,13 @@ const Profiles = () => {
                               >
                                 <i className="fa-solid fa-pen-to-square"></i>
                               </Button>
+                              <Button
+                                tooltip="Open profile folder"
+                                className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"
+                                onClick={() => windowInstance.api.openProfileFolder(profile.profile_id)}
+                              >
+                                <i className="fa-solid fa-folder-open"></i>
+                              </Button>
                             </div>
                           </div>
                         </div>

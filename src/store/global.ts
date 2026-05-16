@@ -1,3 +1,4 @@
+import { MainConfig } from "electron/types";
 import { create } from "zustand";
 
 interface GlobalStore {
@@ -5,6 +6,8 @@ interface GlobalStore {
   setIsLoading: (isLoading: boolean) => void
   captions: string[],
   setCaptions: (captions: string[]) => void
+  mainConfig: MainConfig,
+  setMainConfig: (mainConfig: MainConfig) => void
 }
 
 export const useGlobalStore = create<GlobalStore>((set) => ({
@@ -12,4 +15,6 @@ export const useGlobalStore = create<GlobalStore>((set) => ({
   setIsLoading: (isLoading: boolean) => set({ isLoading }),
   captions: [],
   setCaptions: (captions: string[]) => set({ captions }),
+  mainConfig: {},
+  setMainConfig: (mainConfig: MainConfig) => set({ mainConfig }),
 }))
