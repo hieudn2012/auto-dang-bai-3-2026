@@ -10,11 +10,6 @@ const Product = () => {
   const [link, setLink] = useState('');
 
   const handleCreateEmptyProduct = async () => {
-    const result = window.confirm('Are you sure you want to create an empty product?');
-    if (!result) {
-      return;
-    }
-
     const data = await windowInstance.api.createEmptyProduct();
     loadData(data.folderPath);
     toast.success('Create success');
