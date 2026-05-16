@@ -147,9 +147,14 @@ export const clickPostButton = async ({
     }
 
     if (type === 'quote') {
-      const repostSvg = await page.$(
+      let repostSvg = await page.$(
         'div.x4vbgl9 svg[aria-label="Repost"]'
       )
+      if (!repostSvg) {
+        repostSvg = await page.$(
+          'div.x4vbgl9 svg[aria-label="Đăng lại"]'
+        )
+      }
 
       if (repostSvg) {
         await repostSvg.click();
@@ -164,6 +169,8 @@ export const clickPostButton = async ({
           }
         }
 
+      } else {
+        throw new Error('Cannot find repost button');
       }
     }
 
