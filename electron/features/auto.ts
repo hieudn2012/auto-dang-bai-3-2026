@@ -165,9 +165,9 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
     }
 
     await ddTest('post');
-    if (item.mode === 'affiliate') {
-      await ddTest('quote');
-    }
+    // if (item.mode === 'affiliate') {
+    //   await ddTest('quote');
+    // }
 
     // close profiles
     let closeCount = 0;
