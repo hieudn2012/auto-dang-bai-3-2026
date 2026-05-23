@@ -123,6 +123,7 @@ export const getRandomCaption = (p: string) => {
     }
     
     const randomIndex = Math.floor(Math.random() * captions.length);
+
     return captions[randomIndex];
   } catch (error) {
     console.error(`Error reading caption file: ${p}`, error);

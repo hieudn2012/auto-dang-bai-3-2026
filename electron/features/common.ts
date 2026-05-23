@@ -2,6 +2,7 @@ import { app } from "electron";
 import { History, MainConfig } from "electron/types";
 import { trim } from "lodash";
 import fs from 'node:fs';
+import path from "node:path";
 
 // wait random from to ms
 export const waitRandom = async (from: number, to: number) => {
@@ -15,7 +16,7 @@ export const saveMainConfig = async (config: MainConfig) => {
   // get app config in system
   const appConfig = app.getPath('userData');
   // save config to file config.json
-  fs.writeFileSync(`${appConfig}/config.json`, JSON.stringify({ ...currentConfig, ...config }));
+  fs.writeFileSync(path.join(appConfig, 'config.json'), JSON.stringify({ ...currentConfig, ...config }));
   return true;
 }
 
@@ -24,7 +25,13 @@ export const loadMainConfig = async (): Promise<MainConfig | null> => {
   // get app config in system
   const appConfig = app.getPath('userData');
   // get config from file config.json
-  const config = fs.readFileSync(`${appConfig}/config.json`, 'utf8');
+  const config = fs.readFileSync(path.join(appConfig, 'config.json'), 'utf8');
+
+  // create history2.txt if not exists
+  if (!fs.existsSync(path.join(appConfig, 'history2.txt'))) {
+    fs.writeFileSync(path.join(appConfig, 'history2.txt'), '');
+  }
+  
   if (config) {
     return JSON.parse(config);
   }
@@ -36,7 +43,7 @@ export const getHistoryTxt = async (): Promise<History[]> => {
   // get app config in system
   const appConfig = app.getPath('userData');
   // get history from file history.txt
-  const history = fs.readFileSync(`${appConfig}/history.txt`, 'utf8');
+  const history = fs.readFileSync(path.join(appConfig, 'history.txt'), 'utf8');
   if (!history) {
     return [];
   }
@@ -55,13 +62,13 @@ export const initConfigFile = async () => {
   // get app config in system
   const appConfig = app.getPath('userData');
   // create config file if not exists
-  if (!fs.existsSync(`${appConfig}/config.json`)) {
-    fs.writeFileSync(`${appConfig}/config.json`, JSON.stringify({ workingDir: '' }));
+  if (!fs.existsSync(path.join(appConfig, 'config.json'))) {
+    fs.writeFileSync(path.join(appConfig, 'config.json'), JSON.stringify({ workingDir: '' }));
   }
 
   // create history file if not exists
-  if (!fs.existsSync(`${appConfig}/history.txt`)) {
-    fs.writeFileSync(`${appConfig}/history.txt`, '');
+  if (!fs.existsSync(path.join(appConfig, 'history.txt'))) {
+    fs.writeFileSync(path.join(appConfig, 'history.txt'), '');
   }
 }
 
@@ -70,9 +77,9 @@ export const saveHistoryTxt = async ({ profile_id, folder }: { profile_id: numbe
   // get app config in system
   const appConfig = app.getPath('userData');
   // get history from file history.txt
-  const historyTxt = fs.readFileSync(`${appConfig}/history.txt`, 'utf8');
+  const historyTxt = fs.readFileSync(path.join(appConfig, 'history.txt'), 'utf8');
   // add 1 line new line
-  fs.writeFileSync(`${appConfig}/history.txt`, `${historyTxt}\n${profile_id} || ${folder}`);
+  fs.writeFileSync(path.join(appConfig, 'history.txt'), `${historyTxt}\n${profile_id} || ${folder}`);
 }
 
 // save report txt
@@ -80,13 +87,13 @@ export const saveReportTxt = async ({ reportName, note, id, status, username }: 
   // get app config in system
   const appConfig = app.getPath('userData');
   // create report file if not exists
-  if (!fs.existsSync(`${appConfig}/report.txt`)) {
-    fs.writeFileSync(`${appConfig}/report.txt`, '');
+  if (!fs.existsSync(path.join(appConfig, 'report.txt'))) {
+    fs.writeFileSync(path.join(appConfig, 'report.txt'), '');
   }
   // get report from file report.txt
-  const reportTxt = fs.readFileSync(`${appConfig}/report.txt`, 'utf8');
+  const reportTxt = fs.readFileSync(path.join(appConfig, 'report.txt'), 'utf8');
   // add 1 line new line
   // id || username || create_at || status || note || reportName
   const date = new Date().toLocaleString();
-  fs.writeFileSync(`${appConfig}/report.txt`, `${reportTxt}\n${id} || ${username} || ${date} || ${status} || ${note} || ${reportName}`);
+  fs.writeFileSync(path.join(appConfig, 'report.txt'), `${reportTxt}\n${id} || ${username} || ${date} || ${status} || ${note} || ${reportName}`);
 }

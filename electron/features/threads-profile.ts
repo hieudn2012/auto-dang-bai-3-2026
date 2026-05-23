@@ -7,6 +7,8 @@ import path from "node:path";
 import { IpcMainEvent } from "electron";
 import { getRandomCap, getRandomCaption, getRandomLink } from "./caption";
 import { showToast } from "./event";
+import { saveHistory } from './history';
+import { profile } from 'node:console';
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -134,6 +136,11 @@ export const clickPostButton = async ({
     await page.goto(`https://threads.com/@${username}`);
     await waitRandom(5000, 10000);
 
+    // move mouse
+    await page.mouse.move(100, 200, {
+      steps: 20,
+    });
+
     if (type === 'post') {
       const els = await page.$$('div.xc26acl');
 
@@ -199,6 +206,10 @@ export const clickPostButton = async ({
         showToast(event, { id, username, message: 'Post completed ✅' });
       }
     }
+    saveHistory({
+      profile_id: id,
+      folder: folder,
+    });
   } catch (error) {
     console.error(error);
     showToast(event, { id, username, message: 'Post failed ❌' });

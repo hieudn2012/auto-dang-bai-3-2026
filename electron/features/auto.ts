@@ -5,12 +5,15 @@ import { clickEditLatestPostButton, clickPostButton } from "./threads-profile";
 import { IpcMainEvent } from "electron";
 import { getRandomFolder } from "./foder";
 import { sendLog } from "./event";
+import { saveHistory } from "./history";
 
 // auto post
 export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const captions = config?.captions || [];
   const mapFolder: Record<string, string> = {};
+  const excludedFolders: string[] = [];
+
 
   // get profile list
   const profiles = await getProfileList(item.groupId);
@@ -73,7 +76,8 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
         const isOpened = profileOpened.some((p) => p.profile_id === profile.profile_id);
         const profileInfo = profileOpened.find((p) => p.profile_id === profile.profile_id);
         if (isOpened && profileInfo) {
-          const randomFolder = getRandomFolder(item.folder);
+          const randomFolder = getRandomFolder(item.folder, excludedFolders);
+          excludedFolders.push(randomFolder);
           mapFolder[profile.profile_id] = randomFolder;
           try {
             clickPostButton({

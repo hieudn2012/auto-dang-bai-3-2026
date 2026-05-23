@@ -1,9 +1,10 @@
 // change working folder
 import { dialog, shell } from 'electron';
 import fs from 'node:fs';
-import { getHistoryTxt, loadMainConfig } from './common';
+import { loadMainConfig } from './common';
 import { FolderInfo } from 'electron/types';
 import nodePath from 'node:path';
+import { getRandomFolder } from './foder';
 
 export const openDialogFolder = async () => {
   const folderPath = dialog.showOpenDialogSync({
@@ -65,30 +66,10 @@ export const moveAllFilesFromFolderAtoFolderB = async (from: string, to: string)
 export const randomFolderNotUsed = async (exclude: string[] = []): Promise<{ name: string, path: string }> => {
   // get working folder
   const config = await loadMainConfig();
-  const history = await getHistoryTxt();
-
-  // get all folder in working folder
-  const folders = fs.readdirSync(config?.workingDir || '');
-
-  const isMac = process.platform === 'darwin';
-  const matchPath = isMac ? '/' : '\\';
-
-  // get all folder not in history
-  const foldersNotInHistory = folders.filter(folder => {
-    const folderPath = `${config?.workingDir}${matchPath}${folder}`;
-    return (
-      !history.some(item => item.folder === folderPath) &&
-      ![...exclude].includes(folderPath) &&
-      !folderPath.includes(`.DS_Store`) &&
-      !folderPath.includes(`desktop.ini`)
-    );
-  });
-
-  // random folder not in history
-  const randomFolderName = foldersNotInHistory[Math.floor(Math.random() * foldersNotInHistory.length)];
+  const randomFolder = getRandomFolder(config?.workingDir || '', exclude);
   return {
-    name: randomFolderName,
-    path: `${config?.workingDir}${matchPath}${randomFolderName}`
+    name: randomFolder.split('/').pop() || '',
+    path: randomFolder
   };
 }
 
