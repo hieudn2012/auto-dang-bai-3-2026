@@ -5,15 +5,17 @@ import SetupAcc from "./SetupAcc";
 import CheckLive from "./CheckLive";
 import CheckValidFolder from "./CheckValidFolder";
 import Product from "./Product";
+import AmzLink from "./AmzLink";
 
 const ImportSheet = () => {
-  const [tab, setTab] = useState<'cookie' | 'setup' | 'check-live' | 'check-valid-folder' | 'product'>('setup');
+  const [tab, setTab] = useState<'cookie' | 'setup' | 'check-live' | 'check-valid-folder' | 'product' | 'amz-link'>('setup');
   const tabs = [
     { id: 'setup', label: 'Setup', icon: 'fas fa-cog' },
     { id: 'cookie', label: 'Cookie', icon: 'fas fa-cookie' },
     { id: 'check-live', label: 'Check Live', icon: 'fas fa-signal' },
     { id: 'check-valid-folder', label: 'Check Valid Folder', icon: 'fas fa-check-circle' },
     { id: 'product', label: 'Product', icon: 'fas fa-box' },
+    { id: 'amz-link', label: 'Amazon Link', icon: 'fas fa-link' },
   ] as const;
 
   return (
@@ -57,6 +59,7 @@ const ImportSheet = () => {
               {tab === 'check-live' && <CheckLive />}
               {tab === 'check-valid-folder' && <CheckValidFolder />}
               {tab === 'product' && <Product />}
+              {tab === 'amz-link' && <AmzLink />}
             </div>
           </div>
         </div>

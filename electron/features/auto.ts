@@ -5,7 +5,6 @@ import { clickEditLatestPostButton, clickPostButton } from "./threads-profile";
 import { IpcMainEvent } from "electron";
 import { getRandomFolder } from "./foder";
 import { sendLog } from "./event";
-import { saveHistory } from "./history";
 
 // auto post
 export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {

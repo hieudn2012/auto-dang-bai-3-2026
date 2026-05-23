@@ -77,6 +77,7 @@ contextBridge.exposeInMainWorld('api', {
   createEmptyProduct: () => invoke(InvokeChannel.CREATE_EMPTY_PRODUCT),
   saveProduct: (product: Product) => invoke(InvokeChannel.SAVE_PRODUCT, product),
   getProductFolder: (folderPath: string) => invoke(InvokeChannel.GET_PRODUCT_FOLDER, folderPath),
+  getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => invoke(InvokeChannel.GET_AFF_AMZ_LINK, params),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

@@ -15,6 +15,7 @@ import { bulkToggleDismissButton } from './features/instagram'
 import { registerNewAccounts } from './features/register'
 import { showToast } from './features/event'
 import { createEmptyProduct, getProductFolder, saveProduct } from './features/product'
+import { getAffAmzLink } from './features/amz'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -222,6 +223,12 @@ handle(InvokeChannel.SAVE_PRODUCT, async (_event, product) => {
 
 handle(InvokeChannel.GET_PRODUCT_FOLDER, async (_event, folderPath) => {
   return getProductFolder(folderPath);
+})
+
+handle(InvokeChannel.GET_AFF_AMZ_LINK, async (_event, params) => {
+  console.log('kaka');
+  
+  return getAffAmzLink(params);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

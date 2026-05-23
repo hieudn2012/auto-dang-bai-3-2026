@@ -123,6 +123,9 @@ export const getRandomCaption = (p: string) => {
     }
     
     const randomIndex = Math.floor(Math.random() * captions.length);
+    // remove caption in file
+    const newCaptions = captions.filter((_, index) => index !== randomIndex);
+    fs.writeFileSync(filePath, newCaptions.join('\n\n\n'));
 
     return captions[randomIndex];
   } catch (error) {
@@ -167,6 +170,9 @@ export const getRandomLink = (p: string) => {
     }
     
     const randomIndex = Math.floor(Math.random() * links.length);
+    const newLinks = links.filter((_, index) => index !== randomIndex);
+    fs.writeFileSync(filePath, newLinks.join('\n'));
+
     return links[randomIndex];
   } catch (error) {
     console.error(`Error reading link file: ${p}`, error);

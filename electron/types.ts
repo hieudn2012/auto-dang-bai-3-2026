@@ -41,6 +41,7 @@ export enum InvokeChannel {
   CREATE_EMPTY_PRODUCT = 'create-empty-product',
   SAVE_PRODUCT = 'save-product',
   GET_PRODUCT_FOLDER = 'get-product-folder',
+  GET_AFF_AMZ_LINK = 'get-aff-amz-link',
 }
 
 export type MainConfig = {
