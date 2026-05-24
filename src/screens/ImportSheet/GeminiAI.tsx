@@ -57,6 +57,7 @@ const GeminiAI = () => {
       <table className="w-full border-collapse border border-gray-200">
         <thead>
           <tr className="bg-gray-50">
+            <th className="border border-gray-200 px-4 py-2 text-left">Index</th>
             <th className="border border-gray-200 px-4 py-2 text-left">Path</th>
             <th className="border border-gray-200 px-4 py-2 text-left">Link</th>
             <th className="border border-gray-200 px-4 py-2 text-left">C</th>
@@ -68,7 +69,7 @@ const GeminiAI = () => {
         </thead>
         <tbody>
           {items.map((item, index) => (
-            <Row key={index} path={item.path} ws={ws} />
+            <Row key={index} path={item.path} ws={ws} numberIndex={index + 1} />
           ))}
         </tbody>
       </table>
@@ -76,7 +77,7 @@ const GeminiAI = () => {
   )
 }
 
-const Row = ({ path, ws }: { path: string, ws: string }) => {
+const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex: number }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
   const [text, setText] = useState('');
@@ -144,6 +145,9 @@ const Row = ({ path, ws }: { path: string, ws: string }) => {
 
   return (
     <tr className="hover:bg-gray-50">
+      <td className="border border-gray-200 px-4 py-2">
+        {numberIndex}
+      </td>
       <td className="border border-gray-200 px-4 py-2">
         <div className="flex gap-2">
           <span>
