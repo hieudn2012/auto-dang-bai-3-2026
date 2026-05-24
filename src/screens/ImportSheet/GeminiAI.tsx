@@ -133,7 +133,7 @@ const Row = ({ path, ws }: { path: string, ws: string }) => {
       if (fileName === 'cap.txt') {
         setIsCapMoved(true);
       }
-      if (fileName === 'links.txt') {
+      if (fileName === 'link.txt') {
         setIsLinksMoved(true);
       }
       toast.success('Moved to folder');
