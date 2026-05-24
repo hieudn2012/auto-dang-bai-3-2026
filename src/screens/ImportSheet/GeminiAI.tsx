@@ -149,7 +149,7 @@ const Row = ({ path, ws }: { path: string, ws: string }) => {
           <span>
             {shortName(path)}
           </span>
-          <Button onClick={() => windowInstance.api.openFolder(path)}>
+          <Button onClick={() => windowInstance.api.openFolder(path)} className="px-3 py-1 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border border-emerald-200">
             <i className="fas fa-folder-open"></i>
           </Button>
         </div>
