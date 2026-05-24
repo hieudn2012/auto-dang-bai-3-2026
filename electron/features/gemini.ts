@@ -38,7 +38,7 @@ export const generateAmazonCaptions = async (folder: string) => {
     const videoBytes = fs.readFileSync(videoPath);
 
     const response = await ai.models.generateContent({
-      model: mainConfig?.gemini?.model || "gemini-2.5-flash-lite",
+      model: mainConfig?.gemini?.model || "gemini-2.5-flash",
       contents: [
         {
           inlineData: {

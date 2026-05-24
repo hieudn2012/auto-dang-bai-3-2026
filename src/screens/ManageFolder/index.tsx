@@ -180,6 +180,8 @@ const ManageFolder = () => {
                 setGeminiApiKey={setGeminiApiKey}
                 prompt={prompt}
                 setPrompt={setPrompt}
+                model={model}
+                setModel={setModel}
               />
             )}
 
