@@ -64,6 +64,7 @@ export type MainConfig = {
   gemini?: {
     apiKey?: string
     prompt?: string
+    model?: string
   }
 }
 

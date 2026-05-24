@@ -23,6 +23,7 @@ const ManageFolder = () => {
   const [proxy, setProxy] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [prompt, setPrompt] = useState('');
+  const [model, setModel] = useState('');
   const [activeTab, setActiveTab] = useState('global');
 
   const handleOpenWorkingFolder = async () => {
@@ -45,7 +46,8 @@ const ManageFolder = () => {
       proxy,
       gemini: {
         apiKey: geminiApiKey,
-        prompt
+        prompt,
+        model
       }
     });
     toast.success('Lưu cấu hình thành công');
@@ -61,6 +63,7 @@ const ManageFolder = () => {
     setProxy(config?.proxy || '');
     setGeminiApiKey(config?.gemini?.apiKey || '');
     setPrompt(config?.gemini?.prompt || '');
+    setModel(config?.gemini?.model || '');
   }
 
   useEffect(() => {
