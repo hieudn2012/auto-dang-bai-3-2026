@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld('api', {
   saveProduct: (product: Product) => invoke(InvokeChannel.SAVE_PRODUCT, product),
   getProductFolder: (folderPath: string) => invoke(InvokeChannel.GET_PRODUCT_FOLDER, folderPath),
   getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => invoke(InvokeChannel.GET_AFF_AMZ_LINK, params),
+  generateAmazonCaptions: (folder: string) => invoke(InvokeChannel.GENERATE_AMAZON_CAPTIONS, folder),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

@@ -42,6 +42,7 @@ export enum InvokeChannel {
   SAVE_PRODUCT = 'save-product',
   GET_PRODUCT_FOLDER = 'get-product-folder',
   GET_AFF_AMZ_LINK = 'get-aff-amz-link',
+  GENERATE_AMAZON_CAPTIONS = 'generate-amazon-captions',
 }
 
 export type MainConfig = {
@@ -57,6 +58,10 @@ export type MainConfig = {
   profile?: {
     groupId?: number
     mode?: 'default' | 'affiliate'
+  },
+  gemini?: {
+    apiKey?: string
+    prompt?: string
   }
 }
 

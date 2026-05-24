@@ -16,6 +16,7 @@ import { registerNewAccounts } from './features/register'
 import { showToast } from './features/event'
 import { createEmptyProduct, getProductFolder, saveProduct } from './features/product'
 import { getAffAmzLink } from './features/amz'
+import { generateAmazonCaptions } from './features/gemini'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -229,6 +230,14 @@ handle(InvokeChannel.GET_AFF_AMZ_LINK, async (_event, params) => {
   console.log('kaka');
   
   return getAffAmzLink(params);
+})
+
+handle(InvokeChannel.GENERATE_AMAZON_CAPTIONS, async (_event, folder) => {
+  try {
+    return await generateAmazonCaptions(folder);
+  } catch (error) {
+    throw String(error); // Convert error to string for IPC
+  }
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

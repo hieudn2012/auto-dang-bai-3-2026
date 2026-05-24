@@ -6,9 +6,10 @@ import CheckLive from "./CheckLive";
 import CheckValidFolder from "./CheckValidFolder";
 import Product from "./Product";
 import AmzLink from "./AmzLink";
+import GeminiAI from "./GeminiAI";
 
 const ImportSheet = () => {
-  const [tab, setTab] = useState<'cookie' | 'setup' | 'check-live' | 'check-valid-folder' | 'product' | 'amz-link'>('setup');
+  const [tab, setTab] = useState<'cookie' | 'setup' | 'check-live' | 'check-valid-folder' | 'product' | 'amz-link' | 'gemini-ai'>('setup');
   const tabs = [
     { id: 'setup', label: 'Setup', icon: 'fas fa-cog' },
     { id: 'cookie', label: 'Cookie', icon: 'fas fa-cookie' },
@@ -16,6 +17,7 @@ const ImportSheet = () => {
     { id: 'check-valid-folder', label: 'Check Valid Folder', icon: 'fas fa-check-circle' },
     { id: 'product', label: 'Product', icon: 'fas fa-box' },
     { id: 'amz-link', label: 'Amazon Link', icon: 'fas fa-link' },
+    { id: 'gemini-ai', label: 'Gemini AI', icon: 'fas fa-robot' },
   ] as const;
 
   return (
@@ -60,6 +62,7 @@ const ImportSheet = () => {
               {tab === 'check-valid-folder' && <CheckValidFolder />}
               {tab === 'product' && <Product />}
               {tab === 'amz-link' && <AmzLink />}
+              {tab === 'gemini-ai' && <GeminiAI />}
             </div>
           </div>
         </div>

@@ -52,6 +52,7 @@ type WindownInstance = typeof window & {
     saveProduct: (product: Product) => Promise<any>,
     getProductFolder: (folderPath: string) => Promise<Product>,
     getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => Promise<string>,
+    generateAmazonCaptions: (folder: string) => Promise<string>,
   }
 }
 

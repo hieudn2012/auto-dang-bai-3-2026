@@ -7,6 +7,7 @@ import GlobalConfig from "./GlobalConfig";
 import CaptionConfig from "./CaptionConfig";
 import MultipleCaption from "./MultipleCaption";
 import ProxyConfig from "./ProxyConfig";
+import GeminiAI from "./GeminiAI";
 
 interface Caption {
   label: string;
@@ -20,6 +21,8 @@ const ManageFolder = () => {
   const [caption, setCaption] = useState('');
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [proxy, setProxy] = useState('');
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [prompt, setPrompt] = useState('');
   const [activeTab, setActiveTab] = useState('global');
 
   const handleOpenWorkingFolder = async () => {
@@ -39,7 +42,11 @@ const ManageFolder = () => {
       linkPost,
       caption,
       captions,
-      proxy
+      proxy,
+      gemini: {
+        apiKey: geminiApiKey,
+        prompt
+      }
     });
     toast.success('Lưu cấu hình thành công');
   }
@@ -52,6 +59,8 @@ const ManageFolder = () => {
     setCaption(config?.caption || '');
     setCaptions(config?.captions || []);
     setProxy(config?.proxy || '');
+    setGeminiApiKey(config?.gemini?.apiKey || '');
+    setPrompt(config?.gemini?.prompt || '');
   }
 
   useEffect(() => {
@@ -113,6 +122,16 @@ const ManageFolder = () => {
                 <i className="fas fa-network-wired mr-2"></i>
                 Proxy config
               </button>
+              <button
+                onClick={() => setActiveTab('gemini')}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'gemini'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                <i className="fas fa-robot mr-2"></i>
+                Gemini AI
+              </button>
             </nav>
           </div>
 
@@ -149,6 +168,15 @@ const ManageFolder = () => {
               <ProxyConfig
                 proxy={proxy}
                 setProxy={setProxy}
+              />
+            )}
+
+            {activeTab === 'gemini' && (
+              <GeminiAI
+                geminiApiKey={geminiApiKey}
+                setGeminiApiKey={setGeminiApiKey}
+                prompt={prompt}
+                setPrompt={setPrompt}
               />
             )}
 
