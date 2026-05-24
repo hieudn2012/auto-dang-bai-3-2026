@@ -22,7 +22,7 @@ const ImportSheet = () => {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="p-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">

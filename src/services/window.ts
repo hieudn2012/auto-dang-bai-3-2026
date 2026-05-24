@@ -4,6 +4,7 @@ import { LogItem } from "electron/features/event";
 import { BulkToggleDismissButtonParams } from "electron/features/instagram";
 import { RegisterNewAccountParams } from "electron/features/register";
 import { Product } from "electron/features/product";
+import { MoveData } from "electron/features/foder";
 
 type WindownInstance = typeof window & {
   api: {
@@ -53,6 +54,8 @@ type WindownInstance = typeof window & {
     getProductFolder: (folderPath: string) => Promise<Product>,
     getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => Promise<string>,
     generateAmazonCaptions: (folder: string) => Promise<string>,
+    getAllFolder: (rootPath: string) => Promise<string[]>,
+    moveDataToFolder: (data: MoveData) => Promise<any>,
   }
 }
 

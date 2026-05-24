@@ -17,6 +17,7 @@ import { showToast } from './features/event'
 import { createEmptyProduct, getProductFolder, saveProduct } from './features/product'
 import { getAffAmzLink } from './features/amz'
 import { generateAmazonCaptions } from './features/gemini'
+import { getAllFolder, moveDataToFolder } from './features/foder'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -238,6 +239,14 @@ handle(InvokeChannel.GENERATE_AMAZON_CAPTIONS, async (_event, folder) => {
   } catch (error) {
     throw String(error); // Convert error to string for IPC
   }
+})
+
+handle(InvokeChannel.GET_ALL_FOLDER, async (_event, rootPath) => {
+  return getAllFolder(rootPath);
+})
+
+handle(InvokeChannel.MOVE_DATA_TO_FOLDER, async (_event, data) => {
+  return moveDataToFolder(data);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

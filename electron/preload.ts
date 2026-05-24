@@ -2,6 +2,7 @@ import { ipcRenderer, contextBridge, Product } from 'electron'
 import { History, InvokeChannel, MainConfig, UserInfo } from './types'
 import { ScheduleItem } from './features/job'
 import { RegisterNewAccountParams } from './features/register'
+import { MoveData } from './features/foder'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -79,6 +80,8 @@ contextBridge.exposeInMainWorld('api', {
   getProductFolder: (folderPath: string) => invoke(InvokeChannel.GET_PRODUCT_FOLDER, folderPath),
   getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => invoke(InvokeChannel.GET_AFF_AMZ_LINK, params),
   generateAmazonCaptions: (folder: string) => invoke(InvokeChannel.GENERATE_AMAZON_CAPTIONS, folder),
+  getAllFolder: (rootPath: string) => invoke(InvokeChannel.GET_ALL_FOLDER, rootPath),
+  moveDataToFolder: (data: MoveData) => invoke(InvokeChannel.MOVE_DATA_TO_FOLDER, data),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

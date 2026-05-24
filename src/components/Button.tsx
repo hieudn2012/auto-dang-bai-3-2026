@@ -9,12 +9,14 @@ type Props = React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElemen
 const Button = ({ loading, tooltip, ...props }: Props) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
+  const isDisabled = loading || props.disabled;
+
   return (
     <div className="relative">
       <button
         {...props}
-        className={twMerge("px-4 py-2 rounded-lg bg-primary text-white text-md font-semibold hover:bg-primary/80 dark:bg-gradient-to-r dark:from-dark-accent dark:to-dark-accentHover dark:hover:from-dark-accentHover dark:hover:to-dark-accent hover:scale-95 active:scale-90 shadow-lg dark:shadow-xl border border-primary/20 dark:border-dark-accent/30 transition-all duration-150", props.className)}
-        disabled={loading}
+        className={twMerge("px-4 py-2 rounded-lg bg-primary text-white text-md font-semibold hover:bg-primary/80 dark:bg-gradient-to-r dark:from-dark-accent dark:to-dark-accentHover dark:hover:from-dark-accentHover dark:hover:to-dark-accent hover:scale-95 active:scale-90 shadow-lg dark:shadow-xl border border-primary/20 dark:border-dark-accent/30 transition-all duration-150", isDisabled ? 'opacity-50 cursor-not-allowed' : '', props.className)}
+        disabled={isDisabled}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >

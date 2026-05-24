@@ -2,6 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { isHistoryExists } from './history';
 
+export interface MoveData {
+  data: string;
+  folder: string;
+  fileName: string;
+}
+
 export const getRandomFolder = (
   rootPath: string,
   excludeFolders: string[] = [],
@@ -47,3 +53,25 @@ export const getRandomFolder = (
     return '';
   }
 };
+
+// get all folder in root path
+export const getAllFolder = (rootPath: string): string[] => {
+  try {
+    const folders = fs.readdirSync(rootPath);
+    const data = folders.filter(folder => folder !== '.DS_Store' && folder !== 'desktop.ini');
+    return data.map(folder => path.join(rootPath, folder));
+  } catch (error) {
+    console.error('Error reading folder:', rootPath, error);
+    return [];
+  }
+};
+
+export const moveDataToFolder = ({ data, folder, fileName }: MoveData): void => {
+  try {
+    const folderPath = path.join(folder, fileName);
+    fs.writeFileSync(folderPath, data);
+  } catch (error) {
+    console.error('Error moving data to folder:', error);
+    throw error;
+  }
+}
