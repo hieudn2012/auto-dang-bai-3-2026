@@ -144,7 +144,16 @@ const Row = ({ path, ws }: { path: string, ws: string }) => {
 
   return (
     <tr className="hover:bg-gray-50">
-      <td className="border border-gray-200 px-4 py-2">{shortName(path)}</td>
+      <td className="border border-gray-200 px-4 py-2">
+        <div className="flex gap-2">
+          <span>
+            {shortName(path)}
+          </span>
+          <Button onClick={() => windowInstance.api.openFolder(path)}>
+            <i className="fas fa-folder-open"></i>
+          </Button>
+        </div>
+      </td>
       <td className="border border-gray-200 px-4 py-2">
         <Input
           value={link}
