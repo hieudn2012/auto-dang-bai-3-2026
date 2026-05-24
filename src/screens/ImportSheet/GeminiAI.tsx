@@ -10,6 +10,11 @@ interface Item {
   link: string;
 }
 
+const shortName = (name: string) => {
+  // get 10 characters start and 10 characters end
+  return name.slice(0, 10) + '...' + name.slice(-10);
+}
+
 const GeminiAI = () => {
   const [rootFolder, setRootFolder] = useState('');
   const [items, setItems] = useState<Item[]>([]);
@@ -139,7 +144,7 @@ const Row = ({ path, ws }: { path: string, ws: string }) => {
 
   return (
     <tr className="hover:bg-gray-50">
-      <td className="border border-gray-200 px-4 py-2">{path}</td>
+      <td className="border border-gray-200 px-4 py-2">{shortName(path)}</td>
       <td className="border border-gray-200 px-4 py-2">
         <Input
           value={link}
