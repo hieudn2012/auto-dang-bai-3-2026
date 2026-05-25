@@ -3,6 +3,7 @@ import { History, InvokeChannel, MainConfig, UserInfo } from './types'
 import { ScheduleItem } from './features/job'
 import { RegisterNewAccountParams } from './features/register'
 import { MoveData } from './features/foder'
+import { MoveFolderParams } from './features/threads-folder'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -82,6 +83,7 @@ contextBridge.exposeInMainWorld('api', {
   generateAmazonCaptions: (folder: string) => invoke(InvokeChannel.GENERATE_AMAZON_CAPTIONS, folder),
   getAllFolder: (rootPath: string) => invoke(InvokeChannel.GET_ALL_FOLDER, rootPath),
   moveDataToFolder: (data: MoveData) => invoke(InvokeChannel.MOVE_DATA_TO_FOLDER, data),
+  moveFolder: (params: MoveFolderParams) => invoke(InvokeChannel.MOVE_FOLDER, params)
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

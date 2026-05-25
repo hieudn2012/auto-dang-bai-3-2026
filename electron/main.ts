@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { spawn } from 'child_process'
 import { InvokeChannel } from './types'
-import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, openDialogFolder, openFolder, openProfileFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
+import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, moveFolder, openDialogFolder, openFolder, openProfileFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
 import { openProfile, updateProfileGroup } from './features/ixbrowser-api'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNewAccount } from './features/threads-profile'
 import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
@@ -247,6 +247,10 @@ handle(InvokeChannel.GET_ALL_FOLDER, async (_event, rootPath) => {
 
 handle(InvokeChannel.MOVE_DATA_TO_FOLDER, async (_event, data) => {
   return moveDataToFolder(data);
+})
+
+handle(InvokeChannel.MOVE_FOLDER, async (_event, params) => {
+  return moveFolder(params);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

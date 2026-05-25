@@ -5,6 +5,7 @@ import { BulkToggleDismissButtonParams } from "electron/features/instagram";
 import { RegisterNewAccountParams } from "electron/features/register";
 import { Product } from "electron/features/product";
 import { MoveData } from "electron/features/foder";
+import { MoveFolderParams } from "electron/features/threads-folder";
 
 type WindownInstance = typeof window & {
   api: {
@@ -56,6 +57,7 @@ type WindownInstance = typeof window & {
     generateAmazonCaptions: (folder: string) => Promise<string>,
     getAllFolder: (rootPath: string) => Promise<string[]>,
     moveDataToFolder: (data: MoveData) => Promise<any>,
+    moveFolder: (params: MoveFolderParams) => Promise<any>
   }
 }
 

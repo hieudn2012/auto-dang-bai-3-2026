@@ -7,7 +7,7 @@ const initPrompt = `
       Analyze this affiliate product video.
 
       Generate:
-      - 10 amazon captions
+      - 20 amazon captions
       - Each caption is separated by new line with character "####" for example:
       cation1
       ####

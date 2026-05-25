@@ -45,6 +45,7 @@ export enum InvokeChannel {
   GENERATE_AMAZON_CAPTIONS = 'generate-amazon-captions',
   GET_ALL_FOLDER = 'get-all-folder',
   MOVE_DATA_TO_FOLDER = 'move-data-to-folder',
+  MOVE_FOLDER = 'move-folder'
 }
 
 export type MainConfig = {

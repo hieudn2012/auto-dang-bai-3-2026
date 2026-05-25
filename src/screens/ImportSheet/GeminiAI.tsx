@@ -3,7 +3,7 @@ import Input from "@/components/Input";
 import { toast } from "@/components/ToastContainer";
 import { windowInstance } from "@/services/window";
 import { MoveData } from "electron/features/foder";
-import { useState } from "react";
+import React, { useState, useImperativeHandle, forwardRef } from "react";
 
 interface Item {
   path: string;
@@ -15,10 +15,33 @@ const shortName = (name: string) => {
   return name.slice(0, 10) + '...' + name.slice(-10);
 }
 
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 const GeminiAI = () => {
   const [rootFolder, setRootFolder] = useState('');
   const [items, setItems] = useState<Item[]>([]);
   const [ws, setWs] = useState('');
+  const [indexSelected, setIndexSelected] = useState<number[]>([]);
+  const rowRefs = items.reduce((acc, _, index) => {
+    acc[index] = React.createRef();
+    return acc;
+  }, {} as { [key: number]: React.RefObject<{ handleGenerate: (folder: string) => Promise<void>, handleGetLinks: () => Promise<void> }> });
+
+  const handleSelect = (index: number) => {
+    if (indexSelected.includes(index)) {
+      setIndexSelected(indexSelected.filter(i => i !== index));
+    } else {
+      setIndexSelected([...indexSelected, index]);
+    }
+  }
+
+  const handleSelectAll = () => {
+    if (indexSelected.length === items.length) {
+      setIndexSelected([]);
+    } else {
+      setIndexSelected(items.map((_, index) => index));
+    }
+  }
 
   const handleChangeFolder = async () => {
     const root = await windowInstance.api.openDialogFolder();
@@ -30,6 +53,34 @@ const GeminiAI = () => {
     }));
     setItems(results);
   };
+
+  const handleBulkGenerate = async () => {
+    for (const index of indexSelected) {
+      const ref = rowRefs[index];
+      if (ref && ref.current) {
+        await ref.current.handleGenerate(items[index].path);
+        await wait(2000);
+        const buttonMoveCaption = document.getElementById(`move-caption-btn-${index}`);
+        if (buttonMoveCaption) {
+          buttonMoveCaption.click();
+        }
+      }
+    }
+  }
+
+  const handleBulkGetLinks = async () => {
+    for (const index of indexSelected) {
+      const ref = rowRefs[index];
+      if (ref && ref.current) {
+        await ref.current.handleGetLinks();
+        await wait(2000);
+        const buttonMoveLinks = document.getElementById(`move-links-btn-${index}`);
+        if (buttonMoveLinks) {
+          buttonMoveLinks.click();
+        }
+      }
+    }
+  }
 
   return (
     <div className="w-full p-6 pb-10">
@@ -54,10 +105,34 @@ const GeminiAI = () => {
           placeholder="WebSocket URL"
         />
       </div>
+      <div className="flex justify-end gap-4">
+        <Button
+          className="px-4 py-2 mb-4 bg-blue-500 hover:bg-blue-600 text-white rounded"
+          onClick={handleBulkGenerate}
+          disabled={indexSelected.length === 0}
+          tooltip="Generate Captions for selected folders"
+        >
+          <i className="fas fa-robot"></i>
+        </Button>
+        <Button
+          className="px-4 py-2 mb-4 bg-green-500 hover:bg-green-600 text-white rounded"
+          onClick={handleBulkGetLinks}
+          disabled={indexSelected.length === 0 || !ws}
+          tooltip="Get Links for selected folders"
+        >
+          <i className="fas fa-link"></i>
+        </Button>
+      </div>
       <table className="w-full border-collapse border border-gray-200">
         <thead>
           <tr className="bg-gray-50">
-            <th className="border border-gray-200 px-4 py-2 text-left">Index</th>
+            <th className="border border-gray-200 px-4 py-2 text-left">
+              <input
+                type="checkbox"
+                checked={indexSelected.length === items.length && items.length > 0}
+                onChange={handleSelectAll}
+              />
+            </th>
             <th className="border border-gray-200 px-4 py-2 text-left">Path</th>
             <th className="border border-gray-200 px-4 py-2 text-left">Link</th>
             <th className="border border-gray-200 px-4 py-2 text-left">C</th>
@@ -69,7 +144,7 @@ const GeminiAI = () => {
         </thead>
         <tbody>
           {items.map((item, index) => (
-            <Row key={index} path={item.path} ws={ws} numberIndex={index + 1} />
+            <Row key={index} path={item.path} ws={ws} numberIndex={index} indexSelected={indexSelected} onSelect={handleSelect} ref={rowRefs[index]} />
           ))}
         </tbody>
       </table>
@@ -77,7 +152,7 @@ const GeminiAI = () => {
   )
 }
 
-const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex: number }) => {
+const Row = forwardRef(({ path, ws, numberIndex, indexSelected, onSelect }: { path: string, ws: string, numberIndex: number, indexSelected: number[], onSelect: (index: number) => void }, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
   const [text, setText] = useState('');
@@ -110,7 +185,7 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
   const handleGetLinks = async () => {
     try {
       setIsGettingLinks(true);
-      const links = await windowInstance.api.getAffAmzLink({ links: [link], ws, numberToGet: 10 });
+      const links = await windowInstance.api.getAffAmzLink({ links: [link], ws, numberToGet: 20 });
       setLinks(links);
     } catch (error) {
       toast.error((error as Error).message);
@@ -144,10 +219,24 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
     }
   };
 
+  // use useImperativeHandle to expose handleGenerate and handleGetLinks to parent component
+  useImperativeHandle(ref, () => ({
+    handleGenerate,
+    handleGetLinks,
+  }));
+
   return (
     <tr className="hover:bg-gray-50">
-      <td className="border border-gray-200 px-4 py-2">
-        {numberIndex}
+      <td className="border border-gray-200 px-4 py-2 cursor-pointer" onClick={() => onSelect(numberIndex)}>
+        <div className="flex items-center select-none">
+          <input
+            type="checkbox"
+            className="mr-2"
+            checked={indexSelected.includes(numberIndex)}
+            onChange={() => onSelect(numberIndex)}
+          />
+          {numberIndex + 1}
+        </div>
       </td>
       <td className="border border-gray-200 px-4 py-2">
         <div className="flex gap-2">
@@ -186,6 +275,7 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
             loading={isGenerating}
             onClick={() => handleGenerate(path)}
             tooltip="Generate caption"
+            id={`generate-btn-${numberIndex}`}
           >
             <i className="fas fa-robot"></i>
           </Button>
@@ -195,6 +285,7 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
             tooltip="Generate links"
             disabled={!link || isGettingLinks}
             loading={isGettingLinks}
+            id={`get-links-btn-${numberIndex}`}
           >
             <i className="fas fa-wand-magic-sparkles"></i>
           </Button>
@@ -204,6 +295,7 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
             onClick={() => handleCopy(text)}
             tooltip="Copy caption"
             disabled={!text}
+            id={`copy-caption-btn-${numberIndex}`}
           >
             <i className="fas fa-copy"></i>
           </Button>
@@ -213,6 +305,7 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
             onClick={() => handleCopy(links)}
             tooltip="Copy links"
             disabled={!links}
+            id={`copy-links-btn-${numberIndex}`}
           >
             <i className="fas fa-link"></i>
           </Button>
@@ -222,6 +315,7 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
             onClick={() => handleMove({ data: text, folder: path, fileName: 'cap.txt' })}
             tooltip="Move caption to folder"
             disabled={!text}
+            id={`move-caption-btn-${numberIndex}`}
           >
             <i className="fas fa-file-arrow-down"></i>
           </Button>
@@ -231,6 +325,7 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
             onClick={() => handleMove({ data: links, folder: path, fileName: 'link.txt' })}
             tooltip="Move link to folder"
             disabled={!links}
+            id={`move-links-btn-${numberIndex}`}
           >
             <i className="fas fa-folder-plus"></i>
           </Button>
@@ -238,6 +333,6 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
       </td>
     </tr>
   )
-}
+});
 
 export default GeminiAI;

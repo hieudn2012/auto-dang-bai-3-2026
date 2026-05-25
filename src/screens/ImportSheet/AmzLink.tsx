@@ -10,7 +10,7 @@ const AmzLink = () => {
   const [result, setResult] = useState('');
 
   const handleGetLinks = async () => {
-    const res = await windowInstance.api.getAffAmzLink({ ws, links: links.trim().split('\n'), numberToGet: 10 });
+    const res = await windowInstance.api.getAffAmzLink({ ws, links: links.trim().split('\n'), numberToGet: 20 });
     setResult(res);
   };
 

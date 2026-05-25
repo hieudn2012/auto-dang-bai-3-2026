@@ -1,15 +1,34 @@
 import Button from "@/components/Button";
 import { windowInstance } from "@/services/window";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
 const CheckValidFolder = () => {
   const [selectedFolder, setSelectedFolder] = useState('');
+  const [selectedToMove, setSelectedToMove] = useState<string[]>([]);
   const [results, setResults] = useState({
     captionResult: [],
     linkResult: [],
     captionErrorCount: 0,
     linkErrorCount: 0,
   });
+
+  const handleSelectToMove = async (path: string) => {
+    if (selectedToMove.includes(path)) {
+      setSelectedToMove(selectedToMove.filter(p => p !== path));
+    } else {
+      setSelectedToMove([...selectedToMove, path]);
+    }
+  }
+
+  const handleMoveSelected = async () => {
+    const targetFolder = await windowInstance.api.openDialogFolder();
+    if (targetFolder) {
+      await windowInstance.api.moveFolder({ froms: selectedToMove, to: targetFolder });
+      setSelectedToMove([]);
+      toast.success('Di chuyển file thành công!, Vui lòng reload lại trang hoặc đổi thư mục để cập nhật kết quả');
+    }
+  }
 
   const handleFolderSelect = async () => {
     const folderPath = await windowInstance.api.openDialogFolder();
@@ -206,6 +225,8 @@ const CheckValidFolder = () => {
               </div>
             </div>
 
+
+
             {/* Warning for files with less than 5 items */}
             {captionFilesWithFewItems.length > 0 && (
               <div className="mt-6 bg-yellow-50 rounded-lg p-4 border border-yellow-200">
@@ -354,6 +375,15 @@ const CheckValidFolder = () => {
           </div>
         )}
 
+        <div>
+          {selectedToMove.length > 0 && (<Button
+            onClick={handleMoveSelected}
+            className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+          >
+            Di chuyển File đã chọn
+          </Button>)}
+        </div>
+
         {/* Caption Files Table */}
         <div className="mt-6">
           <h4 className="font-medium text-gray-700 mb-3 flex items-center">
@@ -374,7 +404,17 @@ const CheckValidFolder = () => {
               <tbody>
                 {results.captionResult.map((item: any, index: number) => (
                   <tr key={index} className="hover:bg-gray-50">
-                    <td className="border border-gray-200 px-4 py-2">{index + 1}</td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedToMove.includes(item.path)}
+                          onChange={() => handleSelectToMove(item.path)}
+                          className="form-checkbox h-4 w-4 text-blue-600"
+                        />
+                        <span>{index + 1}</span>
+                      </div>
+                    </td>
                     <td className="border border-gray-200 px-4 py-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-mono truncate max-w-xs">{item.path}</span>
@@ -430,7 +470,17 @@ const CheckValidFolder = () => {
               <tbody>
                 {results.linkResult.map((item: any, index: number) => (
                   <tr key={index} className="hover:bg-gray-50">
-                    <td className="border border-gray-200 px-4 py-2">{index + 1}</td>
+                    <td className="border border-gray-200 px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedToMove.includes(item.path)}
+                          onChange={() => handleSelectToMove(item.path)}
+                          className="form-checkbox h-4 w-4 text-green-600"
+                        />
+                        <span className="ml-2">{index + 1}</span>
+                      </div>
+                    </td>
                     <td className="border border-gray-200 px-4 py-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-mono truncate max-w-xs">{item.path}</span>

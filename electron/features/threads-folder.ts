@@ -83,3 +83,16 @@ export const getFolderInfo = async (path: string): Promise<FolderInfo> => {
     link,
   }
 }
+
+export interface MoveFolderParams {
+  froms: string[];
+  to: string;
+}
+// cut folder to another place
+export const moveFolder = async ({ froms, to }: MoveFolderParams) => {
+  froms.forEach((from) => {
+    const folderName = from.split('/').pop() || '';
+    const newPath = nodePath.join(to, folderName);
+    fs.renameSync(from, newPath);
+  });
+}

@@ -8,7 +8,7 @@ interface GetAffAmzLinkParams {
   numberToGet: number;
 }
 
-export const getAffAmzLink = async ({ ws, links, numberToGet = 10 }: GetAffAmzLinkParams) => {
+export const getAffAmzLink = async ({ ws, links, numberToGet = 20 }: GetAffAmzLinkParams) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -39,6 +39,7 @@ export const getAffAmzLink = async ({ ws, links, numberToGet = 10 }: GetAffAmzLi
         }
       }
       const resultString = data.join("\n").trim();
+      page.close();
       return resultString;
     }
     let allLinks = '';
