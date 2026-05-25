@@ -20,13 +20,15 @@ const CheckValidFolder = () => {
       setSelectedToMove([...selectedToMove, path]);
     }
   }
-
+  
   const handleMoveSelected = async () => {
-    const targetFolder = await windowInstance.api.openDialogFolder();
-    if (targetFolder) {
-      await windowInstance.api.moveFolder({ froms: selectedToMove, to: targetFolder });
+    try {
+      const targetFolder = await windowInstance.api.openDialogFolder();
+      windowInstance.api.moveFolder({ froms: selectedToMove, to: targetFolder });
       setSelectedToMove([]);
       toast.success('Di chuyển file thành công!, Vui lòng reload lại trang hoặc đổi thư mục để cập nhật kết quả');
+    } catch (error) {
+      console.error('Lỗi khi di chuyển file:', error);
     }
   }
 
