@@ -13,7 +13,7 @@ const Splash: React.FC = () => {
     const checkAuthentication = async () => {
       try {
         // Wait a moment for LaunchDarkly to initialize
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
         const allFlags = (ldClient?.allFlags() || {
           required_login: false,

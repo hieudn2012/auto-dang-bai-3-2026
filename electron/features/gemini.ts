@@ -8,23 +8,29 @@ const initPrompt = `
 
       Generate:
       - 10 amazon captions
-      - Each caption is separated by three line breaks"
+      - Each caption is separated by new line with character "####" for example:
+      cation1
+      ####
+      cation2
+      ####
+      cation3
 
       Style:
       Gen Z
       Viral short-form
       Emotional buying trigger
       Only captions, no hashtags, have emojis, no links, no mentions
-      Have 150 to 200 characters
-      Have a hook, a story, and a call to action
-      Format: "[hook1]\n[story1]\n[call to action1]\n\n\n\n[hook2]\n[story2]\n[call to action2]\n\n\n\n[hook3]\n[story3]\n[call to action3]"
+      Have 100 to 150 characters
       `;
 
 export const generateAmazonCaptions = async (folder: string) => {
   try {
     const mainConfig = await loadMainConfig();
+    const keys = mainConfig?.gemini?.apiKey?.trim().split(`\n`);
+    const randomKey = keys?.[Math.floor(Math.random() * keys.length)] || mainConfig?.gemini?.apiKey;
+
     const ai = new GoogleGenAI({
-      apiKey: mainConfig?.gemini?.apiKey,
+      apiKey: randomKey,
     });
 
     // get .mp4 in folder

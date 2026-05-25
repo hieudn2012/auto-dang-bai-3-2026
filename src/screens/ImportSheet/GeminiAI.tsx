@@ -126,8 +126,9 @@ const Row = ({ path, ws, numberIndex }: { path: string, ws: string, numberIndex:
     }
 
     try {
+      const result = data.replace(/####/g, '\n\n');
       await windowInstance.api.moveDataToFolder({
-        data,
+        data: result,
         folder,
         fileName
       });

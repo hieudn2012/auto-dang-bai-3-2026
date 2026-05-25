@@ -21,7 +21,7 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
     if (fs.existsSync(captionFile)) {
       try {
         const caption = fs.readFileSync(captionFile, 'utf-8').trim();
-        captionValidation = checkValid(caption, path.join(workingDir, folder));
+        captionValidation = checkValid(caption, path.join(workingDir, folder), 'cap');
       } catch (error) {
         console.error(`Lỗi khi đọc file caption ${captionFile}:`, error);
         captionValidation = {
@@ -44,7 +44,7 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
     if (fs.existsSync(linkFile)) {
       try {
         const link = fs.readFileSync(linkFile, 'utf-8').trim();
-        linkValidation = checkValid(link, path.join(workingDir, folder));
+        linkValidation = checkValid(link, path.join(workingDir, folder), 'link');
       } catch (error) {
         console.error(`Lỗi khi đọc file link ${linkFile}:`, error);
         linkValidation = {
@@ -75,7 +75,7 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
   };
 };
 
-const checkValid = (data: string, path: string) => {
+const checkValid = (data: string, path: string, type: 'cap' | 'link') => {
   // Chuẩn hóa ký tự xuống dòng để xử lý cả Windows (\r\n) và Unix (\n)
   const normalizedData = data.replace(/\r\n/g, '\n');
   const errors: string[] = [];
@@ -86,16 +86,16 @@ const checkValid = (data: string, path: string) => {
   }
 
   // Quy tắc 2: Caption không được chứa quá nhiều dòng trống liên tiếp (tối đa 4)
-  const emptyLineGroups = normalizedData.match(/\n{5,}/g);
+  const emptyLineGroups = normalizedData.match(type === 'cap' ? /\n{5,}/g : /\n{2,}/g);
   if (emptyLineGroups) {
-    errors.push("Dữ liệu chứa quá nhiều dòng trống liên tiếp (tối đa 4 dòng cho phép)");
+    errors.push(`Dữ liệu chứa quá nhiều dòng trống liên tiếp (tối đa ${type === 'cap' ? 4 : 1} dòng cho phép)`);
   }
 
   return {
     isValid: errors.length === 0,
     errors,
     path,
-    totalItems: normalizedData.split('\n\n\n\n').length,
+    totalItems: normalizedData.split(type === 'cap' ? '\n\n\n\n' : '\n').length,
   };
 }
 

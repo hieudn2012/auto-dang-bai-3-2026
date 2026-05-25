@@ -16,11 +16,10 @@ const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, prom
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Gemini API Key</label>
-        <Input
-          type="text"
+        <TextArea
           value={geminiApiKey}
           onChange={(e) => setGeminiApiKey(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full min-h-[200px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Enter your Gemini API key"
         />
       </div>
