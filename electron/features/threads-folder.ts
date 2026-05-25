@@ -68,7 +68,7 @@ export const randomFolderNotUsed = async (exclude: string[] = []): Promise<{ nam
   const config = await loadMainConfig();
   const randomFolder = getRandomFolder(config?.workingDir || '', exclude);
   return {
-    name: randomFolder.split('/').pop() || '',
+    name: nodePath.basename(randomFolder),
     path: randomFolder
   };
 }
@@ -91,7 +91,7 @@ export interface MoveFolderParams {
 // cut folder to another place
 export const moveFolder = async ({ froms, to }: MoveFolderParams) => {
   froms.forEach((from) => {
-    const folderName = from.split('/').pop() || '';
+    const folderName = nodePath.basename(from);
     const newPath = nodePath.join(to, folderName);
     fs.renameSync(from, newPath);
   });
