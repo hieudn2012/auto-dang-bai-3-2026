@@ -7,7 +7,7 @@ import React, { useState, useImperativeHandle, forwardRef } from "react";
 
 interface Item {
   path: string;
-  link: string;
+  defaultLink: string;
 }
 
 const shortName = (name: string) => {
@@ -47,9 +47,9 @@ const GeminiAI = () => {
     const root = await windowInstance.api.openDialogFolder();
     setRootFolder(root);
     const folders = await windowInstance.api.getAllFolder(root);
-    const results = folders.map((folder: string) => ({
+    const results = folders.map(({ folder, defaultLink }) => ({
       path: folder,
-      link: '',
+      defaultLink: defaultLink,
     }));
     setItems(results);
   };
@@ -144,7 +144,7 @@ const GeminiAI = () => {
         </thead>
         <tbody>
           {items.map((item, index) => (
-            <Row key={index} path={item.path} ws={ws} numberIndex={index} indexSelected={indexSelected} onSelect={handleSelect} ref={rowRefs[index]} />
+            <Row key={index} path={item.path} defaultLink={item.defaultLink} ws={ws} numberIndex={index} indexSelected={indexSelected} onSelect={handleSelect} ref={rowRefs[index]} />
           ))}
         </tbody>
       </table>
@@ -152,11 +152,11 @@ const GeminiAI = () => {
   )
 }
 
-const Row = forwardRef(({ path, ws, numberIndex, indexSelected, onSelect }: { path: string, ws: string, numberIndex: number, indexSelected: number[], onSelect: (index: number) => void }, ref) => {
+const Row = forwardRef(({ path, defaultLink, ws, numberIndex, indexSelected, onSelect }: { path: string, defaultLink: string, ws: string, numberIndex: number, indexSelected: number[], onSelect: (index: number) => void }, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
   const [text, setText] = useState('');
-  const [link, setLink] = useState('');
+  const [link, setLink] = useState(defaultLink);
   const [links, setLinks] = useState('');
   const [isCapMoved, setIsCapMoved] = useState(false);
   const [isLinksMoved, setIsLinksMoved] = useState(false);

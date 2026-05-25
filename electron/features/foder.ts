@@ -55,11 +55,30 @@ export const getRandomFolder = (
 };
 
 // get all folder in root path
-export const getAllFolder = (rootPath: string): string[] => {
+export const getAllFolder = (rootPath: string): { folder: string, defaultLink: string }[] => {
   try {
     const folders = fs.readdirSync(rootPath);
     const data = folders.filter(folder => folder !== '.DS_Store' && folder !== 'desktop.ini');
-    return data.map(folder => path.join(rootPath, folder));
+    return data.map((folder) => {
+      // get link.txt in folder
+      const linkPath = path.join(rootPath, folder, 'link.txt');
+      console.log(linkPath, 'linkPath');
+
+      let defaultLink = '';
+      if (fs.existsSync(linkPath)) {
+        const linkData = fs.readFileSync(linkPath, 'utf-8');
+        const normalizedData = linkData.replace(/\r\n/g, '\n');
+        const links = normalizedData.split('\n').filter(link => link.trim().length > 0);
+
+        if (links.length > 0) {
+          defaultLink = links[0]; // Lấy link đầu tiên làm defaultLink
+        }
+      }
+      return ({
+        folder: path.join(rootPath, folder),
+        defaultLink: defaultLink,
+      });
+    });
   } catch (error) {
     console.error('Error reading folder:', rootPath, error);
     return [];

@@ -55,7 +55,7 @@ type WindownInstance = typeof window & {
     getProductFolder: (folderPath: string) => Promise<Product>,
     getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => Promise<string>,
     generateAmazonCaptions: (folder: string) => Promise<string>,
-    getAllFolder: (rootPath: string) => Promise<string[]>,
+    getAllFolder: (rootPath: string) => Promise<{ folder: string, defaultLink: string }[]>,
     moveDataToFolder: (data: MoveData) => Promise<any>,
     moveFolder: (params: MoveFolderParams) => Promise<any>
   }
