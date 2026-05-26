@@ -8,7 +8,6 @@ import { IpcMainEvent } from "electron";
 import { getRandomCap, getRandomCaption, getRandomLink } from "./caption";
 import { showToast } from "./event";
 import { saveHistory } from './history';
-import { profile } from 'node:console';
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -145,7 +144,7 @@ export const clickPostButton = async ({
       const els = await page.$$('div.xc26acl');
 
       for (const el of els) {
-        const text = await page.evaluate(e => e.textContent.trim(), el);
+        const text = await page.evaluate(e => e?.textContent?.trim(), el);
         if (text === 'Post' || text === 'Đăng') {
           await el.click();
           break;
@@ -350,7 +349,7 @@ export const setupNewAccount = async ({
 // upload media
 export const uploadMedia = async ({
   page,
-  username,
+  // username,
   folder,
   mode,
 }: {

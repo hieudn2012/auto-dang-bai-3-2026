@@ -1,5 +1,14 @@
+import mongoose from 'mongoose';
+import 'dotenv/config';
+// Kết nối MongoDB
+const MONGODB_URI = process.env.MONGODB_URI || '';
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch((err) => console.error('❌ MongoDB connection error:', err));
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import userRouter from './user/user.router';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -7,6 +16,10 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+
+// User API router
+app.use('/api/users', userRouter);
 
 // Routes
 app.get('/', (req: Request, res: Response) => {
