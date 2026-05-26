@@ -31,7 +31,7 @@ export const loadMainConfig = async (): Promise<MainConfig | null> => {
   if (!fs.existsSync(path.join(appConfig, 'history2.txt'))) {
     fs.writeFileSync(path.join(appConfig, 'history2.txt'), '');
   }
-  
+
   if (config) {
     return JSON.parse(config);
   }
@@ -69,6 +69,10 @@ export const initConfigFile = async () => {
   // create history file if not exists
   if (!fs.existsSync(path.join(appConfig, 'history.txt'))) {
     fs.writeFileSync(path.join(appConfig, 'history.txt'), '');
+  }
+
+  if (!fs.existsSync(path.join(appConfig, 'history2.txt'))) {
+    fs.writeFileSync(path.join(appConfig, 'history2.txt'), '');
   }
 }
 

@@ -93,6 +93,10 @@ export const moveFolder = async ({ froms, to }: MoveFolderParams) => {
   froms.forEach((from) => {
     const folderName = nodePath.basename(from);
     const newPath = nodePath.join(to, folderName);
-    fs.renameSync(from, newPath);
+    try {
+      fs.renameSync(from, newPath);
+    } catch (error) {
+      console.error(`Error moving folder from ${from} to ${newPath}:`, error);
+    }
   });
 }

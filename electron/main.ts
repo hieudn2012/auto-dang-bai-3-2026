@@ -18,6 +18,7 @@ import { createEmptyProduct, getProductFolder, saveProduct } from './features/pr
 import { getAffAmzLink } from './features/amz'
 import { generateAmazonCaptions } from './features/gemini'
 import { getAllFolder, moveDataToFolder } from './features/foder'
+import { init } from './init'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -288,6 +289,7 @@ export function sendToRenderer<T>(channel: string, data: T) {
 
 app.whenReady().then(async () => {
   await initConfigFile();
+  await init();
   startServer();
   createWindow();
 })
