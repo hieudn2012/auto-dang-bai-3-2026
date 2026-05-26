@@ -26,7 +26,9 @@ export interface LoginCredentials {
 }
 
 export const login = async ({ mac_id }: LoginCredentials) => {
-  const user = await User.findOne({ mac_id });
+  const user = await User.findOne({ mac_id: mac_id.toUpperCase() });
+  console.log(mac_id);
+  
   if (!user) {
     throw new Error('Mac ID is not registered');
   }

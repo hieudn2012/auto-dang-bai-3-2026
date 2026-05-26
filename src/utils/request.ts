@@ -1,13 +1,11 @@
 import axios from "axios"
 
 const request = axios.create({
-  baseURL: 'https://api.gologin.com',
+  baseURL: 'http://localhost:3001/api',
 })
 
 request.interceptors.request.use((config) => {
-  const settings = JSON.parse(localStorage.getItem('settings') || '{}')
   config.headers['Content-Type'] = 'application/json'
-  config.headers['Authorization'] = `Bearer ${settings.token}`
   return config
 })
 

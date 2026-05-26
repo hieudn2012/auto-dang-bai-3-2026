@@ -8,5 +8,6 @@ export const routerPath = {
   import_sheet: '/tools',
   schedule: '/schedule',
   report: '/report',
-  logs: '/logs'
+  logs: '/logs',
+  contact_support: '/contact-support',
 };

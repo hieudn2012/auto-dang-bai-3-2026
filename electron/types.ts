@@ -66,7 +66,8 @@ export type MainConfig = {
     apiKey?: string
     prompt?: string
     model?: string
-  }
+  },
+  macId?: string
 }
 
 export type History = {

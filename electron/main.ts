@@ -229,8 +229,6 @@ handle(InvokeChannel.GET_PRODUCT_FOLDER, async (_event, folderPath) => {
 })
 
 handle(InvokeChannel.GET_AFF_AMZ_LINK, async (_event, params) => {
-  console.log('kaka');
-  
   return getAffAmzLink(params);
 })
 

@@ -15,6 +15,7 @@ import Logs from './screens/LogsD'
 import Login from './screens/Login'
 import { DarkModeProvider } from './contexts/DarkModeContext'
 import { LDProvider } from './configs/LDProvider'
+import ContactSupport from './screens/ContactSupport'
 // import LDFlagsViewer from './components/LDFlagsViewer'
 
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ function App() {
               <Route path={routerPath.report} element={<Report />} />
               <Route path={routerPath.logs} element={<Logs />} />
               <Route path={routerPath.login} element={<Login />} />
+              <Route path={routerPath.contact_support} element={<ContactSupport />} />
             </Routes>
           </Router>
         </QueryClientProvider>

@@ -3,6 +3,8 @@ import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { useNavigate } from 'react-router-dom';
 import { Flags } from '@/configs/LDProvider';
 import { routerPath } from '@/configs/router';
+// import request from '@/utils/request';
+// import { windowInstance } from '@/services/window';
 
 const Splash: React.FC = () => {
   const ldClient = useLDClient();
@@ -10,11 +12,26 @@ const Splash: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // const checkMacId = async () => {
+    //   try {
+    //     const config = await windowInstance.api.loadMainConfig();
+    //     await request.post(`/users/login`, {
+    //       mac_id: config?.macId,
+    //     });
+    //     return true;
+    //   } catch (error) {
+    //     return false;
+    //   }
+    // }
     const checkAuthentication = async () => {
       try {
         // Wait a moment for LaunchDarkly to initialize
+        // const isMacOk = await checkMacId();
+        // if (!isMacOk) {
+        //   return navigate(routerPath.contact_support);
+        // }
         await new Promise(resolve => setTimeout(resolve, 1500));
-        
+
         const allFlags = (ldClient?.allFlags() || {
           required_login: false,
           authentication: {
@@ -38,6 +55,7 @@ const Splash: React.FC = () => {
       }
     };
 
+
     checkAuthentication();
   }, [ldClient, navigate]);
 
@@ -49,22 +67,22 @@ const Splash: React.FC = () => {
           <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-8 shadow-2xl animate-pulse">
             <i className="fas fa-rocket text-white text-3xl"></i>
           </div>
-          
+
           {/* App Name */}
           <h1 className="text-4xl font-bold text-gray-800 dark:text-dark-text mb-4">
             Threads Tools
           </h1>
-          
+
           {/* Loading Text */}
           <p className="text-gray-600 dark:text-dark-textSecondary mb-8">
             Initializing application...
           </p>
-          
+
           {/* Loading Spinner */}
           <div className="flex justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           </div>
-          
+
           {/* Progress Indicator */}
           <div className="mt-8 w-64 mx-auto">
             <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
