@@ -5,7 +5,7 @@ import { loadMainConfig, saveReportTxt, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
-import { getRandomCap, getRandomCaption, getRandomLink } from "./caption";
+import { getRandomCaption, getRandomLink } from "./caption";
 import { showToast } from "./event";
 import { saveHistory } from './history';
 
@@ -108,10 +108,8 @@ export const clickPostButton = async ({
   folder,
   type = 'quote',
   mode = 'default',
-  captionData,
 }: PostParams, event: IpcMainEvent) => {
-  const config = await loadMainConfig();
-  const caption = mode === 'affiliate' ? getRandomCaption(folder) : getRandomCap(captionData || config?.caption || '') || '';
+  const caption = getRandomCaption(folder);
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
