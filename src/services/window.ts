@@ -6,6 +6,7 @@ import { RegisterNewAccountParams } from "electron/features/register";
 import { Product } from "electron/features/product";
 import { MoveData } from "electron/features/foder";
 import { MoveFolderParams } from "electron/features/threads-folder";
+import { FanpageLinkParams } from "electron/features/fanpage";
 
 type WindownInstance = typeof window & {
   api: {
@@ -57,7 +58,8 @@ type WindownInstance = typeof window & {
     generateAmazonCaptions: (folder: string) => Promise<string>,
     getAllFolder: (rootPath: string) => Promise<{ folder: string, defaultLink: string }[]>,
     moveDataToFolder: (data: MoveData) => Promise<any>,
-    moveFolder: (params: MoveFolderParams) => Promise<any>
+    moveFolder: (params: MoveFolderParams) => Promise<any>,
+    getFanpageLinks: (params: FanpageLinkParams) => Promise<string>
   }
 }
 

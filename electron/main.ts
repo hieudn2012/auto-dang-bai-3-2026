@@ -19,6 +19,7 @@ import { getAffAmzLink } from './features/amz'
 import { generateAmazonCaptions } from './features/gemini'
 import { getAllFolder, moveDataToFolder } from './features/foder'
 import { init } from './init'
+import { getFanpageLinks } from './features/fanpage'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -250,6 +251,10 @@ handle(InvokeChannel.MOVE_DATA_TO_FOLDER, async (_event, data) => {
 
 handle(InvokeChannel.MOVE_FOLDER, async (_event, params) => {
   return moveFolder(params);
+})
+
+handle(InvokeChannel.GET_FANPAGE_LINKS, async (_event, params) => {
+  return getFanpageLinks(params);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

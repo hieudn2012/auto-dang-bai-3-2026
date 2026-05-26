@@ -443,6 +443,10 @@ export const clickEditLatestPostButton = async ({
     const page = targetPage || pages[pages.length - 1];
     await page.bringToFront();
 
+    // scroll to top
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await waitRandom(2000, 4000);
+
     // Đợi DOM load
     await page.waitForSelector('div.x1c1b4dv', { timeout: 10000 });
 
