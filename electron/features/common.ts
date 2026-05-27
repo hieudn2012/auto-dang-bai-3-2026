@@ -74,6 +74,16 @@ export const initConfigFile = async () => {
   if (!fs.existsSync(path.join(appConfig, 'history2.txt'))) {
     fs.writeFileSync(path.join(appConfig, 'history2.txt'), '');
   }
+
+  // create sexy-caption file if not exists
+  if (!fs.existsSync(path.join(appConfig, 'sexy-cap.txt'))) {
+    fs.writeFileSync(path.join(appConfig, 'sexy-cap.txt'), '');
+  }
+
+  // create sexy-link file if not exists
+  if (!fs.existsSync(path.join(appConfig, 'sexy-link.txt'))) {
+    fs.writeFileSync(path.join(appConfig, 'sexy-link.txt'), '');
+  }
 }
 
 // save history txt, add 1 line new line

@@ -8,6 +8,7 @@ import CaptionConfig from "./CaptionConfig";
 import MultipleCaption from "./MultipleCaption";
 import ProxyConfig from "./ProxyConfig";
 import GeminiAI from "./GeminiAI";
+import SexyContent from "./SexyContent";
 
 interface Caption {
   label: string;
@@ -106,6 +107,16 @@ const ManageFolder = () => {
                 Caption config
               </button>
               <button
+                onClick={() => setActiveTab('sexy-content')}
+                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'sexy-content'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+              >
+                <i className="fas fa-heart mr-2"></i>
+                Sexy Content
+              </button>
+              <button
                 onClick={() => setActiveTab('multiple')}
                 className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'multiple'
                   ? 'border-blue-500 text-blue-600'
@@ -158,6 +169,10 @@ const ManageFolder = () => {
                 caption={caption}
                 setCaption={setCaption}
               />
+            )}
+
+            {activeTab === 'sexy-content' && (
+              <SexyContent />
             )}
 
             {activeTab === 'multiple' && (

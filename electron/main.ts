@@ -20,6 +20,7 @@ import { generateAmazonCaptions } from './features/gemini'
 import { getAllFolder, moveDataToFolder } from './features/foder'
 import { init } from './init'
 import { getFanpageLinks } from './features/fanpage'
+import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -49,17 +50,17 @@ let serverProcess: any = null
 function startServer() {
   const serverPath = path.join(__dirname, '..', 'server', 'index.ts')
   console.log('Starting server from:', serverPath)
-  
+
   serverProcess = spawn('npx', ['tsx', serverPath], {
     stdio: 'inherit',
     shell: true,
     cwd: path.join(__dirname, '..')
   })
-  
+
   serverProcess.on('error', (error: any) => {
     console.error('Failed to start server:', error)
   })
-  
+
   serverProcess.on('close', (code: any) => {
     console.log(`Server process exited with code ${code}`)
   })
@@ -255,6 +256,18 @@ handle(InvokeChannel.MOVE_FOLDER, async (_event, params) => {
 
 handle(InvokeChannel.GET_FANPAGE_LINKS, async (_event, params) => {
   return getFanpageLinks(params);
+})
+
+handle(InvokeChannel.SAVE_SEXY_CAPTION, async (_event, data) => {
+  return saveSexyCaption(data);
+})
+
+handle(InvokeChannel.SAVE_SEXY_LINK, async (_event, data) => {
+  return saveSexyLink(data);
+})
+
+handle(InvokeChannel.LOAD_SEXY_CONTENT, async () => {
+  return loadSexyContent();
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

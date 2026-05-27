@@ -59,7 +59,10 @@ type WindownInstance = typeof window & {
     getAllFolder: (rootPath: string) => Promise<{ folder: string, defaultLink: string }[]>,
     moveDataToFolder: (data: MoveData) => Promise<any>,
     moveFolder: (params: MoveFolderParams) => Promise<any>,
-    getFanpageLinks: (params: FanpageLinkParams) => Promise<string>
+    getFanpageLinks: (params: FanpageLinkParams) => Promise<string>,
+    saveSexyCaption: (data: string) => Promise<any>,
+    saveSexyLink: (data: string) => Promise<any>,
+    loadSexyContent: () => Promise<{ caption: string, link: string }>,
   }
 }
 

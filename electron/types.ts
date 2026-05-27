@@ -47,6 +47,9 @@ export enum InvokeChannel {
   MOVE_DATA_TO_FOLDER = 'move-data-to-folder',
   MOVE_FOLDER = 'move-folder',
   GET_FANPAGE_LINKS = 'get-fanpage-links',
+  SAVE_SEXY_CAPTION = 'save-sexy-caption',
+  SAVE_SEXY_LINK = 'save-sexy-link',
+  LOAD_SEXY_CONTENT = 'load-sexy-content',
 }
 
 export type MainConfig = {

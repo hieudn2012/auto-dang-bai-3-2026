@@ -1,13 +1,14 @@
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
-import { loadMainConfig, saveReportTxt, waitRandom } from "./common";
+import { saveReportTxt, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
 import { getRandomCaption, getRandomLink } from "./caption";
 import { showToast } from "./event";
 import { saveHistory } from './history';
+import { cutSexyCaption, cutSexyLink } from './file';
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -109,7 +110,7 @@ export const clickPostButton = async ({
   type = 'quote',
   mode = 'default',
 }: PostParams, event: IpcMainEvent) => {
-  const caption = getRandomCaption(folder);
+  const caption = mode === 'affiliate' ? getRandomCaption(folder) : cutSexyCaption();
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -199,7 +200,11 @@ export const clickPostButton = async ({
       if (postButton) {
         await postButton.click();
         await waitRandom(5000, 10000);
-        // send event to main process
+        // await page.waitForResponse(
+        //   res =>
+        //     res.url().includes('/api/v1/media/configure_text_only_post') &&
+        //     res.status() === 200
+        // )
         showToast(event, { id, username, message: 'Post completed ✅' });
       }
     }
@@ -419,7 +424,6 @@ export const clickEditLatestPostButton = async ({
   mode,
   folder,
 }: ClickEditLatestPostButtonParams, event: IpcMainEvent) => {
-  const config = await loadMainConfig();
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -488,10 +492,9 @@ export const clickEditLatestPostButton = async ({
     // link post split \n and random link
     let linkPost = '';
     if (mode === 'default') {
-      const links = config?.linkPost?.split('\n') || [];
-      linkPost = links[Math.floor(Math.random() * links.length)];
+      linkPost = `👉👉👉: ${cutSexyLink()}`;
     } else {
-      linkPost = `Product link: ${getRandomLink(folder)}`;
+      linkPost = `Product 👉👉👉: ${getRandomLink(folder)}`;
     }
     await page.keyboard.type(linkPost, { delay: 100 });
     await waitRandom(1000, 3000);

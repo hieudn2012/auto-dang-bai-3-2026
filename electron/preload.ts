@@ -86,6 +86,9 @@ contextBridge.exposeInMainWorld('api', {
   moveDataToFolder: (data: MoveData) => invoke(InvokeChannel.MOVE_DATA_TO_FOLDER, data),
   moveFolder: (params: MoveFolderParams) => invoke(InvokeChannel.MOVE_FOLDER, params),
   getFanpageLinks: (params: FanpageLinkParams) => invoke(InvokeChannel.GET_FANPAGE_LINKS, params),
+  saveSexyCaption: (data: string) => invoke(InvokeChannel.SAVE_SEXY_CAPTION, data),
+  saveSexyLink: (data: string) => invoke(InvokeChannel.SAVE_SEXY_LINK, data),
+  loadSexyContent: () => invoke(InvokeChannel.LOAD_SEXY_CONTENT),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
