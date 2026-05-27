@@ -59,7 +59,7 @@ const Profiles = () => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [batchSize, setBatchSize] = useState(20);
   const [reportName, setReportName] = useState('');
-  const [mode, setMode] = useState<'default' | 'affiliate'>('default');
+  const [mode, setMode] = useState<'default' | 'affiliate'>('affiliate');
   const [showProxyModal, setShowProxyModal] = useState(false);
   const [showRangeModal, setShowRangeModal] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
