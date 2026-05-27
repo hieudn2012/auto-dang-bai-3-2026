@@ -196,8 +196,8 @@ export const clickPostButton = async ({
     await uploadMedia({ page, username, folder, mode });
     await waitRandom(3000, 5000);
 
-    // find div with class x6s0dn4 x17zd0t2 x78zum5 x47corl x10l6tqk x13vifvy
-    const textArea = await page.$('div.x6s0dn4.x17zd0t2.x78zum5.x47corl.x10l6tqk.x13vifvy');
+    // find div aria-label="Empty text field. Type to compose a new post." and click
+    const textArea = await page.$('div[aria-label="Empty text field. Type to compose a new post."]');
     if (textArea) {
       await textArea.click();
       await waitRandom(1000, 2000);
