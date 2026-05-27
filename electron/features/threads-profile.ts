@@ -152,6 +152,19 @@ export const clickPostButton = async ({
     }
 
     if (type === 'quote') {
+      // scroll to top
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await waitRandom(2000, 4000);
+
+      // Đợi DOM load
+      const firstPostSelector = 'div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7';
+      await page.waitForSelector(firstPostSelector, { timeout: 10000 });
+
+      // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
+      const firstDiv = await page.$(firstPostSelector);
+      await firstDiv?.click();
+      await waitRandom(2000, 4000);
+
       let repostSvg = await page.$(
         'div.x4vbgl9 svg[aria-label="Repost"]'
       )
@@ -430,59 +443,76 @@ export const clickEditLatestPostButton = async ({
   });
   try {
     // Lấy tất cả tabs
+    // const pages = await browser.pages();
+
+    // let targetPage: Page | null = null;
+
+    // // logs all urls
+    // for (const page of pages) {
+    //   // find page with url contains threads.com
+    //   if (page.url().includes('threads.com')) {
+    //     targetPage = page;
+    //     break;
+    //   }
+    // }
+
+    // // Chọn tab cuối cùng
+    // const page = targetPage || pages[pages.length - 1];
+    // await page.bringToFront();
+
+    // open new tab
+    const page = await browser.newPage();
+
+    // close all pages and keep only this page
     const pages = await browser.pages();
-
-    let targetPage: Page | null = null;
-
-    // logs all urls
-    for (const page of pages) {
-      // find page with url contains threads.com
-      if (page.url().includes('threads.com')) {
-        targetPage = page;
-        break;
+    for (const p of pages) {
+      if (p !== page) {
+        await p.close();
       }
     }
 
-    // Chọn tab cuối cùng
-    const page = targetPage || pages[pages.length - 1];
-    await page.bringToFront();
+    await page.goto(`https://threads.com/@${username}`);
+    await waitRandom(5000, 10000);
 
     // scroll to top
     await page.evaluate(() => window.scrollTo(0, 0));
     await waitRandom(2000, 4000);
 
     // Đợi DOM load
-    await page.waitForSelector('div.x1c1b4dv', { timeout: 10000 });
+    const firstPostSelector = 'div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7';
+    await page.waitForSelector(firstPostSelector, { timeout: 10000 });
 
-    // Tìm svg aria-label="More" nằm trong div.x1c1b4dv
+    // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
+    const firstDiv = await page.$(firstPostSelector);
+    await firstDiv?.click();
+    await waitRandom(2000, 4000);
+
+    // Tìm svg aria-label="More" nằm trong xkqq1k2 x91jh78 x1xkn691 x4oqio7 x1qx5ct2 xw4jnvo
     const moreBtn = await page.$(
-      'div.x1c1b4dv svg[aria-label="More"]'
+      'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4jnvo svg[aria-label="More"]'
     );
     const moreBtnVn = await page.$(
-      'div.x1c1b4dv svg[aria-label="Xem thêm"]'
+      'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4jnvo svg[aria-label="Xem thêm"]'
     );
 
     await moreBtn?.click();
     await moreBtnVn?.click();
     await waitRandom(3000, 5000);
 
-    await page.waitForSelector('div.x17zd0t2');
-
-
     showToast(event, { id, username, message: 'Đang edit...' });
-    const editBtn = await page.evaluateHandle(() => {
-      const divs = document.querySelectorAll('div.x17zd0t2');
 
-      for (const div of divs) {
-        const span = div.querySelector('span');
-        if (span?.textContent?.trim() === 'Edit' || span?.textContent?.trim() === 'Chỉnh sửa') {
-          return div; // click container
-        }
+    // find span with content = "Edit post" in div with class xtsvl71 x1u6grsq x181y1b3 x4hg4is xf6vlc6
+    const editSpans = await page.$$('div.xtsvl71.x1u6grsq.x181y1b3.x4hg4is.xf6vlc6 span');
+    let editSpan = null;
+    for (const span of editSpans) {
+      const text = await page.evaluate(el => el.textContent?.trim(), span);
+      if (text === 'Edit' || text === 'Chỉnh sửa') {
+        editSpan = span;
+        break;
       }
-      return null;
-    });
+    }
 
-    await (editBtn as any).click();
+    await (editSpan as any)?.click();
     await waitRandom(5000, 10000);
     // enter
     await page.keyboard.press('Enter');
@@ -499,10 +529,9 @@ export const clickEditLatestPostButton = async ({
     await page.keyboard.type(linkPost, { delay: 100 });
     await waitRandom(1000, 3000);
 
-    // find div second with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
-    const divs = await page.$$('div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5');
-    const secondDiv = divs[1];
-    await secondDiv?.click();
+    // find div with class = xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
+    const doneBtn = await page.$('div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5');
+    await (doneBtn as any)?.click();
     await waitRandom(1000, 3000);
 
     showToast(event, { id, username, message: 'Edit completed ✅' });
