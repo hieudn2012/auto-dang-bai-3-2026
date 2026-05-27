@@ -490,6 +490,10 @@ export const clickEditLatestPostButton = async ({
     await firstDiv?.click();
     await waitRandom(2000, 4000);
 
+    // scroll to top
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await waitRandom(2000, 4000);
+
     // Tìm svg aria-label="More" nằm trong xkqq1k2 x91jh78 x1xkn691 x4oqio7 x1qx5ct2 xw4jnvo
     const moreBtn = await page.$(
       'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4jnvo svg[aria-label="More"]'
