@@ -232,6 +232,9 @@ const Row = forwardRef(({ path, defaultLink, totalLink, totalCap, ws, numberInde
     handleGetLinks,
   }));
 
+  const capColor = totalCap < 5 || totalCap !== totalLink ? 'text-red-500' : 'text-green-500';
+  const linkColor = totalLink < 5 || totalLink !== totalCap ? 'text-red-500' : 'text-green-500';
+
   return (
     <tr className="hover:bg-gray-50">
       <td className="border border-gray-200 px-4 py-2 cursor-pointer" onClick={() => onSelect(numberIndex)}>
@@ -262,10 +265,10 @@ const Row = forwardRef(({ path, defaultLink, totalLink, totalCap, ws, numberInde
           placeholder="Amz link"
         />
       </td>
-      <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", totalLink > 5 ? "text-green-500" : "text-red-500")}>
+      <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", linkColor)}>
         {totalLink}
       </td>
-      <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", totalCap > 5 ? "text-green-500" : "text-red-500")}>
+      <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", capColor)}>
         {totalCap}
       </td>
       <td className="border border-gray-200 px-4 py-2">
