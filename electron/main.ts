@@ -21,6 +21,7 @@ import { getAllFolder, moveDataToFolder } from './features/foder'
 import { init } from './init'
 import { getFanpageLinks } from './features/fanpage'
 import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
+import { getAffShopeeLink } from './features/shopee'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -231,7 +232,8 @@ handle(InvokeChannel.GET_PRODUCT_FOLDER, async (_event, folderPath) => {
 })
 
 handle(InvokeChannel.GET_AFF_AMZ_LINK, async (_event, params) => {
-  return getAffAmzLink(params);
+  const mainConfig = await loadMainConfig(); 
+  return mainConfig?.gemini?.lang === 'vi' ? getAffShopeeLink(params) : getAffAmzLink(params);
 })
 
 handle(InvokeChannel.GENERATE_AMAZON_CAPTIONS, async (_event, folder) => {

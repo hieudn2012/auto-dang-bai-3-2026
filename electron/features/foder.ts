@@ -6,6 +6,7 @@ export interface MoveData {
   data: string;
   folder: string;
   fileName: string;
+  type?: 'cap' | 'link';
 }
 
 export const getRandomFolder = (

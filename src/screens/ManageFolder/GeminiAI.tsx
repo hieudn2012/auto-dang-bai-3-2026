@@ -1,17 +1,18 @@
 import Input from '@/components/Input';
+import Select from '@/components/Select';
 import TextArea from '@/components/TextArea';
 import React from 'react';
 
 interface GeminiAIProps {
   geminiApiKey: string;
   setGeminiApiKey: (geminiApiKey: string) => void;
-  prompt: string;
-  setPrompt: (prompt: string) => void;
+  lang: string;
+  setLang: (lang: string) => void;
   model: string;
   setModel: (model: string) => void;
 }
 
-const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, prompt, setPrompt, model, setModel }) => {
+const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, lang, setLang, model, setModel }) => {
   return (
     <div className="space-y-4">
       <div>
@@ -24,14 +25,17 @@ const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, prom
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Prompt</label>
-        <TextArea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+        <label className="block text-sm font-medium text-gray-700 mb-2">Lang</label>
+        <Select
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Enter your prompt"
-          rows={4}
+          options={[
+            { label: 'English', value: 'en' },
+            { label: 'Vietnamese', value: 'vi' },
+          ]}
         />
+
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Model</label>

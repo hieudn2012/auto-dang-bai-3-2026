@@ -162,7 +162,7 @@ export const getRandomLink = (p: string) => {
     
     const data = fs.readFileSync(filePath, 'utf-8');
     const normalizedData = data.replace(/\r\n/g, '\n');
-    const links = normalizedData.split('\n').filter(link => link.trim().length > 0);
+    const links = normalizedData.split('\n').filter(link => link.trim().length > 0).slice(1);
     
     if (links.length === 0) {
       console.error(`No links found in file: ${filePath}`);

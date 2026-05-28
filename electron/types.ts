@@ -70,6 +70,7 @@ export type MainConfig = {
     apiKey?: string
     prompt?: string
     model?: string
+    lang?: string
   },
   macId?: string
 }

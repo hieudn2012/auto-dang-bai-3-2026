@@ -210,7 +210,7 @@ const Row = forwardRef(({ path, defaultLink, totalLink, totalCap, ws, numberInde
     try {
       const result = data.replace(/####/g, '\n\n');
       await windowInstance.api.moveDataToFolder({
-        data: result,
+        data: fileName === 'cap.txt' ? result : `${link}\n${result}`,
         folder,
         fileName
       });

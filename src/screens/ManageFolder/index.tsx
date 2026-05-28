@@ -23,7 +23,7 @@ const ManageFolder = () => {
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [proxy, setProxy] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
-  const [prompt, setPrompt] = useState('');
+  const [lang, setLang] = useState('en');
   const [model, setModel] = useState('');
   const [activeTab, setActiveTab] = useState('global');
 
@@ -47,7 +47,7 @@ const ManageFolder = () => {
       proxy,
       gemini: {
         apiKey: geminiApiKey,
-        prompt,
+        lang,
         model
       }
     });
@@ -63,7 +63,7 @@ const ManageFolder = () => {
     setCaptions(config?.captions || []);
     setProxy(config?.proxy || '');
     setGeminiApiKey(config?.gemini?.apiKey || '');
-    setPrompt(config?.gemini?.prompt || '');
+    setLang(config?.gemini?.lang || '');
     setModel(config?.gemini?.model || '');
   }
 
@@ -193,8 +193,8 @@ const ManageFolder = () => {
               <GeminiAI
                 geminiApiKey={geminiApiKey}
                 setGeminiApiKey={setGeminiApiKey}
-                prompt={prompt}
-                setPrompt={setPrompt}
+                lang={lang}
+                setLang={setLang}
                 model={model}
                 setModel={setModel}
               />

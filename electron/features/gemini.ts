@@ -3,26 +3,47 @@ import fs from "node:fs";
 import path from "node:path";
 import { loadMainConfig } from "./common";
 
-const initPrompt = `
-      Analyze this affiliate product video.
+const amzPrompt = `
+  Analyze this affiliate product video.
 
-      Generate:
-      - 20 amazon captions
-      - Each caption is separated by new line with character "####" for example:
-      cation1
-      ####
-      cation2
-      ####
-      cation3
+  Generate:
+  - 20 amazon captions
+  - Each caption is separated by new line with character "####" for example:
+  cation1
+  ####
+  cation2
+  ####
+  cation3
 
-      Style:
-      Gen Z
-      Viral short-form
-      Emotional buying trigger
-      Only captions, no hashtags, have emojis, no links, no mentions
-      Have 100 to 150 characters
-      `;
+  Style:
+  Gen Z
+  Viral short-form
+  Emotional buying trigger
+  Only captions, no hashtags, have emojis, no links, no mentions
+  Have 100 to 150 characters
+  Only return captions, no further explanation
+`;
 
+const shoppePrompt = `
+  Phân tích video sản phẩm affiliate này.
+
+  Tạo:
+  - 20 caption Shopee
+  - Mỗi caption cách nhau xuống dòng bằng ký tự "####", ví dụ:
+  caption1
+  ####
+  caption2
+  ####
+  caption3
+
+  Phong cách:
+  - Gen Z
+  - Viral short-form
+  - Kích thích cảm xúc mua hàng
+  - Chỉ trả về caption, Có chứa ký tự cảm xúc, không hashtag, không link, không mention
+  - Mỗi caption dài từ 100 đến 150 ký tự
+  - Chỉ trả về caption, không giải thích gì thêm
+`;
 export const generateAmazonCaptions = async (folder: string) => {
   try {
     const mainConfig = await loadMainConfig();
@@ -53,7 +74,7 @@ export const generateAmazonCaptions = async (folder: string) => {
           },
         },
         {
-          text: mainConfig?.gemini?.prompt || initPrompt,
+          text: mainConfig?.gemini?.lang === 'vi' ? shoppePrompt : amzPrompt,
         },
       ],
     });
