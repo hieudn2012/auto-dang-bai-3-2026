@@ -545,16 +545,24 @@ export const clickEditLatestPostButton = async ({
     await (doneBtn as any)?.click();
     await waitRandom(1000, 3000);
 
-    showToast(event, { id, username, message: 'Edit completed ✅' });
+    const waitForSelectorPromise = await page.waitForFunction(
+      () => [...document.querySelectorAll('div.html-div')]
+        .some(el => el.textContent === 'Edited')
+    );
 
-    if (reportName) {
-      saveReportTxt({
-        reportName,
-        note: 'Edit completed',
-        id,
-        status: 'completed',
-        username,
-      });
+    if (!waitForSelectorPromise) {
+      throw new Error('Edit may not be successful, cannot find success selector');
+    } else {
+      showToast(event, { id, username, message: 'Edit completed ✅' });
+      if (reportName) {
+        saveReportTxt({
+          reportName,
+          note: 'Edit completed',
+          id,
+          status: 'completed',
+          username,
+        });
+      }
     }
   } catch (error) {
     console.log(error);
