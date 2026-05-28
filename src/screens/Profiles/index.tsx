@@ -156,7 +156,7 @@ const Profiles = () => {
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
         document.getElementById(`post-button-${id}`)?.click();
-        await waitFor(0.2)
+        await waitFor(3)
       }
     }
   }
@@ -165,7 +165,7 @@ const Profiles = () => {
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
         document.getElementById(`edit-folder-${id}`)?.click();
-        await waitFor(0.2);
+        await waitFor(3);
       }
     }
   }
