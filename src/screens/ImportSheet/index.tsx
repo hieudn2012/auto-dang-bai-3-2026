@@ -4,7 +4,7 @@ import ConvertCookie from "./ConvertCookie";
 import SetupAcc from "./SetupAcc";
 import CheckLive from "./CheckLive";
 import CheckValidFolder from "./CheckValidFolder";
-import Product from "./Product";
+// import Product from "./Product";
 import AmzLink from "./AmzLink";
 import GeminiAI from "./GeminiAI";
 import Fanpage from "./Fanpage";
@@ -18,7 +18,7 @@ const ImportSheet = () => {
     { id: 'cookie', label: 'Cookie', icon: 'fas fa-cookie' },
     { id: 'check-live', label: 'Check Live', icon: 'fas fa-signal' },
     { id: 'check-valid-folder', label: 'Check Valid Folder', icon: 'fas fa-check-circle' },
-    { id: 'product', label: 'Product', icon: 'fas fa-box' },
+    // { id: 'product', label: 'Product', icon: 'fas fa-box' },
     { id: 'amz-link', label: 'Amazon Link', icon: 'fas fa-link' },
     { id: 'gemini-ai', label: 'Gemini AI', icon: 'fas fa-robot' },
     { id: 'fanpage', label: 'Fanpage', icon: 'fas fa-users' },
@@ -64,7 +64,7 @@ const ImportSheet = () => {
               {tab === 'setup' && <SetupAcc />}
               {tab === 'check-live' && <CheckLive />}
               {tab === 'check-valid-folder' && <CheckValidFolder />}
-              {tab === 'product' && <Product />}
+              {/* {tab === 'product' && <Product />} */}
               {tab === 'amz-link' && <AmzLink />}
               {tab === 'gemini-ai' && <GeminiAI />}
               {tab === 'fanpage' && <Fanpage />}

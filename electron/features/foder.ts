@@ -55,7 +55,7 @@ export const getRandomFolder = (
 };
 
 // get all folder in root path
-export const getAllFolder = (rootPath: string): { folder: string, defaultLink: string }[] => {
+export const getAllFolder = (rootPath: string): { folder: string, defaultLink: string, totalLink: number, totalCap: number }[] => {
   try {
     const folders = fs.readdirSync(rootPath);
     const data = folders.filter(folder => folder !== '.DS_Store' && folder !== 'desktop.ini');
@@ -64,19 +64,31 @@ export const getAllFolder = (rootPath: string): { folder: string, defaultLink: s
       const linkPath = path.join(rootPath, folder, 'link.txt');
       console.log(linkPath, 'linkPath');
 
+      let totalLink = 0;
+      let totalCap = 0;
       let defaultLink = '';
       if (fs.existsSync(linkPath)) {
         const linkData = fs.readFileSync(linkPath, 'utf-8');
         const normalizedData = linkData.replace(/\r\n/g, '\n');
         const links = normalizedData.split('\n').filter(link => link.trim().length > 0);
-
+        totalLink = links.length;
         if (links.length > 0) {
           defaultLink = links[0]; // Lấy link đầu tiên làm defaultLink
         }
       }
+
+      const capPath = path.join(rootPath, folder, 'cap.txt');
+      if (fs.existsSync(capPath)) {
+        const capData = fs.readFileSync(capPath, 'utf-8').trim();
+        const caps = capData.split('\n\n\n\n').filter(cap => cap.trim().length > 0);
+        totalCap = caps.length;
+      }
+
       return ({
         folder: path.join(rootPath, folder),
         defaultLink: defaultLink,
+        totalLink: totalLink,
+        totalCap: totalCap,
       });
     });
   } catch (error) {

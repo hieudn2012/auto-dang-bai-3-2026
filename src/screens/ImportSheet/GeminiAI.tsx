@@ -4,10 +4,13 @@ import { toast } from "@/components/ToastContainer";
 import { windowInstance } from "@/services/window";
 import { MoveData } from "electron/features/foder";
 import React, { useState, useImperativeHandle, forwardRef } from "react";
+import { twMerge } from "tailwind-merge";
 
 interface Item {
   path: string;
   defaultLink: string;
+  totalLink: number;
+  totalCap: number;
 }
 
 const shortName = (name: string) => {
@@ -47,9 +50,11 @@ const GeminiAI = () => {
     const root = await windowInstance.api.openDialogFolder();
     setRootFolder(root);
     const folders = await windowInstance.api.getAllFolder(root);
-    const results = folders.map(({ folder, defaultLink }) => ({
+    const results = folders.map(({ folder, defaultLink, totalLink, totalCap }) => ({
       path: folder,
       defaultLink: defaultLink,
+      totalLink: totalLink,
+      totalCap: totalCap
     }));
     setItems(results);
   };
@@ -135,6 +140,8 @@ const GeminiAI = () => {
             </th>
             <th className="border border-gray-200 px-4 py-2 text-left">Path</th>
             <th className="border border-gray-200 px-4 py-2 text-left">Link</th>
+            <th className="border border-gray-200 px-4 py-2 text-left">TL</th>
+            <th className="border border-gray-200 px-4 py-2 text-left">TC</th>
             <th className="border border-gray-200 px-4 py-2 text-left">C</th>
             <th className="border border-gray-200 px-4 py-2 text-left">L</th>
             <th className="border border-gray-200 px-4 py-2 text-left">CM</th>
@@ -144,7 +151,7 @@ const GeminiAI = () => {
         </thead>
         <tbody>
           {items.map((item, index) => (
-            <Row key={index} path={item.path} defaultLink={item.defaultLink} ws={ws} numberIndex={index} indexSelected={indexSelected} onSelect={handleSelect} ref={rowRefs[index]} />
+            <Row key={index} path={item.path} defaultLink={item.defaultLink} totalLink={item.totalLink} totalCap={item.totalCap} ws={ws} numberIndex={index} indexSelected={indexSelected} onSelect={handleSelect} ref={rowRefs[index]} />
           ))}
         </tbody>
       </table>
@@ -152,7 +159,7 @@ const GeminiAI = () => {
   )
 }
 
-const Row = forwardRef(({ path, defaultLink, ws, numberIndex, indexSelected, onSelect }: { path: string, defaultLink: string, ws: string, numberIndex: number, indexSelected: number[], onSelect: (index: number) => void }, ref) => {
+const Row = forwardRef(({ path, defaultLink, totalLink, totalCap, ws, numberIndex, indexSelected, onSelect }: { path: string, defaultLink: string, totalLink: number, totalCap: number, ws: string, numberIndex: number, indexSelected: number[], onSelect: (index: number) => void }, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
   const [text, setText] = useState('');
@@ -254,6 +261,12 @@ const Row = forwardRef(({ path, defaultLink, ws, numberIndex, indexSelected, onS
           onChange={(e) => setLink(e.target.value)}
           placeholder="Amz link"
         />
+      </td>
+      <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", totalLink > 5 ? "text-green-500" : "text-red-500")}>
+        {totalLink}
+      </td>
+      <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", totalCap > 5 ? "text-green-500" : "text-red-500")}>
+        {totalCap}
       </td>
       <td className="border border-gray-200 px-4 py-2">
         {text ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}

@@ -102,6 +102,13 @@ export interface PostParams {
   captionData: string;
 }
 
+const POST_BUTTON_SELECTOR = 'div.xc26acl';
+const FIRST_POST_SELECTOR = `div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7`
+const REPOST_BUTTON_SELECTOR = `div.x4vbgl9 svg[aria-label="Repost"]`
+const MODAL_SELECTOR = 'div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is'
+const TEXT_AREA_CAPTION = 'div[aria-label="Empty text field. Type to compose a new post."]'
+const POST_BUTTON_SUBMIT = 'div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5'
+
 export const clickPostButton = async ({
   id,
   ws,
@@ -140,7 +147,7 @@ export const clickPostButton = async ({
     });
 
     if (type === 'post') {
-      const els = await page.$$('div.xc26acl');
+      const els = await page.$$(POST_BUTTON_SELECTOR);
 
       for (const el of els) {
         const text = await page.evaluate(e => e?.textContent?.trim(), el);
@@ -157,22 +164,14 @@ export const clickPostButton = async ({
       await waitRandom(2000, 4000);
 
       // Đợi DOM load
-      const firstPostSelector = 'div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7';
-      await page.waitForSelector(firstPostSelector, { timeout: 10000 });
+      await page.waitForSelector(FIRST_POST_SELECTOR, { timeout: 10000 });
 
       // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
-      const firstDiv = await page.$(firstPostSelector);
+      const firstDiv = await page.$(FIRST_POST_SELECTOR);
       await firstDiv?.click();
       await waitRandom(2000, 4000);
 
-      let repostSvg = await page.$(
-        'div.x4vbgl9 svg[aria-label="Repost"]'
-      )
-      if (!repostSvg) {
-        repostSvg = await page.$(
-          'div.x4vbgl9 svg[aria-label="Đăng lại"]'
-        )
-      }
+      const repostSvg = await page.$(REPOST_BUTTON_SELECTOR);
 
       if (repostSvg) {
         await repostSvg.click();
@@ -186,7 +185,6 @@ export const clickPostButton = async ({
             break
           }
         }
-
       } else {
         throw new Error('Cannot find repost button');
       }
@@ -197,40 +195,44 @@ export const clickPostButton = async ({
     await waitRandom(3000, 5000);
 
     // find div with class x1n2onr6 x1ja2u2z x1afcbsf x78zum5 xdt5ytf x1a2a7pz x71s49j x1plvlek xryxfnj x5hsz1j x1u6grsq x1mkrjbl x4hg4is
-    const modal = await page.$('div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is');
+    const modal = await page.$(MODAL_SELECTOR);
 
     if (!modal) {
       throw new Error('Cannot find caption modal');
     }
     // find div aria-label="Empty text field. Type to compose a new post." and click
-    const textArea = await modal.$('div[aria-label="Empty text field. Type to compose a new post."]');
+    const textArea = await modal.$(TEXT_AREA_CAPTION);
 
     if (textArea) {
       await textArea.click();
       await waitRandom(1000, 2000);
       showToast(event, { id, username, message: 'Đang nhập caption...' });
       await page.keyboard.type(caption, { delay: 100 });
+    } else {
+      throw new Error('Cannot find caption text area');
     }
 
     // in modal find div with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
-    const postButton = await modal.$('div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5');
+    const postButton = await modal.$(POST_BUTTON_SUBMIT);
     if (postButton) {
       await postButton.click();
-      await waitRandom(5000, 10000);
-      // await page.waitForResponse(
-      //   res =>
-      //     res.url().includes('/api/v1/media/configure_text_only_post') &&
-      //     res.status() === 200
-      // )
-      showToast(event, { id, username, message: 'Post completed ✅' });
+      // waiting for element disappear with class x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xc5r6h4 xqeqjp1 x1phubyo x13fuv20 x18b5jzi x1q0q8m5 x1t7ytsu x972fbf x10w94by x1qhh985 x14e42zd x9f619 x1ypdohk xdl72j9 x2lah0s x3ct3a4 xdj266r x14z9mp xat24cr x2lwn1j xeuugli xexx8yu xyri2b x18d9i69 x1c1uobl x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1q0g3np x1lku1pv x1rg5ohu x1a2a7pz xjwep3j x1t39747 x1wcsgtt x1pczhz8 x13fj5qh x87ps6o
+      const waitForSelectorPromise = await page.waitForSelector('a.x1i10hfl.x1qjc9v5.xjbqb8w.xjqpnuy.xc5r6h4.xqeqjp1.x1phubyo.x13fuv20.x18b5jzi.x1q0q8m5.x1t7ytsu.x972fbf.x10w94by.x1qhh985.x14e42zd.x9f619.x1ypdohk.xdl72j9.x2lah0s.x3ct3a4.xdj266r.x14z9mp.xat24cr.x2lwn1j.xeuugli.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x1n2onr6.x16tdsg8.x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x1lku1pv.x1rg5ohu.x1a2a7pz.xjwep3j.x1t39747.x1wcsgtt.x1pczhz8.x13fj5qh.x87ps6o', { visible: true, timeout: 60000 });
+      if (!waitForSelectorPromise) {
+        throw new Error('Post may not be successful, cannot find success selector');
+      } else {
+        showToast(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
+        saveHistory({
+          profile_id: id,
+          folder: folder,
+        });
+      }
+    } else {
+      throw new Error('Cannot find post button');
     }
-    saveHistory({
-      profile_id: id,
-      folder: folder,
-    });
   } catch (error) {
     console.error(error);
-    showToast(event, { id, username, message: 'Post failed ❌' });
+    showToast(event, { id, username, message: error instanceof Error ? error.message : 'Đăng bài thất bại ❌' });
   } finally {
     await browser.disconnect();
   }
@@ -537,7 +539,7 @@ export const clickEditLatestPostButton = async ({
     await waitRandom(1000, 3000);
 
     // find div with class = xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
-    const doneBtn = await page.$('div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5');
+    const doneBtn = await page.$(POST_BUTTON_SUBMIT);
     await (doneBtn as any)?.click();
     await waitRandom(1000, 3000);
 
