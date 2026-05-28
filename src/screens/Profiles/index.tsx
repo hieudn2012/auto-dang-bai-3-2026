@@ -174,7 +174,7 @@ const Profiles = () => {
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
         document.getElementById(`edit-folder-${id}`)?.click();
-        await waitFor(3);
+        await waitFor(0.5);
       }
     }
   }
