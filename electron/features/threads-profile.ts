@@ -531,9 +531,9 @@ export const clickEditLatestPostButton = async ({
     // link post split \n and random link
     let linkPost = '';
     if (mode === 'default') {
-      linkPost = `👉👉👉: ${cutSexyLink()}`;
+      linkPost = `${cutSexyLink()}`;
     } else {
-      linkPost = `Product link 👉: ${getRandomLink(folder)}`;
+      linkPost = `Product link 👉 ${getRandomLink(folder)}`;
     }
     await page.keyboard.type(linkPost, { delay: 100 });
     await waitRandom(1000, 3000);
