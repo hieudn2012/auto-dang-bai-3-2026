@@ -161,6 +161,15 @@ const Profiles = () => {
     }
   }
 
+  const handleBulkQuote = async (ids: number[], openedList: any) => {
+    for (const id of ids) {
+      if (!!openedList?.[id]?.ws) {
+        document.getElementById(`quote-button-${id}`)?.click();
+        await waitFor(3)
+      }
+    }
+  }
+
   const handleBulkEdit = async (ids: number[], openedList: any) => {
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
@@ -339,6 +348,10 @@ const Profiles = () => {
                 <Button onClick={() => handleBulkPost(selectedIds, openedList)} tooltip="Post" className="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm">
                   <i className="fa-solid fa-paper-plane mr-1"></i>
                   Post
+                </Button>
+                <Button onClick={() => handleBulkQuote(selectedIds, openedList)} tooltip="Quote" className="px-3 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm">
+                  <i className="fa-solid fa-quote-right mr-1"></i>
+                  Quote
                 </Button>
                 <Button onClick={() => handleBulkEdit(selectedIds, openedList)} tooltip="Edit" className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm">
                   <i className="fa-solid fa-pen-to-square mr-1"></i>
@@ -535,6 +548,7 @@ const Profiles = () => {
                                 <i className="fa-solid fa-circle-play"></i>
                               </Button>
                               <Button
+                                id={`quote-button-${profile.profile_id}`}
                                 onClick={() => clickPostButton({ ws: openedList?.[profile.profile_id]?.ws, username: profile.name, folder: userMap?.[profile.profile_id]?.path, type: 'quote', mode, id: profile.profile_id })}
                                 tooltip="Quote"
                                 className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
