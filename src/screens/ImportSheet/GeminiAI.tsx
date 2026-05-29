@@ -246,8 +246,8 @@ const Row = forwardRef(({ path, defaultLink, totalLink, totalCap, ws, numberInde
     handleGetLinks,
   }));
 
-  const capColor = totalCap < 5 || totalCap !== totalLink ? 'text-red-500' : 'text-green-500';
-  const linkColor = totalLink < 5 || totalLink !== totalCap ? 'text-red-500' : 'text-green-500';
+  const capColor = totalCap < 5 || totalCap !== (totalLink - 1) ? 'text-red-500' : 'text-green-500';
+  const linkColor = totalLink < 5 || (totalLink - 1) !== totalCap ? 'text-red-500' : 'text-green-500';
 
   return (
     <tr className="hover:bg-gray-50">
