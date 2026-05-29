@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
-import { saveReportTxt, waitRandom } from "./common";
+import { loadMainConfig, saveReportTxt, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
@@ -448,6 +448,8 @@ export const clickEditLatestPostButton = async ({
     browserWSEndpoint: ws,
     defaultViewport: null,
   });
+  const config = await loadMainConfig();
+  const isVietnamese = config?.gemini?.lang === 'vi';
   try {
     // Lấy tất cả tabs
     // const pages = await browser.pages();
@@ -535,7 +537,8 @@ export const clickEditLatestPostButton = async ({
     if (mode === 'default') {
       linkPost = `${cutSexyLink()}`;
     } else {
-      linkPost = `Product link 👉 ${getRandomLink(folder)}`;
+      const prefix = isVietnamese ? 'Link sản phẩm 👉 ' : 'Product link 👉 ';
+      linkPost = `${prefix}${getRandomLink(folder)}`;
     }
     await page.keyboard.type(linkPost, { delay: 100 });
     await waitRandom(1000, 3000);

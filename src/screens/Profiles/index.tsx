@@ -10,7 +10,7 @@ import {
   useOpenProfile
 } from "@/services/profiles";
 import { windowInstance } from "@/services/window";
-import { UserInfo } from "electron/types";
+import { MainConfig, UserInfo } from "electron/types";
 import { find, map, split } from "lodash";
 import { useEffect, useState } from "react";
 import { toast } from "@/components/ToastContainer";
@@ -64,6 +64,7 @@ const Profiles = () => {
   const [showRangeModal, setShowRangeModal] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
+  const [mainConfig, setMainConfig] = useState<MainConfig>({});
 
   const handleRandomFolder = async (profile_id: number) => {
     const currentPaths = map(userMap, (item) => item.path);
@@ -133,6 +134,7 @@ const Profiles = () => {
 
   const handleCopyWs = async (ws: string) => {
     await navigator.clipboard.writeText(ws);
+    await windowInstance.api.saveMainConfig({ wsUrl: ws });
     toast.success('Đã copy WebSocket URL');
   }
 
@@ -279,10 +281,13 @@ const Profiles = () => {
       const mainConfig = await windowInstance.api.loadMainConfig();
       if (mainConfig?.profile?.groupId) {
         setGroupId(mainConfig.profile.groupId);
+        setMainConfig(mainConfig);
       }
     };
     loadMainConfig();
   }, []);
+
+  const isVietnamese = mainConfig?.gemini?.lang === 'vi';
 
   return (
     <Layout>
@@ -299,12 +304,22 @@ const Profiles = () => {
                 Quản lý và điều khiển các profile tài khoản mạng xã hội
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              {mode === 'default' ? (
-                <i className="fas fa-at text-5xl text-black"></i>
-              ) : (
-                <i className="fab fa-amazon text-5xl text-orange-500"></i>
-              )}
+            <div className="flex gap-4 items-center">
+              <div className="">
+                {isVietnamese ? 'Bạn đang dùng chế độ shopee' : 'Current mode: '}
+              </div>
+              <div className="flex items-center gap-4">
+                {isVietnamese && <i className="fa-solid fa-bag-shopping text-5xl text-orange-500"></i>}
+                {!isVietnamese && (
+                  <div>
+                    {mode === 'default' ? (
+                      <i className="fas fa-at text-5xl text-black"></i>
+                    ) : (
+                      <i className="fab fa-amazon text-5xl text-orange-500"></i>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

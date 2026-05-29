@@ -1,10 +1,11 @@
 import Button from "@/components/Button";
 import { windowInstance } from "@/services/window";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Group } from "../../components/Group";
 import { useDeleteProfile, useGetProfiles } from "@/services/profiles";
 import Input from "@/components/Input";
 import { toast } from "@/components/ToastContainer";
+import { useMainConfig } from "@/hooks/useMainConfig";
 
 const CheckLive = () => {
   const [checkLiveLoading, setCheckLiveLoading] = useState(false);
@@ -15,6 +16,7 @@ const CheckLive = () => {
   const [{ data }] = useGetProfiles(groupId);
   const { mutateAsync: deleteProfile } = useDeleteProfile();
   const accounts = data?.data?.data?.data;
+  const { mainConfig } = useMainConfig();
 
   const [ws, setWs] = useState('');
 
@@ -39,6 +41,12 @@ const CheckLive = () => {
     toast.success(`Đã xóa ${profileIdsToDelete.length} profile bị die`);
     setLoading(false);
   }
+
+  useEffect(() => {
+    if (mainConfig?.wsUrl) {
+      setWs(mainConfig.wsUrl);
+    }
+  }, [mainConfig]);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -79,7 +87,7 @@ const CheckLive = () => {
               </label>
               <Input 
                 placeholder="Nhập WebSocket URL..." 
-                value={ws} 
+                value={ws}
                 onChange={(e) => setWs(e.target.value)} 
               />
             </div>

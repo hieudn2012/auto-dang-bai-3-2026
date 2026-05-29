@@ -73,6 +73,7 @@ export type MainConfig = {
     lang?: string
   },
   macId?: string
+  wsUrl?: string
 }
 
 export type History = {

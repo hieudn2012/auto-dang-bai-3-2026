@@ -1,9 +1,10 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import { toast } from "@/components/ToastContainer";
+import { useMainConfig } from "@/hooks/useMainConfig";
 import { windowInstance } from "@/services/window";
 import { MoveData } from "electron/features/foder";
-import React, { useState, useImperativeHandle, forwardRef } from "react";
+import React, { useState, useImperativeHandle, forwardRef, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
 
 interface Item {
@@ -29,6 +30,8 @@ const GeminiAI = () => {
     acc[index] = React.createRef();
     return acc;
   }, {} as { [key: number]: React.RefObject<{ handleGenerate: (folder: string) => Promise<void>, handleGetLinks: () => Promise<void> }> });
+  const { mainConfig } = useMainConfig();
+  const isVietnamese = mainConfig?.gemini?.lang === 'vi';
 
   const handleSelect = (index: number) => {
     if (indexSelected.includes(index)) {
@@ -87,6 +90,12 @@ const GeminiAI = () => {
     }
   }
 
+  useEffect(() => {
+    if (mainConfig?.wsUrl) {
+      setWs(mainConfig.wsUrl);
+    }
+  }, [mainConfig])
+
   return (
     <div className="w-full p-6 pb-10">
       <div className="mb-2">
@@ -110,23 +119,28 @@ const GeminiAI = () => {
           placeholder="WebSocket URL"
         />
       </div>
-      <div className="flex justify-end gap-4">
-        <Button
-          className="px-4 py-2 mb-4 bg-blue-500 hover:bg-blue-600 text-white rounded"
-          onClick={handleBulkGenerate}
-          disabled={indexSelected.length === 0}
-          tooltip="Generate Captions for selected folders"
-        >
-          <i className="fas fa-robot"></i>
-        </Button>
-        <Button
-          className="px-4 py-2 mb-4 bg-green-500 hover:bg-green-600 text-white rounded"
-          onClick={handleBulkGetLinks}
-          disabled={indexSelected.length === 0 || !ws}
-          tooltip="Get Links for selected folders"
-        >
-          <i className="fas fa-link"></i>
-        </Button>
+      <div className="flex justify-between gap-4">
+        <div>
+          <p>{isVietnamese ? <i className="fa-solid fa-bag-shopping text-4xl text-orange-500"></i> : <i className="fab fa-amazon text-4xl text-orange-500"></i>}</p>
+        </div>
+        <div className="flex gap-4">
+          <Button
+            className="px-4 py-2 mb-4 bg-blue-500 hover:bg-blue-600 text-white rounded"
+            onClick={handleBulkGenerate}
+            disabled={indexSelected.length === 0}
+            tooltip="Generate Captions for selected folders"
+          >
+            <i className="fas fa-robot"></i>
+          </Button>
+          <Button
+            className="px-4 py-2 mb-4 bg-green-500 hover:bg-green-600 text-white rounded"
+            onClick={handleBulkGetLinks}
+            disabled={indexSelected.length === 0 || !ws}
+            tooltip="Get Links for selected folders"
+          >
+            <i className="fas fa-link"></i>
+          </Button>
+        </div>
       </div>
       <table className="w-full border-collapse border border-gray-200">
         <thead>
