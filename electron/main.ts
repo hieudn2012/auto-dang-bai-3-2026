@@ -13,7 +13,7 @@ import { getReportByReportName, getReportNames } from './features/report'
 import { updateProfileProxy } from './features/proxy'
 import { bulkToggleDismissButton } from './features/instagram'
 import { registerNewAccounts } from './features/register'
-import { showToast } from './features/event'
+import { sendMessage } from './features/event'
 import { createEmptyProduct, getProductFolder, saveProduct } from './features/product'
 import { getAffAmzLink } from './features/amz'
 import { generateAmazonCaptions } from './features/gemini'
@@ -130,7 +130,7 @@ handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id) => {
   try {
     await openProfile(id);
   } catch (error) {
-    showToast(_event, {
+    sendMessage(_event, {
       id,
       username: '',
       message: 'Open profile failed',

@@ -6,7 +6,7 @@ import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
 import { getRandomCaption, getRandomLink } from "./caption";
-import { showToast } from "./event";
+import { sendMessage } from "./event";
 import { saveHistory } from './history';
 import { cutSexyCaption, cutSexyLink } from './file';
 
@@ -125,7 +125,7 @@ export const clickPostButton = async ({
 
   try {
     // send event to renderer
-    showToast(event, { id, username, message: 'Đang đăng bài...' });
+    sendMessage(event, { id, username, message: 'Đang đăng bài...' });
 
     // open new tab
     const page = await browser.newPage();
@@ -190,7 +190,7 @@ export const clickPostButton = async ({
       }
     }
 
-    showToast(event, { id, username, message: 'Đang tải media...' });
+    sendMessage(event, { id, username, message: 'Đang tải media...' });
     await uploadMedia({ page, username, folder, mode });
     await waitRandom(3000, 5000);
 
@@ -206,7 +206,7 @@ export const clickPostButton = async ({
     if (textArea) {
       await textArea.click();
       await waitRandom(1000, 2000);
-      showToast(event, { id, username, message: 'Đang nhập caption...' });
+      sendMessage(event, { id, username, message: 'Đang nhập caption...' });
       await page.keyboard.type(caption, { delay: 100 });
     } else {
       throw new Error('Cannot find caption text area');
@@ -223,7 +223,7 @@ export const clickPostButton = async ({
       if (!waitForSelectorPromise) {
         throw new Error('Post may not be successful, cannot find success selector');
       } else {
-        showToast(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
+        sendMessage(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
         saveHistory({
           profile_id: id,
           folder: folder,
@@ -234,7 +234,7 @@ export const clickPostButton = async ({
     }
   } catch (error) {
     console.error(error);
-    showToast(event, { id, username, message: error instanceof Error ? error.message : 'Đăng bài thất bại ❌' });
+    sendMessage(event, { id, username, message: error instanceof Error ? error.message : 'Đăng bài thất bại ❌' });
   } finally {
     await browser.disconnect();
   }
@@ -304,7 +304,7 @@ export const setupNewAccount = async ({
         // Nếu đã thử 3 lần vẫn thất bại
         if (retryCount >= 3) {
           console.error('Failed to load page after 3 retries');
-          showToast(event, { id, username, message: 'Không thể tải trang sau 3 lần thử lại' });
+          sendMessage(event, { id, username, message: 'Không thể tải trang sau 3 lần thử lại' });
           return;
         }
       }
@@ -315,7 +315,7 @@ export const setupNewAccount = async ({
       page = currentPage;
     }
 
-    showToast(event, { id, username, message: 'Đang setup account...' });
+    sendMessage(event, { id, username, message: 'Đang setup account...' });
 
     // find span with "Continue with Instagram"
     const spans = await page.$$('span');
@@ -324,7 +324,7 @@ export const setupNewAccount = async ({
       const text = await page.evaluate(el => el.textContent?.trim(), span);
       if (text === 'Continue with Instagram') {
         continueWithInstagram = span;
-        showToast(event, { id, username, message: 'Đang click "Continue with Instagram"...' });
+        sendMessage(event, { id, username, message: 'Đang click "Continue with Instagram"...' });
       }
     }
 
@@ -346,7 +346,7 @@ export const setupNewAccount = async ({
     if (nextButton) {
       await nextButton.click();
       await waitRandom(20000, 30000);
-      showToast(event, { id, username, message: 'Đang click "Next" lần 1...' });
+      sendMessage(event, { id, username, message: 'Đang click "Next" lần 1...' });
     }
 
     // find divs with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
@@ -358,12 +358,12 @@ export const setupNewAccount = async ({
       if (text === 'Join Threads') {
         await div.click();
         await waitRandom(5000, 10000);
-        showToast(event, { id, username, message: 'Setup new account success ✅' });
+        sendMessage(event, { id, username, message: 'Setup new account success ✅' });
       }
     }
   } catch (error) {
     console.error(error);
-    showToast(event, { id, username, message: 'Setup new account failed ❌' });
+    sendMessage(event, { id, username, message: 'Setup new account failed ❌' });
   } finally {
     await browser.disconnect();
   }
@@ -512,7 +512,7 @@ export const clickEditLatestPostButton = async ({
     await moreBtnVn?.click();
     await waitRandom(3000, 5000);
 
-    showToast(event, { id, username, message: 'Đang edit...' });
+    sendMessage(event, { id, username, message: 'Đang edit...' });
 
     // find span with content = "Edit post" in div with class xtsvl71 x1u6grsq x181y1b3 x4hg4is xf6vlc6
     const editSpans = await page.$$('div.xtsvl71.x1u6grsq.x181y1b3.x4hg4is.xf6vlc6 span');
@@ -556,7 +556,7 @@ export const clickEditLatestPostButton = async ({
     if (!waitForSelectorPromise) {
       throw new Error('Edit may not be successful, cannot find success selector');
     } else {
-      showToast(event, { id, username, message: 'Edit completed ✅' });
+      sendMessage(event, { id, username, message: 'Edit completed ✅' });
       if (reportName) {
         saveReportTxt({
           reportName,
@@ -569,7 +569,7 @@ export const clickEditLatestPostButton = async ({
     }
   } catch (error) {
     console.log(error);
-    showToast(event, { id, username, message: 'Edit failed ❌' });
+    sendMessage(event, { id, username, message: 'Edit failed ❌' });
     if (reportName) {
       saveReportTxt({
         reportName,

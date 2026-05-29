@@ -15,6 +15,6 @@ export const sendLog = (event: IpcMainEvent, arg: LogItem) => {
   event.sender.send(EventName.LOG, arg);
 };
 
-export const showToast = (event: IpcMainEvent, arg: LogItem) => {
+export const sendMessage = (event: IpcMainEvent, arg: LogItem) => {
   event.sender.send(EventName.TOAST, arg);
 };
