@@ -308,6 +308,6 @@ export function sendToRenderer<T>(channel: string, data: T) {
 app.whenReady().then(async () => {
   await initConfigFile();
   await init();
-  startServer();
+  // startServer();
   createWindow();
 })
