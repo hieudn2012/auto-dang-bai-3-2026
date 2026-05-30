@@ -683,7 +683,7 @@ const Profiles = () => {
                                 <i className="fa-solid fa-folder-open"></i>
                               </Button>
                               <p className="hidden" id={`profile-info-${profile.profile_id}`}>
-                                {`${profile.name}||${userMap?.[profile.profile_id]?.name}`}
+                                {`${profile.name}||${userMap?.[profile.profile_id]?.path}`}
                               </p>
                             </div>
                           </div>
