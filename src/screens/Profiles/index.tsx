@@ -494,6 +494,8 @@ const Profiles = () => {
                     value={batchSize}
                     onChange={(e) => setBatchSize(Number(e.target.value))}
                     options={[
+                      { value: 1, label: '1' },
+                      { value: 2, label: '2' },
                       { value: 5, label: '5' },
                       { value: 10, label: '10' },
                       { value: 20, label: '20' },
