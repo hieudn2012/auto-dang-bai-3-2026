@@ -1,5 +1,5 @@
 import { ScheduleItem } from "electron/features/job";
-import { MainConfig, UserInfo } from "electron/types";
+import { MainConfig } from "electron/types";
 import { LogItem } from "electron/features/event";
 import { BulkToggleDismissButtonParams } from "electron/features/instagram";
 import { RegisterNewAccountParams } from "electron/features/register";
@@ -7,6 +7,7 @@ import { Product } from "electron/features/product";
 import { MoveData } from "electron/features/foder";
 import { MoveFolderParams } from "electron/features/threads-folder";
 import { FanpageLinkParams } from "electron/features/fanpage";
+import { PostParams } from "electron/features/threads-profile";
 
 type WindownInstance = typeof window & {
   api: {
@@ -25,8 +26,8 @@ type WindownInstance = typeof window & {
     loadMainConfig: () => Promise<MainConfig | null>,
     randomFolderNotUsed: (exclude: string[]) => Promise<{ name: string, path: string }>,
     getFolderInfo: (path: string) => Promise<{ cap: string, link: string }>,
-    clickPostButton: (info: UserInfo) => Promise<any>,
-    clickEditLatestPostButton: (info: UserInfo) => Promise<any>,
+    clickPostButton: (info: PostParams) => Promise<any>,
+    clickEditLatestPostButton: (info: PostParams) => Promise<any>,
     saveHistoryTxt: ({ profile_id, folder }: { profile_id: number, folder: string }) => Promise<any>,
     setupNewAccount: (info: { ws: string, username: string }) => Promise<any>,
     checkLiveAccounts: (info: { ws: string, accounts: string[], batchSize?: number }) => Promise<{ liveAccounts: string[], deadAccounts: string[] }>,

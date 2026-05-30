@@ -84,6 +84,11 @@ export const initConfigFile = async () => {
   if (!fs.existsSync(path.join(appConfig, 'sexy-link.txt'))) {
     fs.writeFileSync(path.join(appConfig, 'sexy-link.txt'), '');
   }
+
+  // create folder reports if not exists
+  if (!fs.existsSync(path.join(appConfig, 'reports'))) {
+    fs.mkdirSync(path.join(appConfig, 'reports'));
+  }
 }
 
 // save history txt, add 1 line new line

@@ -87,6 +87,8 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
               type: type,
               mode: item.mode,
               captionData: captions.find(cap => cap.label === item.captionLabel)?.value || '',
+              reportName: item.reportName,
+              isAuto: true,
             }, event);
             postCount++;
             sendLog(event, {
@@ -134,6 +136,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
               mode: item.mode,
               reportName: item.reportName,
               id: profile.profile_id,
+              isAuto: true,
             }, event);
             editCount++;
             sendLog(event, {

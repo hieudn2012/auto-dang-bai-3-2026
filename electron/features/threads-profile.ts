@@ -1,14 +1,14 @@
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
-import { loadMainConfig, saveReportTxt, waitRandom } from "./common";
+import { loadMainConfig, waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
 import { getRandomCaption, getRandomLink } from "./caption";
 import { sendMessage } from "./event";
-import { saveHistory } from './history';
 import { cutSexyCaption, cutSexyLink } from './file';
+import { ReportType, saveReport } from './report';
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -97,9 +97,11 @@ export interface PostParams {
   ws: string,
   username: string,
   folder: string,
-  type: 'post' | 'quote',
+  type: ReportType,
   mode: 'default' | 'affiliate',
   captionData: string;
+  reportName: string;
+  isAuto: boolean;
 }
 
 const POST_BUTTON_SELECTOR = 'div.xc26acl';
@@ -116,6 +118,8 @@ export const clickPostButton = async ({
   folder,
   type = 'quote',
   mode = 'default',
+  reportName,
+  isAuto,
 }: PostParams, event: IpcMainEvent) => {
   const caption = mode === 'affiliate' ? getRandomCaption(folder) : cutSexyCaption();
   const browser = await puppeteer.connect({
@@ -224,17 +228,33 @@ export const clickPostButton = async ({
         throw new Error('Post may not be successful, cannot find success selector');
       } else {
         sendMessage(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
-        saveHistory({
-          profile_id: id,
-          folder: folder,
-        });
+        saveReport({
+          reportName,
+          description: type === 'post' ? 'Post completed ✅' : 'Quote completed ✅',
+          userId: id,
+          status: 'completed',
+          username,
+          type,
+        })
       }
     } else {
       throw new Error('Cannot find post button');
     }
   } catch (error) {
     console.error(error);
-    sendMessage(event, { id, username, message: error instanceof Error ? error.message : 'Đăng bài thất bại ❌' });
+    const message = error instanceof Error ? error.message : 'Đăng bài thất bại ❌';
+    sendMessage(event, { id, username, message: message });
+    saveReport({
+      reportName,
+      description: message,
+      userId: id,
+      status: 'failed',
+      username,
+      type,
+    });
+    if (isAuto) {
+      await browser.close();
+    }
   } finally {
     await browser.disconnect();
   }
@@ -434,6 +454,7 @@ interface ClickEditLatestPostButtonParams {
   id: number,
   folder: string,
   mode: 'default' | 'affiliate',
+  isAuto: boolean;
 }
 
 export const clickEditLatestPostButton = async ({
@@ -443,6 +464,7 @@ export const clickEditLatestPostButton = async ({
   id,
   mode,
   folder,
+  isAuto,
 }: ClickEditLatestPostButtonParams, event: IpcMainEvent) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
@@ -557,27 +579,20 @@ export const clickEditLatestPostButton = async ({
       throw new Error('Edit may not be successful, cannot find success selector');
     } else {
       sendMessage(event, { id, username, message: 'Edit completed ✅' });
-      if (reportName) {
-        saveReportTxt({
-          reportName,
-          note: 'Edit completed',
-          id,
-          status: 'completed',
-          username,
-        });
-      }
     }
   } catch (error) {
-    console.log(error);
-    sendMessage(event, { id, username, message: 'Edit failed ❌' });
-    if (reportName) {
-      saveReportTxt({
-        reportName,
-        note: 'Edit failed',
-        id,
-        status: 'failed',
-        username,
-      });
+    const message = error instanceof Error ? error.message : 'Edit failed ❌';
+    sendMessage(event, { id, username, message });
+    saveReport({
+      reportName,
+      description: message,
+      userId: id,
+      status: 'failed',
+      username,
+      type: 'edit',
+    });
+    if (isAuto) {
+      await browser.close();
     }
   } finally {
     await browser.disconnect();
