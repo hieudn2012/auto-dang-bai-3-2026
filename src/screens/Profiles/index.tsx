@@ -207,7 +207,7 @@ const Profiles = () => {
   const handleBulkPost = async (ids: number[], openedList: any) => {
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
-        await clickPostButton(id, 'post', openedList, userMap);
+        clickPostButton(id, 'post', openedList, userMap);
         await waitFor(3)
       }
     }
@@ -216,7 +216,7 @@ const Profiles = () => {
   const handleBulkQuote = async (ids: number[], openedList: any) => {
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
-        await clickPostButton(id, 'quote', openedList, userMap);
+        clickPostButton(id, 'quote', openedList, userMap);
         await waitFor(3)
       }
     }
@@ -225,22 +225,20 @@ const Profiles = () => {
   const handleBulkEdit = async (ids: number[], openedList: any) => {
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
-        await clickEditLatestPostButton(id, openedList, userMap);
+        clickEditLatestPostButton(id, openedList, userMap);
         await waitFor(0.5);
       }
     }
   }
 
   const handleBulkRandom = async (ids: number[], openedList: any) => {
-    const result = {};
     for (const id of ids) {
       if (!!openedList?.[id]?.ws) {
-        const data = await handleRandomFolder(id);
-        Object.assign(result, data);
+        const randomBtn = document.getElementById(`random-folder-${id}`);
+        randomBtn?.click();
         await waitFor(0.1);
       }
     }
-    return result;
   }
 
   const handleBulkSetupNewAccount = async (ids: number[], openedList: any) => {
@@ -271,7 +269,17 @@ const Profiles = () => {
     await waitFor(10);
     toast.success('Đã refetch.');
 
-    const usMap = await handleBulkRandom(ids, openList);
+    await handleBulkRandom(ids, openList);
+    const usMap = {} as any;
+    for (const id of ids) {
+      const content = document.getElementById(`profile-info-${id}`)?.textContent || '';
+      const [username, path] = split(content, '||');
+      usMap[id] = {
+        path,
+        username,
+      }
+    }
+
     await waitFor(5);
     toast.success('Đã random folder.');
 
@@ -672,6 +680,9 @@ const Profiles = () => {
                               >
                                 <i className="fa-solid fa-folder-open"></i>
                               </Button>
+                              <p className="hidden" id={`profile-info-${profile.profile_id}`}>
+                                {`${profile.name}||${userMap?.[profile.profile_id]?.name}`}
+                              </p>
                             </div>
                           </div>
                         </div>
