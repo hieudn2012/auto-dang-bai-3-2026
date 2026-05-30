@@ -291,11 +291,25 @@ const Profiles = () => {
     await runWithDelay(editPostPromiseFactories, 0.5);
     toast.success('Đã hoàn thành edit post.');
 
-    const quotePromiseFactories = ids.map(id => () => clickPostButton(id, 'quote', openList, usMap));
+    await handleBulkRandom(ids, openList);
+    const usMap2 = {} as any;
+    for (const id of ids) {
+      const content = document.getElementById(`profile-info-${id}`)?.textContent || '';
+      const [username, path] = split(content, '||');
+      usMap2[id] = {
+        path,
+        username,
+      }
+    }
+
+    await waitFor(5);
+    toast.success('Đã random folder.');
+
+    const quotePromiseFactories = ids.map(id => () => clickPostButton(id, 'quote', openList, usMap2));
     await runWithDelay(quotePromiseFactories, 3);
     toast.success('Đã hoàn thành quote.');
 
-    const editLatestQuotePromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap));
+    const editLatestQuotePromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap2));
     await runWithDelay(editLatestQuotePromiseFactories, 0.5);
     toast.success('Đã hoàn thành edit quote.');
 
