@@ -268,11 +268,11 @@ const Profiles = () => {
     toast.success('Đã mở profile.');
 
     const { data: openList } = await refetchOpenedList();
-    await waitFor(2);
+    await waitFor(10);
     toast.success('Đã refetch.');
 
     const usMap = await handleBulkRandom(ids, openList);
-    await waitFor(2);
+    await waitFor(5);
     toast.success('Đã random folder.');
 
     const postPromiseFactories = ids.map(id => () => clickPostButton(id, 'post', openList, usMap));
