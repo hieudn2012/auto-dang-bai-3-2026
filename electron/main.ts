@@ -226,8 +226,8 @@ handle(InvokeChannel.GET_PRODUCT_FOLDER, async (_event, folderPath) => {
 })
 
 handle(InvokeChannel.GET_AFF_AMZ_LINK, async (_event, params) => {
-  const mainConfig = await loadMainConfig();
-  return mainConfig?.gemini?.lang === 'vi' ? getAffShopeeLink(params) : getAffAmzLink(params);
+  const linkMode = params.linkMode || 'amz';
+  return linkMode === 'shopee' ? getAffShopeeLink(params) : getAffAmzLink(params);
 })
 
 handle(InvokeChannel.GENERATE_CAPTIONS, async (_event, data) => {

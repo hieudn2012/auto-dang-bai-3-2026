@@ -80,7 +80,7 @@ contextBridge.exposeInMainWorld('api', {
   createEmptyProduct: () => invoke(InvokeChannel.CREATE_EMPTY_PRODUCT),
   saveProduct: (product: Product) => invoke(InvokeChannel.SAVE_PRODUCT, product),
   getProductFolder: (folderPath: string) => invoke(InvokeChannel.GET_PRODUCT_FOLDER, folderPath),
-  getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => invoke(InvokeChannel.GET_AFF_AMZ_LINK, params),
+  getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number, linkMode: 'amz' | 'shopee' }) => invoke(InvokeChannel.GET_AFF_AMZ_LINK, params),
   generateCaptions: (params: GenerateCaptionsParams) => invoke(InvokeChannel.GENERATE_CAPTIONS, params),
   getAllFolder: (rootPath: string) => invoke(InvokeChannel.GET_ALL_FOLDER, rootPath),
   moveDataToFolder: (data: MoveData) => invoke(InvokeChannel.MOVE_DATA_TO_FOLDER, data),

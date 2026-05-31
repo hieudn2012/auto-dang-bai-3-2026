@@ -30,12 +30,13 @@ const GeminiAI = () => {
   const [promptSelected, setPromptSelected] = useState('');
   const [isIncludeSubPrompt, setIsIncludeSubPrompt] = useState(false);
   const [indexSelected, setIndexSelected] = useState<number[]>([]);
+  const [linkMode, setLinkMode] = useState<'amz' | 'shopee'>('amz');
+
   const rowRefs = items.reduce((acc, _, index) => {
     acc[index] = React.createRef();
     return acc;
   }, {} as { [key: number]: React.RefObject<{ handleGenerate: (folder: string) => Promise<void>, handleGetLinks: () => Promise<void> }> });
   const { mainConfig } = useMainConfig();
-  const isVietnamese = mainConfig?.gemini?.lang === 'vi';
   const prompts = mainConfig?.gemini?.propmts || [];
 
   const handleSelect = (index: number) => {
@@ -110,6 +111,7 @@ const GeminiAI = () => {
             value={rootFolder}
             onChange={(e) => setRootFolder(e.target.value)}
             placeholder="Select root folder"
+            icon="fas fa-folder-open"
           />
           <Button onClick={handleChangeFolder}>
             <i className="fas fa-folder-open"></i>
@@ -122,12 +124,28 @@ const GeminiAI = () => {
           value={ws}
           onChange={(e) => setWs(e.target.value)}
           placeholder="WebSocket URL"
+          icon="fas fa-link"
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Select
+            label="Link Mode"
+            icon="fas fa-link"
+            value={linkMode}
+            onChange={(e) => setLinkMode(e.target.value as 'amz' | 'shopee')}
+            options={
+              [
+                { label: 'Amazon', value: 'amz' },
+                { label: 'Shopee', value: 'shopee' },
+              ]
+            }
+          />
+        </div>
         <div>
           <Select
             label="Main Prompt"
+            icon="fas fa-pen-to-square"
             value={promptSelected}
             onChange={(e) => setPromptSelected(e.target.value)}
             options={prompts.map(p => ({ label: p.label, value: p.value }))}
@@ -135,6 +153,7 @@ const GeminiAI = () => {
         </div>
         <div>
           <label className="flex items-center gap-2 mb-4">
+            <i className="fas fa-info-circle"></i>
             Include sub prompt
           </label>
           <Switch
@@ -143,11 +162,10 @@ const GeminiAI = () => {
             className={twMerge("relative inline-flex items-center h-6 rounded-full w-11", isIncludeSubPrompt ? "bg-blue-600" : "bg-gray-200")}
           />
         </div>
-        <div></div>
       </div>
-      <div className="flex justify-between gap-4">
+      <div className="flex justify-between gap-4 mt-5">
         <div>
-          <p>{isVietnamese ? <i className="fa-solid fa-bag-shopping text-4xl text-orange-500"></i> : <i className="fab fa-amazon text-4xl text-orange-500"></i>}</p>
+          <p>{linkMode === 'shopee' ? <i className="fa-solid fa-bag-shopping text-4xl text-orange-500"></i> : <i className="fab fa-amazon text-4xl text-orange-500"></i>}</p>
         </div>
         <div className="flex gap-4">
           <Button
@@ -203,6 +221,7 @@ const GeminiAI = () => {
               onSelect={handleSelect}
               ref={rowRefs[index]}
               isIncludeSubPrompt={isIncludeSubPrompt}
+              linkMode={linkMode}
             />
           ))}
 
@@ -222,6 +241,7 @@ interface RowProps {
   indexSelected: number[];
   onSelect: (index: number) => void;
   isIncludeSubPrompt: boolean;
+  linkMode: 'amz' | 'shopee';
 }
 
 const Row = forwardRef(({
@@ -233,7 +253,8 @@ const Row = forwardRef(({
   numberIndex,
   indexSelected,
   onSelect,
-  isIncludeSubPrompt
+  isIncludeSubPrompt,
+  linkMode,
 }: RowProps, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
@@ -271,7 +292,7 @@ const Row = forwardRef(({
   const handleGetLinks = async () => {
     try {
       setIsGettingLinks(true);
-      const links = await windowInstance.api.getAffAmzLink({ links: [link], ws, numberToGet: 20 });
+      const links = await windowInstance.api.getAffAmzLink({ links: [link], ws, numberToGet: 20, linkMode });
       setLinks(links);
     } catch (error) {
       toast.error((error as Error).message);
