@@ -8,6 +8,7 @@ import { MoveData } from "electron/features/foder";
 import { MoveFolderParams } from "electron/features/threads-folder";
 import { FanpageLinkParams } from "electron/features/fanpage";
 import { PostParams } from "electron/features/threads-profile";
+import { DeletePostOptions } from "electron/features/threads-delete";
 
 type WindownInstance = typeof window & {
   api: {
@@ -64,6 +65,7 @@ type WindownInstance = typeof window & {
     saveSexyCaption: (data: string) => Promise<any>,
     saveSexyLink: (data: string) => Promise<any>,
     loadSexyContent: () => Promise<{ caption: string, link: string }>,
+    deletePost: (params: DeletePostOptions) => Promise<any>,
   }
 }
 

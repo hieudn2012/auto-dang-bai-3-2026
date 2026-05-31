@@ -50,6 +50,7 @@ export enum InvokeChannel {
   SAVE_SEXY_CAPTION = 'save-sexy-caption',
   SAVE_SEXY_LINK = 'save-sexy-link',
   LOAD_SEXY_CONTENT = 'load-sexy-content',
+  DELETE_POST = 'delete-post',
 }
 
 export type MainConfig = {

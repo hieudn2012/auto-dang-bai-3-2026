@@ -22,6 +22,7 @@ import { init } from './init'
 import { getFanpageLinks } from './features/fanpage'
 import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 import { getAffShopeeLink } from './features/shopee'
+import { deletePost } from './features/threads-delete'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -130,10 +131,12 @@ handle(InvokeChannel.THREADS_PROFILE_OPEN, async (_event, id) => {
   try {
     await openProfile(id);
   } catch (error) {
+    console.log(error);
+    const message = error instanceof Error ? error.message : String(error);
     sendMessage(_event, {
       id,
       username: '',
-      message: 'Open profile failed',
+      message: message,
     });
   }
 })
@@ -270,6 +273,10 @@ handle(InvokeChannel.SAVE_SEXY_LINK, async (_event, data) => {
 
 handle(InvokeChannel.LOAD_SEXY_CONTENT, async () => {
   return loadSexyContent();
+})
+
+handle(InvokeChannel.DELETE_POST, async (event, params) => {
+  return deletePost(params, event);
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -20,6 +20,7 @@ import LoadingWraper from "@/components/LoadingWraper";
 import { Group } from "@/components/Group";
 import ProxyModal from "./ProxyModal";
 import { ReportType } from "electron/features/report";
+import { DeletePostOptions } from "electron/features/threads-delete";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -258,6 +259,10 @@ const Profiles = () => {
     } else {
       toast.error('Không có profile nào đang mở để xử lý.');
     }
+  }
+
+  const handleDeletePost = (params: DeletePostOptions) => {
+    windowInstance.api.deletePost(params);
   }
 
   const handleAutoPost = async (ids: number[]) => {
@@ -695,6 +700,13 @@ const Profiles = () => {
                                 onClick={() => windowInstance.api.openProfileFolder(profile.profile_id)}
                               >
                                 <i className="fa-solid fa-folder-open"></i>
+                              </Button>
+                              <Button
+                                tooltip="Delete latest post"
+                                className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs"
+                                onClick={() => handleDeletePost({ user_id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
+                              >
+                                <i className="fa-solid fa-trash"></i>
                               </Button>
                               <p className="hidden" id={`profile-info-${profile.profile_id}`}>
                                 {`${profile.name}||${userMap?.[profile.profile_id]?.path}`}

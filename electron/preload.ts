@@ -5,6 +5,7 @@ import { RegisterNewAccountParams } from './features/register'
 import { MoveData } from './features/foder'
 import { MoveFolderParams } from './features/threads-folder'
 import { FanpageLinkParams } from './features/fanpage'
+import { DeletePostOptions } from './features/threads-delete'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -89,6 +90,7 @@ contextBridge.exposeInMainWorld('api', {
   saveSexyCaption: (data: string) => invoke(InvokeChannel.SAVE_SEXY_CAPTION, data),
   saveSexyLink: (data: string) => invoke(InvokeChannel.SAVE_SEXY_LINK, data),
   loadSexyContent: () => invoke(InvokeChannel.LOAD_SEXY_CONTENT),
+  deletePost: (params: DeletePostOptions) => invoke(InvokeChannel.DELETE_POST, params), 
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
