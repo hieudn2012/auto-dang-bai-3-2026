@@ -6,33 +6,26 @@ import { windowInstance } from '@/services/window';
 import Layout from '@/components/Layout';
 import { Group } from '@/components/Group';
 import { useOpenProfile } from '@/services/profiles';
-
-interface ReportItem {
-  id: string;
-  username: string;
-  create_at: string;
-  status: string;
-  note: string;
-  reportName: string;
-}
-
-interface ReportData {
-  results: ReportItem[];
-  totalFailed: number;
-  totalCompleted: number;
-  failedItems: ReportItem[];
-}
+import { ReportResult } from 'electron/features/report';
+import moment from 'moment';
 
 const ReportModal = () => {
   const [reportNames, setReportNames] = useState<string[]>([]);
   const [selectedReportName, setSelectedReportName] = useState<string>('');
-  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [reportData, setReportData] = useState<ReportResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
   const [selectedGroup, setSelectedGroup] = useState<number>(-1);
   const [isMoving, setIsMoving] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
+  const [mode, setMode] = useState<'completed' | 'failed' | 'default'>('completed');
   const { mutate: openProfile } = useOpenProfile();
+
+  const listView = {
+    'completed': reportData?.results.filter(item => item.status === 'completed') || [],
+    'failed': reportData?.results.filter(item => item.status === 'failed') || [],
+    'default': reportData?.results || [],
+  }
 
   useEffect(() => {
     loadReportNames();
@@ -40,7 +33,7 @@ const ReportModal = () => {
 
   const loadReportNames = async () => {
     try {
-      const names = await windowInstance.api.getReportNames();
+      const names = await windowInstance.api.getReportNamesV2();
       setReportNames(names.reverse());
     } catch (error) {
       console.error('Error loading report names:', error);
@@ -50,10 +43,12 @@ const ReportModal = () => {
 
   const loadReportData = async (reportName: string) => {
     if (!reportName) return;
-    
+
     setLoading(true);
     try {
-      const data = await windowInstance.api.getReportByReportName(reportName);
+      const data = await windowInstance.api.getReportByName(reportName);
+      console.log(data, 'data');
+
       setReportData(data);
       setSelectedUsers(new Set()); // Reset selection when loading new report
     } catch (error) {
@@ -64,24 +59,25 @@ const ReportModal = () => {
     }
   };
 
-  const toggleUserSelection = (username: string) => {
+  const toggleUserSelection = (userId: number) => {
     setSelectedUsers(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(username)) {
-        newSet.delete(username);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
       } else {
-        newSet.add(username);
+        newSet.add(userId);
       }
       return newSet;
     });
   };
 
-  const toggleSelectAll = () => {
-    if (selectedUsers.size === reportData?.results?.length) {
-      setSelectedUsers(new Set());
+  const toggleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { checked } = event.target;
+    if (checked && reportData?.results) {
+      const allUserIds = reportData.results.map((item) => item.userId);
+      setSelectedUsers(new Set(allUserIds));
     } else {
-      const allUsernames = reportData?.results?.map((item) => item.username) || [];
-      setSelectedUsers(new Set(allUsernames));
+      setSelectedUsers(new Set());
     }
   };
 
@@ -98,16 +94,16 @@ const ReportModal = () => {
 
     setIsMoving(true);
     try {
-      const failedUsers: string[] = [];
-      
-      for (const username of selectedUsers) {
-        const user = reportData?.results?.find((item) => item.username === username);
-        if (user && user.id) {
+      const failedUsers: number[] = [];
+
+      for (const userId of selectedUsers) {
+        const user = reportData?.results?.find((item) => item.userId === userId);
+        if (user && user.userId) {
           try {
-            await windowInstance.api.updateProfileGroup(parseInt(user.id), selectedGroup);
+            await windowInstance.api.updateProfileGroup(Number(user.userId), selectedGroup);
           } catch (error) {
-            failedUsers.push(username);
-            console.error(`Failed to move user ${username}:`, error);
+            failedUsers.push(userId);
+            console.error(`Failed to move user ${user.username}:`, error);
           }
         }
       }
@@ -121,7 +117,7 @@ const ReportModal = () => {
       setSelectedUsers(new Set());
       setShowMoveModal(false);
       setSelectedGroup(-1);
-      
+
       // Refresh report data
       await loadReportData(selectedReportName);
     } catch (error) {
@@ -144,7 +140,7 @@ const ReportModal = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-6">
           {/* Header */}
           <div className="mb-8 animate-fade-in">
             <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
@@ -174,19 +170,23 @@ const ReportModal = () => {
 
           <div className="space-y-8">
             {/* Report Selection */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-slide-up">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
-                  <i className="fa-solid fa-list text-white text-sm"></i>
-                </div>
-                Chọn báo cáo
-              </label>
+            <div className="flex gap-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-6 animate-slide-up">
               <Select
                 value={selectedReportName}
                 onChange={(e) => handleReportNameChange(e.target.value)}
                 options={[
                   { value: '', label: '-- Chọn báo cáo --' },
                   ...reportNames.map((name) => ({ value: name, label: name }))
+                ]}
+                className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <Select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as 'completed' | 'failed' | 'default')}
+                options={[
+                  { value: 'default', label: 'Tất cả' },
+                  { value: 'completed', label: 'Hoàn thành' },
+                  { value: 'failed', label: 'Thất bại' }
                 ]}
                 className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -303,7 +303,6 @@ const ReportModal = () => {
                             <input
                               type="checkbox"
                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                              checked={selectedUsers.size === reportData?.results?.length && reportData?.results?.length > 0}
                               onChange={toggleSelectAll}
                             />
                           </th>
@@ -323,32 +322,34 @@ const ReportModal = () => {
                             Ghi chú
                           </th>
                           <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                             Action
                           </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                        {reportData.results.map((item, index) => (
-                          <tr key={index} className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-200 ${
-                            selectedUsers.has(item.username) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                          }`}>
+                        {listView[mode].map((item, index) => (
+                          <tr key={index} className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-200 ${selectedUsers.has(item.userId) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <input
                                 type="checkbox"
                                 className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                checked={selectedUsers.has(item.username)}
-                                onChange={() => toggleUserSelection(item.username)}
+                                checked={selectedUsers.has(item.userId)}
+                                onChange={() => toggleUserSelection(item.userId)}
                               />
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-lg">
-                                #{item.id}
-                              </span>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white px-2 py-1 rounded-lg">
+                                #{item.userId}
+                              </p>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                                    <span className="text-white text-xs font-bold">
                                     {item.username.charAt(0).toUpperCase()}
                                   </span>
                                 </div>
@@ -358,14 +359,13 @@ const ReportModal = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                              {item.create_at}
+                              {moment(item.create_at).format('HH:mm:ss DD/MM/YYYY')}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full transition-all duration-200 ${
-                                item.status === 'completed' 
-                                  ? 'bg-gradient-to-r from-green-400 to-green-600 text-white shadow-green-500/25 shadow-md'
-                                  : 'bg-gradient-to-r from-red-400 to-red-600 text-white shadow-red-500/25 shadow-md'
-                              }`}>
+                              <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full transition-all duration-200 ${item.status === 'completed'
+                                ? 'bg-gradient-to-r from-green-400 to-green-600 text-white shadow-green-500/25 shadow-md'
+                                : 'bg-gradient-to-r from-red-400 to-red-600 text-white shadow-red-500/25 shadow-md'
+                                }`}>
                                 {item.status === 'completed' ? (
                                   <><i className="fas fa-check mr-1"></i> Hoàn thành</>
                                 ) : (
@@ -374,19 +374,23 @@ const ReportModal = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                              <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-lg text-xs">
-                                {item.note || 'Không có ghi chú'}
-                              </span>
+                              <p className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-lg text-xs max-w-[200px] break-words">
+                                {item.description || 'Không có ghi chú'}
+                              </p>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                              <p>
+                                {item.type}
+                              </p>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <button
-                                onClick={() => openProfile({ id: parseInt(item.id), index: 0 })}
+                              <Button
+                                onClick={() => openProfile({ id: Number(item.userId), index: 0 })}
                                 className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs font-medium rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-1"
-                                title="Open Profile"
+                                tooltip="Open Profile"
                               >
                                 <i className="fas fa-external-link-alt"></i>
-                                Open Profile
-                              </button>
+                              </Button>
                             </td>
                           </tr>
                         ))}
@@ -439,9 +443,9 @@ const ReportModal = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Chọn group đích:
                   </label>
-                  <Group 
-                    value={selectedGroup} 
-                    onChange={setSelectedGroup} 
+                  <Group
+                    value={selectedGroup}
+                    onChange={setSelectedGroup}
                   />
                 </div>
 

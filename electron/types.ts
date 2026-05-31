@@ -19,8 +19,6 @@ export enum InvokeChannel {
   SAVE_HISTORY_TXT = 'save-history-txt',
   SETUP_NEW_ACCOUNT = 'setup-new-account',
   CHECK_LIVE_ACCOUNTS = 'check-live-accounts',
-  GET_REPORT_NAMES = 'get-report-names',
-  GET_REPORT_BY_REPORT_NAME = 'get-report-by-report-name',
   SAVE_TELEGRAM_TOKEN = 'save-telegram-token',
   GET_TELEGRAM_TOKEN = 'get-telegram-token',
   SAVE_TELEGRAM_CHAT_ID = 'save-telegram-chat-id',
@@ -51,6 +49,8 @@ export enum InvokeChannel {
   SAVE_SEXY_LINK = 'save-sexy-link',
   LOAD_SEXY_CONTENT = 'load-sexy-content',
   DELETE_POST = 'delete-post',
+  GET_REPORT_NAMES_V2 = 'get-report-names-v2',
+  GET_REPORT_BY_NAME = 'get-report-by-name',
 }
 
 export type MainConfig = {
@@ -72,6 +72,7 @@ export type MainConfig = {
     prompt?: string
     model?: string
     lang?: string
+    propmts?: { label: string, value: string }[];
   },
   macId?: string
   wsUrl?: string

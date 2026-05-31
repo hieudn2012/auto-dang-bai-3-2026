@@ -53,8 +53,6 @@ contextBridge.exposeInMainWorld('api', {
   saveHistoryTxt: ({ profile_id, folder }: History) => invoke(InvokeChannel.SAVE_HISTORY_TXT, profile_id, folder),
   setupNewAccount: (info: { ws: string }) => invoke(InvokeChannel.SETUP_NEW_ACCOUNT, info),
   checkLiveAccounts: (accounts: string[]) => invoke(InvokeChannel.CHECK_LIVE_ACCOUNTS, accounts),
-  getReportNames: () => invoke(InvokeChannel.GET_REPORT_NAMES),
-  getReportByReportName: (reportName: string) => invoke(InvokeChannel.GET_REPORT_BY_REPORT_NAME, reportName),
   saveTelegramToken: (token: string) => invoke(InvokeChannel.SAVE_TELEGRAM_TOKEN, token),
   getTelegramToken: () => invoke(InvokeChannel.GET_TELEGRAM_TOKEN),
   saveTelegramChatId: (chatId: string) => invoke(InvokeChannel.SAVE_TELEGRAM_CHAT_ID, chatId),
@@ -90,7 +88,9 @@ contextBridge.exposeInMainWorld('api', {
   saveSexyCaption: (data: string) => invoke(InvokeChannel.SAVE_SEXY_CAPTION, data),
   saveSexyLink: (data: string) => invoke(InvokeChannel.SAVE_SEXY_LINK, data),
   loadSexyContent: () => invoke(InvokeChannel.LOAD_SEXY_CONTENT),
-  deletePost: (params: DeletePostOptions) => invoke(InvokeChannel.DELETE_POST, params), 
+  deletePost: (params: DeletePostOptions) => invoke(InvokeChannel.DELETE_POST, params),
+  getReportNamesV2: () => invoke(InvokeChannel.GET_REPORT_NAMES_V2),
+  getReportByName: (reportName: string) => invoke(InvokeChannel.GET_REPORT_BY_NAME, reportName),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

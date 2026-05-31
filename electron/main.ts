@@ -9,7 +9,7 @@ import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNew
 import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
-import { getReportByReportName, getReportNames } from './features/report'
+import { getReportByName, getReportNamesV2 } from './features/report'
 import { updateProfileProxy } from './features/proxy'
 import { bulkToggleDismissButton } from './features/instagram'
 import { registerNewAccounts } from './features/register'
@@ -177,15 +177,6 @@ handle(InvokeChannel.CHECK_LIVE_ACCOUNTS, async (_event, accounts) => {
   return checkLiveAccounts(accounts);
 })
 
-handle(InvokeChannel.GET_REPORT_NAMES, async () => {
-  return getReportNames();
-})
-
-
-handle(InvokeChannel.GET_REPORT_BY_REPORT_NAME, async (_event, reportName) => {
-  return getReportByReportName(reportName);
-})
-
 handle(InvokeChannel.CHECK_VALID_CAPTION_OR_LINK, async (_event, path) => {
   return checkValidCaptionOrLink(path);
 })
@@ -235,7 +226,7 @@ handle(InvokeChannel.GET_PRODUCT_FOLDER, async (_event, folderPath) => {
 })
 
 handle(InvokeChannel.GET_AFF_AMZ_LINK, async (_event, params) => {
-  const mainConfig = await loadMainConfig(); 
+  const mainConfig = await loadMainConfig();
   return mainConfig?.gemini?.lang === 'vi' ? getAffShopeeLink(params) : getAffAmzLink(params);
 })
 
@@ -278,6 +269,14 @@ handle(InvokeChannel.LOAD_SEXY_CONTENT, async () => {
 handle(InvokeChannel.DELETE_POST, async (event, params) => {
   return deletePost(params, event);
 })
+
+handle(InvokeChannel.GET_REPORT_NAMES_V2, async () => {
+  return getReportNamesV2();
+});
+
+handle(InvokeChannel.GET_REPORT_BY_NAME, async (_event, reportName) => {
+  return getReportByName(reportName);
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

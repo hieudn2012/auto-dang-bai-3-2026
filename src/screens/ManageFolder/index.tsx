@@ -26,6 +26,7 @@ const ManageFolder = () => {
   const [lang, setLang] = useState('en');
   const [model, setModel] = useState('');
   const [activeTab, setActiveTab] = useState('global');
+  const [propmts, setPrompts] = useState<{ label: string, value: string }[]>([]);
 
   const handleOpenWorkingFolder = async () => {
     const folderPath = await windowInstance.api.openDialogFolder();
@@ -48,7 +49,8 @@ const ManageFolder = () => {
       gemini: {
         apiKey: geminiApiKey,
         lang,
-        model
+        model,
+        propmts
       }
     });
     toast.success('Lưu cấu hình thành công');
@@ -65,6 +67,7 @@ const ManageFolder = () => {
     setGeminiApiKey(config?.gemini?.apiKey || '');
     setLang(config?.gemini?.lang || '');
     setModel(config?.gemini?.model || '');
+    setPrompts(config?.gemini?.propmts || []);
   }
 
   useEffect(() => {
@@ -197,6 +200,8 @@ const ManageFolder = () => {
                 setLang={setLang}
                 model={model}
                 setModel={setModel}
+                propmts={propmts}
+                setPrompts={setPrompts}
               />
             )}
 

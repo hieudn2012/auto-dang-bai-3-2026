@@ -11,6 +11,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  icon?: string;
 }
 
 const Select = ({ 
@@ -18,7 +19,8 @@ const Select = ({
   label, 
   error, 
   helperText, 
-  className, 
+  className,
+  icon,
   ...props 
 }: SelectProps) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -27,6 +29,7 @@ const Select = ({
     <div className="w-full">
       {label && (
         <label className="block text-sm font-medium text-gray-700 dark:text-dark-textSecondary mb-2">
+          {icon && <i className={`mr-2 ${icon}`}></i>}
           {label}
         </label>
       )}

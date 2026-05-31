@@ -2,13 +2,15 @@ import { twMerge } from "tailwind-merge";
 
 interface InputProps extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {
   label?: string;
+  icon?: string;
 }
 
-const Input = ({ label, ...props }: InputProps) => {
+const Input = ({ label, icon, ...props }: InputProps) => {
   return (
     <div className="w-full">
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-2">
+          {icon && <i className={`mr-2 ${icon}`}></i>}
           {label}
         </label>
       )}

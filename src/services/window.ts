@@ -9,6 +9,7 @@ import { MoveFolderParams } from "electron/features/threads-folder";
 import { FanpageLinkParams } from "electron/features/fanpage";
 import { PostParams } from "electron/features/threads-profile";
 import { DeletePostOptions } from "electron/features/threads-delete";
+import { ReportResult } from "electron/features/report";
 
 type WindownInstance = typeof window & {
   api: {
@@ -32,8 +33,6 @@ type WindownInstance = typeof window & {
     saveHistoryTxt: ({ profile_id, folder }: { profile_id: number, folder: string }) => Promise<any>,
     setupNewAccount: (info: { ws: string, username: string }) => Promise<any>,
     checkLiveAccounts: (info: { ws: string, accounts: string[], batchSize?: number }) => Promise<{ liveAccounts: string[], deadAccounts: string[] }>,
-    getReportNames: () => Promise<string[]>,
-    getReportByReportName: (reportName: string) => Promise<any>,
     saveTelegramToken: (token: string) => Promise<void>,
     getTelegramToken: () => Promise<string | null>,
     saveTelegramChatId: (chatId: string) => Promise<void>,
@@ -66,6 +65,8 @@ type WindownInstance = typeof window & {
     saveSexyLink: (data: string) => Promise<any>,
     loadSexyContent: () => Promise<{ caption: string, link: string }>,
     deletePost: (params: DeletePostOptions) => Promise<any>,
+    getReportNamesV2: () => Promise<string[]>,
+    getReportByName: (reportName: string) => Promise<ReportResult>,
   }
 }
 
