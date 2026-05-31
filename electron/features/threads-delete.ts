@@ -47,6 +47,7 @@ export const deleteOnePost = async ({ ws, user_id, username, retryCount }: Delet
         message: `✅ ✅ ✅ ✅ Finish ✅(${retryCount})`,
         id: user_id,
       });
+      browser.close();
       return 'Done';
     }
 
