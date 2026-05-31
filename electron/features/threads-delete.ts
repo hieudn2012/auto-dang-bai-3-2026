@@ -44,7 +44,7 @@ export const deleteOnePost = async ({ ws, user_id, username, retryCount }: Delet
     if (isFirst && !moreBtn) {
       sendMessage(event, {
         username,
-        message: `No posts found to delete ✅(${retryCount})`,
+        message: `✅ ✅ ✅ ✅ Finish ✅(${retryCount})`,
         id: user_id,
       });
       return 'Done';
