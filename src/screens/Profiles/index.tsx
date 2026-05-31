@@ -21,6 +21,7 @@ import { Group } from "@/components/Group";
 import ProxyModal from "./ProxyModal";
 import { ReportType } from "electron/features/report";
 import { DeletePostOptions } from "electron/features/threads-delete";
+import Switch from "@/components/Switch";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -38,6 +39,8 @@ type UserMap = {
     link: string;
     cap: string;
     username: string;
+    quotePath: string;
+    quoteName: string;
   };
 }
 
@@ -78,13 +81,26 @@ const Profiles = () => {
   const [rangeEnd, setRangeEnd] = useState('');
   const [mainConfig, setMainConfig] = useState<MainConfig>({});
   const [isAuto, setIsAuto] = useState(false);
+  const [isIgnoreQuoteLink, setIsIgnoreQuoteLink] = useState(false);
   const profiles = data?.data?.data?.data || [];
 
   const handleRandomFolder = async (profile_id: number) => {
     const profile = profiles.find((p: any) => p.profile_id === profile_id);
     const currentPaths = map(userMap, (item) => item.path);
+    const quoteCurrentPaths = map(userMap, (item) => item.quotePath);
     const { name, path } = await windowInstance.api.randomFolderNotUsed(currentPaths);
-    const newData = ({ ...userMap, [profile_id]: { profile_id, name, path, username: profile.name } });
+    const quoteFolder = await windowInstance.api.randomQuoteFolderNotUsed(quoteCurrentPaths);
+    const newData = ({
+      ...userMap, [profile_id]:
+      {
+        profile_id,
+        name,
+        path,
+        username: profile.name,
+        quotePath: quoteFolder.path,
+        quoteName: quoteFolder.name
+      }
+    });
     setUserMap(newData);
     return newData;
   }
@@ -123,7 +139,7 @@ const Profiles = () => {
       const data = {
         ws: openList?.[id]?.ws,
         username: usMap[id]?.username,
-        folder: usMap?.[id]?.path,
+        folder: type === 'quote' ? usMap?.[id]?.quotePath : usMap?.[id]?.path,
         type,
         mode,
         id,
@@ -139,12 +155,12 @@ const Profiles = () => {
     }
   }
 
-  const clickEditLatestPostButton = async (id: number, opList: any, usMap: UserMap) => {
+  const clickEditLatestPostButton = async (id: number, opList: any, usMap: UserMap, type: ReportType) => {
     try {
       const data = {
         ws: opList?.[id]?.ws,
         username: usMap[id]?.username,
-        folder: usMap?.[id]?.path,
+        folder: type === 'quote' ? usMap?.[id]?.quotePath : usMap?.[id]?.path,
         type: 'edit' as ReportType,
         id,
         reportName,
@@ -198,7 +214,7 @@ const Profiles = () => {
 
   const handleBulkClose = async (ids: number[], openedList: any) => {
     for (const id of ids) {
-      if (!!openedList?.[id]) {
+      if (openedList?.[id]) {
         closeProfile({ profile_id: id });
         await waitFor(1);
       }
@@ -207,7 +223,7 @@ const Profiles = () => {
 
   const handleBulkPost = async (ids: number[], openedList: any) => {
     for (const id of ids) {
-      if (!!openedList?.[id]?.ws) {
+      if (openedList?.[id]?.ws) {
         clickPostButton(id, 'post', openedList, userMap);
         await waitFor(3)
       }
@@ -216,17 +232,17 @@ const Profiles = () => {
 
   const handleBulkQuote = async (ids: number[], openedList: any) => {
     for (const id of ids) {
-      if (!!openedList?.[id]?.ws) {
+      if (openedList?.[id]?.ws) {
         clickPostButton(id, 'quote', openedList, userMap);
         await waitFor(3)
       }
     }
   }
 
-  const handleBulkEdit = async (ids: number[], openedList: any) => {
+  const handleBulkEdit = async (ids: number[], openedList: any, type: ReportType) => {
     for (const id of ids) {
-      if (!!openedList?.[id]?.ws) {
-        clickEditLatestPostButton(id, openedList, userMap);
+      if (openedList?.[id]?.ws) {
+        clickEditLatestPostButton(id, openedList, userMap, type);
         await waitFor(0.5);
       }
     }
@@ -234,7 +250,7 @@ const Profiles = () => {
 
   const handleBulkRandom = async (ids: number[], openedList: any) => {
     for (const id of ids) {
-      if (!!openedList?.[id]?.ws) {
+      if (openedList?.[id]?.ws) {
         const randomBtn = document.getElementById(`random-folder-${id}`);
         randomBtn?.click();
         await waitFor(0.1);
@@ -244,7 +260,7 @@ const Profiles = () => {
 
   const handleBulkSetupNewAccount = async (ids: number[], openedList: any) => {
     for (const id of ids) {
-      if (!!openedList?.[id]?.ws) {
+      if (openedList?.[id]?.ws) {
         document.getElementById(`setup-new-account-${id}`)?.click();
         await waitFor(3);
       }
@@ -278,10 +294,11 @@ const Profiles = () => {
     const usMap = {} as any;
     for (const id of ids) {
       const content = document.getElementById(`profile-info-${id}`)?.textContent || '';
-      const [username, path] = split(content, '||');
+      const [username, path, quotePath] = split(content, '||');
       usMap[id] = {
         path,
         username,
+        quotePath
       }
     }
 
@@ -292,31 +309,19 @@ const Profiles = () => {
     await runWithDelay(postPromiseFactories, 3);
     toast.success(`Đã hoàn thành post.`);
 
-    const editPostPromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap));
+    const editPostPromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap, 'post'));
     await runWithDelay(editPostPromiseFactories, 0.5);
     toast.success('Đã hoàn thành edit post.');
 
-    await handleBulkRandom(ids, openList);
-    const usMap2 = {} as any;
-    for (const id of ids) {
-      const content = document.getElementById(`profile-info-${id}`)?.textContent || '';
-      const [username, path] = split(content, '||');
-      usMap2[id] = {
-        path,
-        username,
-      }
-    }
-
-    await waitFor(5);
-    toast.success('Đã random folder.');
-
-    const quotePromiseFactories = ids.map(id => () => clickPostButton(id, 'quote', openList, usMap2));
+    const quotePromiseFactories = ids.map(id => () => clickPostButton(id, 'quote', openList, usMap));
     await runWithDelay(quotePromiseFactories, 3);
     toast.success('Đã hoàn thành quote.');
 
-    const editLatestQuotePromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap2));
-    await runWithDelay(editLatestQuotePromiseFactories, 0.5);
-    toast.success('Đã hoàn thành edit quote.');
+    if (!isIgnoreQuoteLink) {
+      const editLatestQuotePromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap, 'quote'));
+      await runWithDelay(editLatestQuotePromiseFactories, 0.5);
+      toast.success('Đã hoàn thành edit quote.');
+    }
 
     await handleBulkClose(ids, openList);
     toast.success('Đã đóng all profile.');
@@ -444,55 +449,62 @@ const Profiles = () => {
                     />
                   </div>
                   <div>
-                    <Input
-                      type="checkbox"
-                      label="Auto"
-                      checked={isAuto}
-                      onChange={(e) => setIsAuto(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded"
-                    />
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span>Tự động tắt browser khi gặp lỗi</span>
+                    </label>
+                    <Switch enabled={isAuto} onChange={(enabled) => setIsAuto(enabled)} />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span>Bỏ qua quote link</span>
+                    </label>
+                    <Switch enabled={isIgnoreQuoteLink} onChange={(enabled) => setIsIgnoreQuoteLink(enabled)} />
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => handleBulkOpenProfile(selectedIds)} tooltip="Open profile" className="px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm">
+                  <Button onClick={() => handleBulkOpenProfile(selectedIds)} tooltip="Open profile" className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-sm">
                     <i className="fa-solid fa-folder-open mr-1"></i>
                     Open
                   </Button>
-                  <Button onClick={() => handleBulkRandom(selectedIds, openedList)} tooltip="Random" className="px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm">
+                  <Button onClick={() => handleBulkRandom(selectedIds, openedList)} tooltip="Random" className="px-2 py-1 bg-purple-500 hover:bg-purple-600 text-white text-sm">
                     <i className="fa-solid fa-random mr-1"></i>
                     Random
                   </Button>
-                  <Button onClick={() => handleBulkPost(selectedIds, openedList)} tooltip="Post" className="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm" disabled={!reportName}>
+                  <Button onClick={() => handleBulkPost(selectedIds, openedList)} tooltip="Post" className="px-2 py-1 bg-indigo-500 hover:bg-indigo-600 text-white text-sm" disabled={!reportName}>
                     <i className="fa-solid fa-paper-plane mr-1"></i>
                     Post
                   </Button>
-                  <Button onClick={() => handleBulkQuote(selectedIds, openedList)} tooltip="Quote" className="px-3 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm" disabled={!reportName}>
+                  <Button onClick={() => handleBulkQuote(selectedIds, openedList)} tooltip="Quote" className="px-2 py-1 bg-pink-500 hover:bg-pink-600 text-white text-sm" disabled={!reportName}>
                     <i className="fa-solid fa-quote-right mr-1"></i>
                     Quote
                   </Button>
-                  <Button onClick={() => handleBulkEdit(selectedIds, openedList)} tooltip="Edit" className="px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm" disabled={!reportName}>
+                  <Button onClick={() => handleBulkEdit(selectedIds, openedList, 'post')} tooltip="Edit" className="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm" disabled={!reportName}>
                     <i className="fa-solid fa-pen-to-square mr-1"></i>
-                    Edit
+                    Edit Post
                   </Button>
-                  <Button onClick={() => handleBulkSetupNewAccount(selectedIds, openedList)} tooltip="Setup New Account" className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm">
+                  <Button onClick={() => handleBulkEdit(selectedIds, openedList, 'quote')} tooltip="Edit" className="px-2 py-1 bg-purple-500 hover:bg-purple-600 text-white text-sm" disabled={!reportName}>
+                    <i className="fa-solid fa-pen-to-square mr-1"></i>
+                    Edit Quote
+                  </Button>
+                  <Button onClick={() => handleBulkSetupNewAccount(selectedIds, openedList)} tooltip="Setup New Account" className="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white text-sm">
                     <i className="fa-solid fa-user-plus mr-1"></i>
                     Setup
                   </Button>
                   <Button
                     onClick={() => setShowProxyModal(true)}
                     tooltip="Update Proxy"
-                    className="px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm"
+                    className="px-2 py-1 bg-teal-500 hover:bg-teal-600 text-white text-sm"
                     disabled={selectedIds.length === 0}
                   >
                     <i className="fa-solid fa-shield-alt mr-1"></i>
                     Proxy
                   </Button>
-                  <Button onClick={() => handleBulkClose(selectedIds, openedList)} tooltip="Close" className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm">
+                  <Button onClick={() => handleBulkClose(selectedIds, openedList)} tooltip="Close" className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-sm">
                     <i className="fa-solid fa-xmark mr-1"></i>
                     Close
                   </Button>
-                  <Button onClick={() => handleBulkToggleDismissButton(selectedIds, openedList)} tooltip="Toggle Dismiss Button" className="px-3 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm">
+                  <Button onClick={() => handleBulkToggleDismissButton(selectedIds, openedList)} tooltip="Toggle Dismiss Button" className="px-2 py-1 bg-pink-500 hover:bg-pink-600 text-white text-sm">
                     <i className="fa-solid fa-hand mr-1"></i>
                     Dismiss
                   </Button>
@@ -627,6 +639,9 @@ const Profiles = () => {
                             <div className="text-xs text-gray-500 mt-1">
                               {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
                             </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {shortName(userMap?.[profile.profile_id]?.quoteName || 'N/A')}
+                            </div>
                           </div>
 
                           {/* Message */}
@@ -688,9 +703,17 @@ const Profiles = () => {
                               </Button>
                               <Button
                                 id={`edit-folder-${profile.profile_id}`}
-                                tooltip="Edit folder"
-                                onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap)}
+                                tooltip="Edit folder for post"
+                                onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap, 'post')}
                                 className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"
+                              >
+                                <i className="fa-solid fa-pen-to-square"></i>
+                              </Button>
+                              <Button
+                                id={`edit-folder-${profile.profile_id}`}
+                                tooltip="Edit folder for quote"
+                                onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap, 'quote')}
+                                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
                               >
                                 <i className="fa-solid fa-pen-to-square"></i>
                               </Button>
@@ -709,7 +732,7 @@ const Profiles = () => {
                                 <i className="fa-solid fa-trash"></i>
                               </Button>
                               <p className="hidden" id={`profile-info-${profile.profile_id}`}>
-                                {`${profile.name}||${userMap?.[profile.profile_id]?.path}`}
+                                {`${profile.name}||${userMap?.[profile.profile_id]?.path}||${userMap?.[profile.profile_id]?.quotePath}`}
                               </p>
                             </div>
                           </div>

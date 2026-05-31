@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('api', {
   saveMainConfig: (config: MainConfig) => invoke(InvokeChannel.SAVE_MAIN_CONFIG, config),
   loadMainConfig: () => invoke(InvokeChannel.LOAD_MAIN_CONFIG),
   randomFolderNotUsed: (exclude: string[] = []) => invoke(InvokeChannel.RANDOM_FOLDER_NOT_USED, exclude),
+  randomQuoteFolderNotUsed: (exclude: string[] = []) => invoke(InvokeChannel.RANDOM_QUOTE_FOLDER_NOT_USED, exclude),
   getFolderInfo: (path: string) => invoke(InvokeChannel.GET_FOLDER_INFO, path),
   clickPostButton: (info: UserInfo) => invoke(InvokeChannel.CLICK_POST_BUTTON, info),
   clickEditLatestPostButton: (info: UserInfo) => invoke(InvokeChannel.CLICK_EDIT_LATEST_POST_BUTTON, info),

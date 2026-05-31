@@ -28,6 +28,7 @@ type WindownInstance = typeof window & {
     saveMainConfig: (config: MainConfig) => Promise<any>,
     loadMainConfig: () => Promise<MainConfig | null>,
     randomFolderNotUsed: (exclude: string[]) => Promise<{ name: string, path: string }>,
+    randomQuoteFolderNotUsed: (exclude: string[]) => Promise<{ name: string, path: string }>,
     getFolderInfo: (path: string) => Promise<{ cap: string, link: string }>,
     clickPostButton: (info: PostParams) => Promise<any>,
     clickEditLatestPostButton: (info: PostParams) => Promise<any>,

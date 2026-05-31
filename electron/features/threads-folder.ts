@@ -73,6 +73,17 @@ export const randomFolderNotUsed = async (exclude: string[] = []): Promise<{ nam
   };
 }
 
+// random quote folder
+export const randomQuoteFolderNotUsed = async (exclude: string[] = []): Promise<{ name: string, path: string }> => {
+  // get quote working folder
+  const config = await loadMainConfig();
+  const randomFolder = getRandomFolder(config?.quoteWorkingDir || '', exclude);
+  return {
+    name: nodePath.basename(randomFolder),
+    path: randomFolder
+  };
+}
+
 // get folder info
 export const getFolderInfo = async (path: string): Promise<FolderInfo> => {
   const cap = fs.readFileSync(nodePath.join(path, 'cap.txt'), 'utf8');

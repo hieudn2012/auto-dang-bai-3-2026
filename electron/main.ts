@@ -3,7 +3,19 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { spawn } from 'child_process'
 import { InvokeChannel } from './types'
-import { createProductFolder, getFolderInfo, loadProductInfo, moveAllFilesFromFolderAtoFolderB, moveFolder, openDialogFolder, openFolder, openProfileFolder, randomFolderNotUsed, saveProductInfo } from './features/threads-folder'
+import {
+  createProductFolder,
+  getFolderInfo,
+  loadProductInfo,
+  moveAllFilesFromFolderAtoFolderB,
+  moveFolder,
+  openDialogFolder,
+  openFolder,
+  openProfileFolder,
+  randomFolderNotUsed,
+  randomQuoteFolderNotUsed,
+  saveProductInfo
+} from './features/threads-folder'
 import { openProfile, updateProfileGroup } from './features/ixbrowser-api'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNewAccount } from './features/threads-profile'
 import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
@@ -151,6 +163,10 @@ handle(InvokeChannel.LOAD_MAIN_CONFIG, async () => {
 
 handle(InvokeChannel.RANDOM_FOLDER_NOT_USED, async (_event, exclude) => {
   return randomFolderNotUsed(exclude);
+})
+
+handle(InvokeChannel.RANDOM_QUOTE_FOLDER_NOT_USED, async (_event, exclude) => {
+  return randomQuoteFolderNotUsed(exclude);
 })
 
 handle(InvokeChannel.GET_FOLDER_INFO, async (_event, path) => {

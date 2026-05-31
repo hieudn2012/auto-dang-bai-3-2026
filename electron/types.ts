@@ -13,6 +13,7 @@ export enum InvokeChannel {
   SAVE_MAIN_CONFIG = 'save-main-config',
   LOAD_MAIN_CONFIG = 'load-main-config',
   RANDOM_FOLDER_NOT_USED = 'random-folder-not-used',
+  RANDOM_QUOTE_FOLDER_NOT_USED = 'random-quote-folder-not-used',
   GET_FOLDER_INFO = 'get-folder-info',
   CLICK_POST_BUTTON = 'click-post-button',
   CLICK_EDIT_LATEST_POST_BUTTON = 'click-edit-latest-post-button',
@@ -55,6 +56,7 @@ export enum InvokeChannel {
 
 export type MainConfig = {
   workingDir?: string
+  quoteWorkingDir?: string
   profileDir?: string
   linkPost?: string
   caption?: string

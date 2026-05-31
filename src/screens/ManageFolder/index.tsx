@@ -27,10 +27,16 @@ const ManageFolder = () => {
   const [model, setModel] = useState('');
   const [activeTab, setActiveTab] = useState('global');
   const [propmts, setPrompts] = useState<{ label: string, value: string }[]>([]);
+  const [quoteWorkingDir, setQuoteWorkingDir] = useState('');
 
   const handleOpenWorkingFolder = async () => {
     const folderPath = await windowInstance.api.openDialogFolder();
     setWorkingFolder(folderPath);
+  }
+
+  const handleOpenQuoteWorkingDir = async () => {
+    const folderPath = await windowInstance.api.openDialogFolder();
+    setQuoteWorkingDir(folderPath);
   }
 
   const handleOpenProfileFolder = async () => {
@@ -42,6 +48,7 @@ const ManageFolder = () => {
     await windowInstance.api.saveMainConfig({
       workingDir: workingFolder,
       profileDir: profileFolder,
+      quoteWorkingDir,
       linkPost,
       caption,
       captions,
@@ -60,6 +67,7 @@ const ManageFolder = () => {
     const config = await windowInstance.api.loadMainConfig();
     setWorkingFolder(config?.workingDir || '');
     setProfileFolder(config?.profileDir || '');
+    setQuoteWorkingDir(config?.quoteWorkingDir || '');
     setLinkPost(config?.linkPost || '');
     setCaption(config?.caption || '');
     setCaptions(config?.captions || []);
@@ -164,6 +172,9 @@ const ManageFolder = () => {
                 setLinkPost={setLinkPost}
                 onChangeWorkingFolder={handleOpenWorkingFolder}
                 onChangeProfileFolder={handleOpenProfileFolder}
+                quoteWorkingDir={quoteWorkingDir}
+                setQuoteWorkingDir={setQuoteWorkingDir}
+                onChangeQuoteWorkingDir={handleOpenQuoteWorkingDir}
               />
             )}
 

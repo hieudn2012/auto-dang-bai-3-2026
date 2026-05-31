@@ -11,6 +11,9 @@ interface GlobalConfigProps {
   onChangeProfileFolder: () => Promise<void>;
   profileFolder: string;
   setProfileFolder: (value: string) => void;
+  quoteWorkingDir: string;
+  setQuoteWorkingDir: (value: string) => void;
+  onChangeQuoteWorkingDir: () => Promise<void>;
 }
 
 const GlobalConfig = ({
@@ -22,6 +25,9 @@ const GlobalConfig = ({
   profileFolder,
   onChangeProfileFolder,
   setProfileFolder,
+  quoteWorkingDir,
+  setQuoteWorkingDir,
+  onChangeQuoteWorkingDir
 }: GlobalConfigProps) => {
   return (
     <div className="space-y-6">
@@ -40,6 +46,27 @@ const GlobalConfig = ({
           />
           <Button
             onClick={onChangeWorkingFolder}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            <i className="fas fa-folder-open"></i>
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          <i className="fas fa-folder text-blue-400 mr-1"></i>
+          Thư Mục Quote phục vụ cho Shopee giải trí
+        </label>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Nhập tên thư mục quote phục vụ cho Shopee giải trí"
+            value={quoteWorkingDir}
+            onChange={(e) => setQuoteWorkingDir(e.target.value)}
+            className="flex-1"
+          />
+          <Button
+            onClick={onChangeQuoteWorkingDir}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
           >
             <i className="fas fa-folder-open"></i>
