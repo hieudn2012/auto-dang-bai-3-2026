@@ -222,6 +222,7 @@ const GeminiAI = () => {
               ref={rowRefs[index]}
               isIncludeSubPrompt={isIncludeSubPrompt}
               linkMode={linkMode}
+              prompt={mainConfig?.gemini?.propmts?.find(p => p.value === promptSelected)?.value || ''}
             />
           ))}
 
@@ -242,6 +243,7 @@ interface RowProps {
   onSelect: (index: number) => void;
   isIncludeSubPrompt: boolean;
   linkMode: 'amz' | 'shopee';
+  prompt: string;
 }
 
 const Row = forwardRef(({
@@ -255,6 +257,7 @@ const Row = forwardRef(({
   onSelect,
   isIncludeSubPrompt,
   linkMode,
+  prompt,
 }: RowProps, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
@@ -270,7 +273,7 @@ const Row = forwardRef(({
       const text = await windowInstance.api.generateCaptions({
         isIncludeSubPrompt,
         folder,
-        prompt: '',
+        prompt,
       });
       setText(text);
     } catch (error) {
