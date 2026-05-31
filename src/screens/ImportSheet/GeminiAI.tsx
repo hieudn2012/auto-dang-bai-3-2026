@@ -148,7 +148,10 @@ const GeminiAI = () => {
             icon="fas fa-pen-to-square"
             value={promptSelected}
             onChange={(e) => setPromptSelected(e.target.value)}
-            options={prompts.map(p => ({ label: p.label, value: p.value }))}
+            options={[
+              { label: 'Select Prompt', value: '' },
+              ...prompts.map(p => ({ label: p.label, value: p.value }))
+            ]}
           />
         </div>
         <div>
@@ -222,7 +225,7 @@ const GeminiAI = () => {
               ref={rowRefs[index]}
               isIncludeSubPrompt={isIncludeSubPrompt}
               linkMode={linkMode}
-              prompt={mainConfig?.gemini?.propmts?.find(p => p.value === promptSelected)?.value || ''}
+              prompt={promptSelected}
             />
           ))}
 
@@ -267,6 +270,10 @@ const Row = forwardRef(({
   const [isCapMoved, setIsCapMoved] = useState(false);
   const [isLinksMoved, setIsLinksMoved] = useState(false);
   const handleGenerate = async (folder: string) => {
+    if (!prompt) {
+      toast.error('Please select a prompt');
+      return;
+    }
     try {
       setIsGenerating(true);
       toast.info('Quá trình có thể mất vài giây, vui lòng chờ...');
