@@ -16,7 +16,7 @@ import { registerNewAccounts } from './features/register'
 import { sendMessage } from './features/event'
 import { createEmptyProduct, getProductFolder, saveProduct } from './features/product'
 import { getAffAmzLink } from './features/amz'
-import { generateAmazonCaptions } from './features/gemini'
+import { generateCaptions } from './features/gemini'
 import { getAllFolder, moveDataToFolder } from './features/foder'
 import { init } from './init'
 import { getFanpageLinks } from './features/fanpage'
@@ -230,9 +230,9 @@ handle(InvokeChannel.GET_AFF_AMZ_LINK, async (_event, params) => {
   return mainConfig?.gemini?.lang === 'vi' ? getAffShopeeLink(params) : getAffAmzLink(params);
 })
 
-handle(InvokeChannel.GENERATE_AMAZON_CAPTIONS, async (_event, folder) => {
+handle(InvokeChannel.GENERATE_CAPTIONS, async (_event, data) => {
   try {
-    return await generateAmazonCaptions(folder);
+    return await generateCaptions(data);
   } catch (error) {
     throw String(error); // Convert error to string for IPC
   }

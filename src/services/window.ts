@@ -10,6 +10,7 @@ import { FanpageLinkParams } from "electron/features/fanpage";
 import { PostParams } from "electron/features/threads-profile";
 import { DeletePostOptions } from "electron/features/threads-delete";
 import { ReportResult } from "electron/features/report";
+import { GenerateCaptionsParams } from "electron/features/gemini";
 
 type WindownInstance = typeof window & {
   api: {
@@ -56,7 +57,7 @@ type WindownInstance = typeof window & {
     saveProduct: (product: Product) => Promise<any>,
     getProductFolder: (folderPath: string) => Promise<Product>,
     getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => Promise<string>,
-    generateAmazonCaptions: (folder: string) => Promise<string>,
+    generateCaptions: (params: GenerateCaptionsParams) => Promise<string>,
     getAllFolder: (rootPath: string) => Promise<{ folder: string, defaultLink: string, totalLink: number, totalCap: number }[]>,
     moveDataToFolder: (data: MoveData) => Promise<any>,
     moveFolder: (params: MoveFolderParams) => Promise<any>,

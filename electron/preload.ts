@@ -6,6 +6,7 @@ import { MoveData } from './features/foder'
 import { MoveFolderParams } from './features/threads-folder'
 import { FanpageLinkParams } from './features/fanpage'
 import { DeletePostOptions } from './features/threads-delete'
+import { GenerateCaptionsParams } from './features/gemini'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -80,7 +81,7 @@ contextBridge.exposeInMainWorld('api', {
   saveProduct: (product: Product) => invoke(InvokeChannel.SAVE_PRODUCT, product),
   getProductFolder: (folderPath: string) => invoke(InvokeChannel.GET_PRODUCT_FOLDER, folderPath),
   getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number }) => invoke(InvokeChannel.GET_AFF_AMZ_LINK, params),
-  generateAmazonCaptions: (folder: string) => invoke(InvokeChannel.GENERATE_AMAZON_CAPTIONS, folder),
+  generateCaptions: (params: GenerateCaptionsParams) => invoke(InvokeChannel.GENERATE_CAPTIONS, params),
   getAllFolder: (rootPath: string) => invoke(InvokeChannel.GET_ALL_FOLDER, rootPath),
   moveDataToFolder: (data: MoveData) => invoke(InvokeChannel.MOVE_DATA_TO_FOLDER, data),
   moveFolder: (params: MoveFolderParams) => invoke(InvokeChannel.MOVE_FOLDER, params),

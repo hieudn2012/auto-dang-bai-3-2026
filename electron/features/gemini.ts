@@ -44,7 +44,14 @@ const shoppePrompt = `
   - Mỗi caption dài từ 100 đến 150 ký tự
   - Chỉ trả về caption, không giải thích gì thêm
 `;
-export const generateAmazonCaptions = async (folder: string) => {
+
+export interface GenerateCaptionsParams {
+  folder: string;
+  prompt: string;
+  isIncludeSubPrompt: boolean;
+}
+
+export const generateCaptions = async ({ folder, prompt, isIncludeSubPrompt }: GenerateCaptionsParams) => {
   try {
     const mainConfig = await loadMainConfig();
     const keys = mainConfig?.gemini?.apiKey?.trim().split(`\n`);
@@ -54,9 +61,21 @@ export const generateAmazonCaptions = async (folder: string) => {
       apiKey: randomKey,
     });
 
+    let mainPrompt = prompt;
+
     // get .mp4 in folder
     const files = fs.readdirSync(folder);
     const videoFile = files.find(file => file.endsWith('.mp4'));
+
+    // get sub prompt from folder/prompt.txt if exist
+    if (isIncludeSubPrompt) {
+      const subPromptPath = path.join(folder, "prompt.txt");
+      if (fs.existsSync(subPromptPath)) {
+        const subPromptContent = fs.readFileSync(subPromptPath, 'utf8');
+        mainPrompt += `\n${subPromptContent}`;
+      }
+    }
+
     if (!videoFile) {
       throw new Error('No video file found in folder');
     }
@@ -74,7 +93,7 @@ export const generateAmazonCaptions = async (folder: string) => {
           },
         },
         {
-          text: mainConfig?.gemini?.lang === 'vi' ? shoppePrompt : amzPrompt,
+          text: mainPrompt,
         },
       ],
     });

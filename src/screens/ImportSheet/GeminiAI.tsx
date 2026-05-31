@@ -1,8 +1,10 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import Select from "@/components/Select";
 import { toast } from "@/components/ToastContainer";
 import { useMainConfig } from "@/hooks/useMainConfig";
 import { windowInstance } from "@/services/window";
+import { Switch } from "@headlessui/react";
 import { MoveData } from "electron/features/foder";
 import React, { useState, useImperativeHandle, forwardRef, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
@@ -25,6 +27,8 @@ const GeminiAI = () => {
   const [rootFolder, setRootFolder] = useState('');
   const [items, setItems] = useState<Item[]>([]);
   const [ws, setWs] = useState('');
+  const [promptSelected, setPromptSelected] = useState('');
+  const [isIncludeSubPrompt, setIsIncludeSubPrompt] = useState(false);
   const [indexSelected, setIndexSelected] = useState<number[]>([]);
   const rowRefs = items.reduce((acc, _, index) => {
     acc[index] = React.createRef();
@@ -32,6 +36,7 @@ const GeminiAI = () => {
   }, {} as { [key: number]: React.RefObject<{ handleGenerate: (folder: string) => Promise<void>, handleGetLinks: () => Promise<void> }> });
   const { mainConfig } = useMainConfig();
   const isVietnamese = mainConfig?.gemini?.lang === 'vi';
+  const prompts = mainConfig?.gemini?.propmts || [];
 
   const handleSelect = (index: number) => {
     if (indexSelected.includes(index)) {
@@ -119,6 +124,27 @@ const GeminiAI = () => {
           placeholder="WebSocket URL"
         />
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Select
+            label="Main Prompt"
+            value={promptSelected}
+            onChange={(e) => setPromptSelected(e.target.value)}
+            options={prompts.map(p => ({ label: p.label, value: p.value }))}
+          />
+        </div>
+        <div>
+          <label className="flex items-center gap-2 mb-4">
+            Include sub prompt
+          </label>
+          <Switch
+            checked={isIncludeSubPrompt}
+            onChange={setIsIncludeSubPrompt}
+            className={twMerge("relative inline-flex items-center h-6 rounded-full w-11", isIncludeSubPrompt ? "bg-blue-600" : "bg-gray-200")}
+          />
+        </div>
+        <div></div>
+      </div>
       <div className="flex justify-between gap-4">
         <div>
           <p>{isVietnamese ? <i className="fa-solid fa-bag-shopping text-4xl text-orange-500"></i> : <i className="fab fa-amazon text-4xl text-orange-500"></i>}</p>
@@ -149,7 +175,7 @@ const GeminiAI = () => {
               <input
                 type="checkbox"
                 checked={indexSelected.length === items.length && items.length > 0}
-                onChange={handleSelectAll}
+                onChange={() => handleSelectAll()}
               />
             </th>
             <th className="border border-gray-200 px-4 py-2 text-left">Path</th>
@@ -165,15 +191,50 @@ const GeminiAI = () => {
         </thead>
         <tbody>
           {items.map((item, index) => (
-            <Row key={index} path={item.path} defaultLink={item.defaultLink} totalLink={item.totalLink} totalCap={item.totalCap} ws={ws} numberIndex={index} indexSelected={indexSelected} onSelect={handleSelect} ref={rowRefs[index]} />
+            <Row
+              key={index}
+              path={item.path}
+              defaultLink={item.defaultLink}
+              totalLink={item.totalLink}
+              totalCap={item.totalCap}
+              ws={ws}
+              numberIndex={index}
+              indexSelected={indexSelected}
+              onSelect={handleSelect}
+              ref={rowRefs[index]}
+              isIncludeSubPrompt={isIncludeSubPrompt}
+            />
           ))}
+
         </tbody>
       </table>
     </div>
   )
 }
 
-const Row = forwardRef(({ path, defaultLink, totalLink, totalCap, ws, numberIndex, indexSelected, onSelect }: { path: string, defaultLink: string, totalLink: number, totalCap: number, ws: string, numberIndex: number, indexSelected: number[], onSelect: (index: number) => void }, ref) => {
+interface RowProps {
+  path: string;
+  defaultLink: string;
+  totalLink: number;
+  totalCap: number;
+  ws: string;
+  numberIndex: number;
+  indexSelected: number[];
+  onSelect: (index: number) => void;
+  isIncludeSubPrompt: boolean;
+}
+
+const Row = forwardRef(({
+  path,
+  defaultLink,
+  totalLink,
+  totalCap,
+  ws,
+  numberIndex,
+  indexSelected,
+  onSelect,
+  isIncludeSubPrompt
+}: RowProps, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
   const [text, setText] = useState('');
@@ -185,7 +246,11 @@ const Row = forwardRef(({ path, defaultLink, totalLink, totalCap, ws, numberInde
     try {
       setIsGenerating(true);
       toast.info('Quá trình có thể mất vài giây, vui lòng chờ...');
-      const text = await windowInstance.api.generateAmazonCaptions(folder);
+      const text = await windowInstance.api.generateCaptions({
+        isIncludeSubPrompt,
+        folder,
+        prompt: '',
+      });
       setText(text);
     } catch (error) {
       toast.error((error as Error).message);
