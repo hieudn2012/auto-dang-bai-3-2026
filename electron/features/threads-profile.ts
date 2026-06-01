@@ -559,7 +559,7 @@ export const clickEditLatestPostButton = async ({
     if (mode === 'default') {
       linkPost = `${cutSexyLink()}`;
     } else {
-      const prefix = isVietnamese ? 'Link sản phẩm 👉 ' : 'Product link 👉 ';
+      const prefix = isVietnamese ? 'Mua ở đây: ' : 'Product link 👉 ';
       linkPost = `${prefix}${getRandomLink(folder)}`;
     }
     await page.keyboard.type(linkPost, { delay: 100 });
