@@ -195,7 +195,10 @@ export const clickPostButton = async ({
     }
 
     sendMessage(event, { id, username, message: 'Đang tải media...' });
-    await uploadMedia({ page, username, folder, mode });
+    const isUploadSuccess = await uploadMedia({ page, username, folder, mode });
+    if (!isUploadSuccess) {
+      throw new Error('Internet connection may be unstable, media upload failed');
+    }
     await waitRandom(3000, 5000);
 
     // find div with class x1n2onr6 x1ja2u2z x1afcbsf x78zum5 xdt5ytf x1a2a7pz x71s49j x1plvlek xryxfnj x5hsz1j x1u6grsq x1mkrjbl x4hg4is
@@ -400,50 +403,85 @@ export const uploadMedia = async ({
   username: string,
   folder: string,
   mode: 'default' | 'affiliate'
-}) => {
-  if (page) {
-    await page.bringToFront();
-    await waitRandom(5000, 10000);
+}): Promise<boolean> => {
+  await page.bringToFront();
+  await waitRandom(5000, 10000);
 
-    // find input type = file
-    const inputFile = await page.$('input[type="file"]');
+  let isVideoUploaded = false;
+  let isImageUploaded = false;
 
-    const uploadImage = async () => {
-      // filter only image files
-      const images = await fs.readdir(folder);
-      const imageFiles = images.filter(image => image.endsWith('.avif') || image.endsWith('.jpg') || image.endsWith('.jpeg') || image.endsWith('.png') || image.endsWith('.webp'));
-      // upload all image files
-      for (const image of imageFiles) {
-        const imagePath = path.join(folder, image);
-        await (inputFile as any).uploadFile(imagePath);
-        await waitRandom(3000, 5000);
+  const waitForUploadSuccess = async (
+    timeoutMs = 3 * 60 * 1000,
+    intervalMs = 3000
+  ): Promise<boolean> => {
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      if (isVideoUploaded && isImageUploaded) {
+        return true;
       }
+
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
 
-    const uploadVideo = async () => {
-      // get all videos in folder
-      const videos = await fs.readdir(folder);
-      // filter only video files
-      const videoFiles = videos.filter(video => video.endsWith('.mp4') || video.endsWith('.mov') || video.endsWith('.webm'));
-      // upload all video files
+    return false;
+  };
 
-      for (const video of videoFiles) {
-        const filePath = path.join(folder, video);
-        await (inputFile as any).uploadFile(filePath);
-        await waitRandom(3000, 5000);
-      }
+  page.on('response', response => {
+    const url = response.url();
+    const status = response.status();
+    if (url.includes('rupload_igvideo') && status === 200) {
+      console.log('Video uploaded successfully!');
+      isVideoUploaded = true;
     }
 
-    if (mode === 'default') {
-      await uploadImage();
-      await uploadVideo();
+    if (url.includes('rupload_igphoto') && status === 200) {
+      console.log('Image uploaded successfully!');
+      isImageUploaded = true;
     }
+  });
 
-    if (mode === 'affiliate') {
-      await uploadVideo();
-      await uploadImage();
+  // find input type = file
+  const inputFile = await page.$('input[type="file"]');
+
+  const uploadImage = async () => {
+    // filter only image files
+    const images = await fs.readdir(folder);
+    const imageFiles = images.filter(image => image.endsWith('.avif') || image.endsWith('.jpg') || image.endsWith('.jpeg') || image.endsWith('.png') || image.endsWith('.webp'));
+    // upload all image files
+    for (const image of imageFiles) {
+      const imagePath = path.join(folder, image);
+      await (inputFile as any).uploadFile(imagePath);
+      await waitRandom(3000, 5000);
     }
   }
+
+  const uploadVideo = async () => {
+    // get all videos in folder
+    const videos = await fs.readdir(folder);
+    // filter only video files
+    const videoFiles = videos.filter(video => video.endsWith('.mp4') || video.endsWith('.mov') || video.endsWith('.webm'));
+    // upload all video files
+
+    for (const video of videoFiles) {
+      const filePath = path.join(folder, video);
+      await (inputFile as any).uploadFile(filePath);
+      await waitRandom(3000, 5000);
+    }
+  }
+
+  if (mode === 'default') {
+    await uploadImage();
+    await uploadVideo();
+  }
+
+  if (mode === 'affiliate') {
+    await uploadVideo();
+    await uploadImage();
+  }
+
+  const success = await waitForUploadSuccess();
+  return success;
 }
 
 
