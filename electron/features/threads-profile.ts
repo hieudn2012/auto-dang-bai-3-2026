@@ -408,7 +408,6 @@ export const uploadMedia = async ({
   await waitRandom(5000, 10000);
 
   let isVideoUploaded = false;
-  let isImageUploaded = false;
 
   const waitForUploadSuccess = async (
     timeoutMs = 3 * 60 * 1000,
@@ -417,7 +416,7 @@ export const uploadMedia = async ({
     const start = Date.now();
 
     while (Date.now() - start < timeoutMs) {
-      if (isVideoUploaded && isImageUploaded) {
+      if (isVideoUploaded) {
         return true;
       }
 
@@ -437,7 +436,6 @@ export const uploadMedia = async ({
 
     if (url.includes('rupload_igphoto') && status === 200) {
       console.log('Image uploaded successfully!');
-      isImageUploaded = true;
     }
   });
 
