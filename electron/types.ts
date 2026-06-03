@@ -52,6 +52,7 @@ export enum InvokeChannel {
   DELETE_POST = 'delete-post',
   GET_REPORT_NAMES_V2 = 'get-report-names-v2',
   GET_REPORT_BY_NAME = 'get-report-by-name',
+  CAPTURE_PRODUCT_IMAGE = 'capture-product-image'
 }
 
 export type MainConfig = {

@@ -27,7 +27,7 @@ import { bulkToggleDismissButton } from './features/instagram'
 import { registerNewAccounts } from './features/register'
 import { sendMessage } from './features/event'
 import { createEmptyProduct, getProductFolder, saveProduct } from './features/product'
-import { getAffAmzLink } from './features/amz'
+import { captureProductImage, getAffAmzLink } from './features/amz'
 import { generateCaptions } from './features/gemini'
 import { getAllFolder, moveDataToFolder } from './features/foder'
 import { init } from './init'
@@ -292,6 +292,10 @@ handle(InvokeChannel.GET_REPORT_NAMES_V2, async () => {
 
 handle(InvokeChannel.GET_REPORT_BY_NAME, async (_event, reportName) => {
   return getReportByName(reportName);
+});
+
+handle(InvokeChannel.CAPTURE_PRODUCT_IMAGE, async (_event, params) => {
+  return captureProductImage(params);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -4,13 +4,14 @@ import { LogItem } from "electron/features/event";
 import { BulkToggleDismissButtonParams } from "electron/features/instagram";
 import { RegisterNewAccountParams } from "electron/features/register";
 import { Product } from "electron/features/product";
-import { MoveData } from "electron/features/foder";
+import { FolderData, MoveData } from "electron/features/foder";
 import { MoveFolderParams } from "electron/features/threads-folder";
 import { FanpageLinkParams } from "electron/features/fanpage";
 import { PostParams } from "electron/features/threads-profile";
 import { DeletePostOptions } from "electron/features/threads-delete";
 import { ReportResult } from "electron/features/report";
 import { GenerateCaptionsParams } from "electron/features/gemini";
+import { CaptureProductImageParams } from "electron/features/amz";
 
 type WindownInstance = typeof window & {
   api: {
@@ -59,7 +60,7 @@ type WindownInstance = typeof window & {
     getProductFolder: (folderPath: string) => Promise<Product>,
     getAffAmzLink: (params: { ws: string, links: string[], numberToGet: number, linkMode: 'amz' | 'shopee' }) => Promise<string>,
     generateCaptions: (params: GenerateCaptionsParams) => Promise<string>,
-    getAllFolder: (rootPath: string) => Promise<{ folder: string, defaultLink: string, totalLink: number, totalCap: number }[]>,
+    getAllFolder: (rootPath: string) => Promise<FolderData[]>,
     moveDataToFolder: (data: MoveData) => Promise<any>,
     moveFolder: (params: MoveFolderParams) => Promise<any>,
     getFanpageLinks: (params: FanpageLinkParams) => Promise<string>,
@@ -69,6 +70,7 @@ type WindownInstance = typeof window & {
     deletePost: (params: DeletePostOptions) => Promise<any>,
     getReportNamesV2: () => Promise<string[]>,
     getReportByName: (reportName: string) => Promise<ReportResult>,
+    captureProductImage: (params: CaptureProductImageParams) => Promise<any>
   }
 }
 

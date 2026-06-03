@@ -56,14 +56,23 @@ export const getRandomFolder = (
 };
 
 // get all folder in root path
-export const getAllFolder = (rootPath: string): { folder: string, defaultLink: string, totalLink: number, totalCap: number }[] => {
+export interface FolderData {
+  folder: string;
+  defaultLink: string;
+  totalLink: number;
+  totalCap: number;
+  imgs: string[];
+  realProductImage: string;
+}
+
+export const getAllFolder = (rootPath: string): FolderData[] => {
   try {
     const folders = fs.readdirSync(rootPath);
     const data = folders.filter(folder => folder !== '.DS_Store' && folder !== 'desktop.ini');
     return data.map((folder) => {
       // get link.txt in folder
       const linkPath = path.join(rootPath, folder, 'link.txt');
-      console.log(linkPath, 'linkPath');
+      console.log(`Reading folder: ${folder}...`);
 
       let totalLink = 0;
       let totalCap = 0;
@@ -85,11 +94,36 @@ export const getAllFolder = (rootPath: string): { folder: string, defaultLink: s
         totalCap = caps.length;
       }
 
+      // get all img in folder
+      const imgs: string[] = [];
+      const files = fs.readdirSync(path.join(rootPath, folder));
+      files.forEach(file => {
+        if (file.endsWith('.jpg') || file.endsWith('.png') || file.endsWith('.jpeg')) {
+          // convert to base64 to view in img tag
+          const imgPath = path.join(rootPath, folder, file);
+          const imgData = fs.readFileSync(imgPath);
+          const imgBase64 = imgData.toString('base64');
+          imgs.push(`data:image/jpeg;base64,${imgBase64}`);
+        }
+      });
+
+      // get real product image in folder/real_product/img.png
+      const realProductImagePath = path.join(rootPath, folder, 'real_product', 'img.png');
+      let realProductImage = '';
+      if (fs.existsSync(realProductImagePath)) {
+        // convert to base64 to view in img tag
+        const imgData = fs.readFileSync(realProductImagePath);
+        const imgBase64 = imgData.toString('base64');
+        realProductImage = `data:image/jpeg;base64,${imgBase64}`;
+      }
+
       return ({
         folder: path.join(rootPath, folder),
         defaultLink: defaultLink,
         totalLink: totalLink,
         totalCap: totalCap,
+        imgs,
+        realProductImage,
       });
     });
   } catch (error) {

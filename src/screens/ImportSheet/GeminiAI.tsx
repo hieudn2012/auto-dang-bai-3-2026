@@ -1,10 +1,10 @@
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
+import Switch from "@/components/Switch";
 import { toast } from "@/components/ToastContainer";
 import { useMainConfig } from "@/hooks/useMainConfig";
 import { windowInstance } from "@/services/window";
-import { Switch } from "@headlessui/react";
 import { MoveData } from "electron/features/foder";
 import React, { useState, useImperativeHandle, forwardRef, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
@@ -14,6 +14,8 @@ interface Item {
   defaultLink: string;
   totalLink: number;
   totalCap: number;
+  imgs: string[];
+  realProductImage: string;
 }
 
 const shortName = (name: string) => {
@@ -31,6 +33,7 @@ const GeminiAI = () => {
   const [isIncludeSubPrompt, setIsIncludeSubPrompt] = useState(false);
   const [indexSelected, setIndexSelected] = useState<number[]>([]);
   const [linkMode, setLinkMode] = useState<'amz' | 'shopee'>('amz');
+  const [isViewImg, setIsViewImg] = useState(false);
 
   const rowRefs = items.reduce((acc, _, index) => {
     acc[index] = React.createRef();
@@ -59,11 +62,13 @@ const GeminiAI = () => {
     const root = await windowInstance.api.openDialogFolder();
     setRootFolder(root);
     const folders = await windowInstance.api.getAllFolder(root);
-    const results = folders.map(({ folder, defaultLink, totalLink, totalCap }) => ({
+    const results = folders.map(({ folder, defaultLink, totalLink, totalCap, imgs, realProductImage }) => ({
       path: folder,
       defaultLink: defaultLink,
       totalLink: totalLink,
-      totalCap: totalCap
+      totalCap: totalCap,
+      imgs: imgs || [],
+      realProductImage: realProductImage || '',
     }));
     setItems(results);
   };
@@ -94,6 +99,16 @@ const GeminiAI = () => {
         }
       }
     }
+  }
+
+  const handleBulkCaptureProductImage = async () => {
+    await windowInstance.api.captureProductImage({
+      ws,
+      items: indexSelected.map(index => ({
+        url: items[index].defaultLink,
+        folderPath: items[index].path,
+      }))
+    })
   }
 
   useEffect(() => {
@@ -127,7 +142,7 @@ const GeminiAI = () => {
           icon="fas fa-link"
         />
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div>
           <Select
             label="Link Mode"
@@ -160,9 +175,18 @@ const GeminiAI = () => {
             Include sub prompt
           </label>
           <Switch
-            checked={isIncludeSubPrompt}
+            enabled={isIncludeSubPrompt}
             onChange={setIsIncludeSubPrompt}
-            className={twMerge("relative inline-flex items-center h-6 rounded-full w-11", isIncludeSubPrompt ? "bg-blue-600" : "bg-gray-200")}
+          />
+        </div>
+        <div>
+          <label className="flex items-center gap-2 mb-4">
+            <i className="fas fa-image"></i>
+            View images
+          </label>
+          <Switch
+            enabled={isViewImg}
+            onChange={setIsViewImg}
           />
         </div>
       </div>
@@ -187,6 +211,14 @@ const GeminiAI = () => {
           >
             <i className="fas fa-link"></i>
           </Button>
+          <Button
+            className="px-4 py-2 mb-4 bg-purple-500 hover:bg-purple-600 text-white rounded"
+            onClick={handleBulkCaptureProductImage}
+            disabled={indexSelected.length === 0 || !ws}
+            tooltip="Capture Product Images for selected folders"
+          >
+            <i className="fas fa-camera"></i>
+          </Button>
         </div>
       </div>
       <table className="w-full border-collapse border border-gray-200">
@@ -199,14 +231,25 @@ const GeminiAI = () => {
                 onChange={() => handleSelectAll()}
               />
             </th>
-            <th className="border border-gray-200 px-4 py-2 text-left">Path</th>
-            <th className="border border-gray-200 px-4 py-2 text-left">Link</th>
-            <th className="border border-gray-200 px-4 py-2 text-left">TL</th>
-            <th className="border border-gray-200 px-4 py-2 text-left">TC</th>
-            <th className="border border-gray-200 px-4 py-2 text-left">C</th>
-            <th className="border border-gray-200 px-4 py-2 text-left">L</th>
-            <th className="border border-gray-200 px-4 py-2 text-left">CM</th>
-            <th className="border border-gray-200 px-4 py-2 text-left">LM</th>
+            {isViewImg ? (
+              <>
+                <th className="border border-gray-200 px-4 py-2 text-left">Images</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">Real</th>
+              </>
+            ) : (
+              <>
+                <th className="border border-gray-200 px-4 py-2 text-left">Path</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">Link</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">TL</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">TC</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">C</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">L</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">CM</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">LM</th>
+              </>
+            )}
+
+
             <th className="border border-gray-200 px-4 py-2 text-center">Action</th>
           </tr>
         </thead>
@@ -226,6 +269,9 @@ const GeminiAI = () => {
               isIncludeSubPrompt={isIncludeSubPrompt}
               linkMode={linkMode}
               prompt={promptSelected}
+              imgs={item.imgs}
+              realProductImage={item.realProductImage}
+              isViewImg={isViewImg}
             />
           ))}
 
@@ -247,6 +293,9 @@ interface RowProps {
   isIncludeSubPrompt: boolean;
   linkMode: 'amz' | 'shopee';
   prompt: string;
+  imgs: string[];
+  realProductImage: string;
+  isViewImg: boolean;
 }
 
 const Row = forwardRef(({
@@ -261,6 +310,9 @@ const Row = forwardRef(({
   isIncludeSubPrompt,
   linkMode,
   prompt,
+  imgs,
+  realProductImage,
+  isViewImg
 }: RowProps, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
@@ -358,41 +410,60 @@ const Row = forwardRef(({
           {numberIndex + 1}
         </div>
       </td>
-      <td className="border border-gray-200 px-4 py-2">
-        <div className="flex gap-2">
-          <span>
-            {shortName(path)}
-          </span>
-          <Button onClick={() => windowInstance.api.openFolder(path)} className="px-3 py-1 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border border-emerald-200">
-            <i className="fas fa-folder-open"></i>
-          </Button>
-        </div>
-      </td>
-      <td className="border border-gray-200 px-4 py-2">
-        <Input
-          value={link}
-          onChange={(e) => setLink(e.target.value)}
-          placeholder="Amz link"
-        />
-      </td>
-      <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", linkColor)}>
-        {totalLink}
-      </td>
-      <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", capColor)}>
-        {totalCap}
-      </td>
-      <td className="border border-gray-200 px-4 py-2">
-        {text ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
-      </td>
-      <td className="border border-gray-200 px-4 py-2">
-        {links ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
-      </td>
-      <td className="border border-gray-200 px-4 py-2">
-        {isCapMoved ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
-      </td>
-      <td className="border border-gray-200 px-4 py-2">
-        {isLinksMoved ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
-      </td>
+      {!isViewImg && (
+        <>
+          <td className="border border-gray-200 px-4 py-2">
+            <div className="flex gap-2">
+              <span>
+                {shortName(path)}
+              </span>
+              <Button onClick={() => windowInstance.api.openFolder(path)} className="px-3 py-1 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border border-emerald-200">
+                <i className="fas fa-folder-open"></i>
+              </Button>
+            </div>
+          </td>
+          <td className="border border-gray-200 px-4 py-2">
+            <Input
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="Amz link"
+            />
+          </td>
+          <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", linkColor)}>
+            {totalLink}
+          </td>
+          <td className={twMerge("border border-gray-200 px-4 py-2 font-bold", capColor)}>
+            {totalCap}
+          </td>
+          <td className="border border-gray-200 px-4 py-2">
+            {text ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
+          </td>
+          <td className="border border-gray-200 px-4 py-2">
+            {links ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
+          </td>
+          <td className="border border-gray-200 px-4 py-2">
+            {isCapMoved ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
+          </td>
+          <td className="border border-gray-200 px-4 py-2">
+            {isLinksMoved ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
+          </td>
+        </>
+      )}
+
+      {isViewImg && (
+        <>
+          <td className="border border-gray-200 px-4 py-2">
+            {imgs?.map((img, index) => (
+              <img key={index} src={img} alt={`img-${index}`} className="w-[200px] h-[200px] object-cover" />
+            ))}
+          </td>
+          <td className="border border-gray-200 px-4 py-2">
+            <img src={realProductImage} alt="real product" className="w-[200px] h-[200px] object-cover" />
+          </td>
+        </>
+      )}
+
+
 
       <td className="border border-gray-200 px-4 py-2 text-center">
         <div className="flex gap-2 flex-wrap">

@@ -7,6 +7,7 @@ import { MoveFolderParams } from './features/threads-folder'
 import { FanpageLinkParams } from './features/fanpage'
 import { DeletePostOptions } from './features/threads-delete'
 import { GenerateCaptionsParams } from './features/gemini'
+import { CaptureProductImageParams } from './features/amz'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -93,6 +94,7 @@ contextBridge.exposeInMainWorld('api', {
   deletePost: (params: DeletePostOptions) => invoke(InvokeChannel.DELETE_POST, params),
   getReportNamesV2: () => invoke(InvokeChannel.GET_REPORT_NAMES_V2),
   getReportByName: (reportName: string) => invoke(InvokeChannel.GET_REPORT_BY_NAME, reportName),
+  captureProductImage: (params: CaptureProductImageParams) => invoke(InvokeChannel.CAPTURE_PRODUCT_IMAGE, params)
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
