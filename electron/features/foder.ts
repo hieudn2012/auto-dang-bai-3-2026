@@ -63,6 +63,8 @@ export interface FolderData {
   totalCap: number;
   imgs: string[];
   realProductImage: string;
+  title: string;
+  isMapping: boolean;
 }
 
 export const getAllFolder = (rootPath: string): FolderData[] => {
@@ -117,6 +119,25 @@ export const getAllFolder = (rootPath: string): FolderData[] => {
         realProductImage = `data:image/jpeg;base64,${imgBase64}`;
       }
 
+      // get title in folder/real_product/title.txt
+      const titlePath = path.join(rootPath, folder, 'real_product', 'title.txt');
+      let titleText = '';
+      if (fs.existsSync(titlePath)) {
+        titleText = fs.readFileSync(titlePath, 'utf-8').trim();
+      }
+
+      // check folder và title text giống nhau 80% thì mới mapping, tránh trường hợp folder tên là "Áo thun nam" mà title là "Áo thun nữ" thì không mapping
+      const folderWords = folder.split(/\s+/);
+      const titleWords = titleText.split(/\s+/);
+      let commonWords = 0;
+      folderWords.forEach(word => {
+        if (titleWords.includes(word)) {
+          commonWords++;
+        }
+      });
+      const similarity = commonWords / Math.max(folderWords.length, titleWords.length);
+      const isMapping = similarity >= 0.8;
+
       return ({
         folder: path.join(rootPath, folder),
         defaultLink: defaultLink,
@@ -124,6 +145,8 @@ export const getAllFolder = (rootPath: string): FolderData[] => {
         totalCap: totalCap,
         imgs,
         realProductImage,
+        title: titleText,
+        isMapping,
       });
     });
   } catch (error) {

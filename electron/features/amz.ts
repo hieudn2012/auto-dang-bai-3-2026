@@ -82,6 +82,10 @@ export const captureProductImage = async ({ ws, items }: CaptureProductImagePara
 
       // data-csa-c-content-id = mediaBlock-primaryView-desktop
       const element = await page.$('[data-csa-c-content-id="mediaBlock-primaryView-desktop"]');
+      // productTitle
+      const title = await page.$('#productTitle');
+      const titleText = await title?.evaluate(el => el.textContent?.trim());
+
       if (element) {
         // save file in folder/real_product/img.png
         const folderPath = path.join(item.folderPath, 'real_product');
@@ -89,7 +93,12 @@ export const captureProductImage = async ({ ws, items }: CaptureProductImagePara
         const filePath = `${path.join(folderPath, 'img')}.png` as const;
         await element.screenshot({ path: filePath });
       }
-      page?.close();
+
+      if (titleText) {
+        const titlePath = path.join(item.folderPath, 'real_product', 'title.txt');
+        fs.writeFileSync(titlePath, titleText);
+      }
+      page.close();
     }
 
     // chia mỗi batch 10 item chạy 1 lúc, mỗi item khởi chạy cách nhau 3s (không chờ từng item xong)
@@ -105,7 +114,5 @@ export const captureProductImage = async ({ ws, items }: CaptureProductImagePara
     }
   } catch (error) {
     console.error(error);
-  } finally {
-    await browser.disconnect();
   }
 }

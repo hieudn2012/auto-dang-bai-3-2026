@@ -16,6 +16,8 @@ interface Item {
   totalCap: number;
   imgs: string[];
   realProductImage: string;
+  title: string;
+  isMapping: boolean;
 }
 
 const shortName = (name: string) => {
@@ -62,13 +64,15 @@ const GeminiAI = () => {
     const root = await windowInstance.api.openDialogFolder();
     setRootFolder(root);
     const folders = await windowInstance.api.getAllFolder(root);
-    const results = folders.map(({ folder, defaultLink, totalLink, totalCap, imgs, realProductImage }) => ({
+    const results = folders.map(({ folder, defaultLink, totalLink, totalCap, imgs, realProductImage, title, isMapping }) => ({
       path: folder,
       defaultLink: defaultLink,
       totalLink: totalLink,
       totalCap: totalCap,
       imgs: imgs || [],
       realProductImage: realProductImage || '',
+      title,
+      isMapping,
     }));
     setItems(results);
   };
@@ -239,6 +243,7 @@ const GeminiAI = () => {
             ) : (
               <>
                 <th className="border border-gray-200 px-4 py-2 text-left">Path</th>
+                <th className="border border-gray-200 px-4 py-2 text-left">MP</th>
                 <th className="border border-gray-200 px-4 py-2 text-left">Link</th>
                 <th className="border border-gray-200 px-4 py-2 text-left">TL</th>
                 <th className="border border-gray-200 px-4 py-2 text-left">TC</th>
@@ -272,6 +277,7 @@ const GeminiAI = () => {
               imgs={item.imgs}
               realProductImage={item.realProductImage}
               isViewImg={isViewImg}
+              isMapping={item.isMapping}
             />
           ))}
 
@@ -296,6 +302,7 @@ interface RowProps {
   imgs: string[];
   realProductImage: string;
   isViewImg: boolean;
+  isMapping: boolean;
 }
 
 const Row = forwardRef(({
@@ -312,7 +319,8 @@ const Row = forwardRef(({
   prompt,
   imgs,
   realProductImage,
-  isViewImg
+  isViewImg,
+  isMapping,
 }: RowProps, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
@@ -421,6 +429,9 @@ const Row = forwardRef(({
                 <i className="fas fa-folder-open"></i>
               </Button>
             </div>
+          </td>
+          <td className="border border-gray-200 px-4 py-2">
+            {isMapping ? <i className="fas fa-check text-green-500"></i> : <i className="fas fa-times text-red-500"></i>}
           </td>
           <td className="border border-gray-200 px-4 py-2">
             <Input
