@@ -111,16 +111,17 @@ const MODAL_SELECTOR = 'div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.
 const TEXT_AREA_CAPTION = 'div[aria-label="Empty text field. Type to compose a new post."]'
 const POST_BUTTON_SUBMIT = 'div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5'
 
-export const clickPostButton = async ({
-  id,
-  ws,
-  username,
-  folder,
-  type = 'quote',
-  mode = 'default',
-  reportName,
-  isAuto,
-}: PostParams, event: IpcMainEvent) => {
+export const clickPostButton = async (params: PostParams, event: IpcMainEvent, attempt = 1): Promise<void> => {
+  const {
+    id,
+    ws,
+    username,
+    folder,
+    type = 'quote',
+    mode = 'default',
+    reportName,
+    isAuto,
+  } = params;
   const caption = mode === 'affiliate' ? getRandomCaption(folder) : cutSexyCaption();
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
@@ -197,6 +198,10 @@ export const clickPostButton = async ({
     sendMessage(event, { id, username, message: 'Đang tải media...' });
     const isUploadSuccess = await uploadMedia({ page, username, folder, mode });
     if (!isUploadSuccess) {
+      if (attempt < 3) {
+        sendMessage(event, { id, username, message: `Tải media thất bại, thử lại lần ${attempt + 1}/3...` });
+        return await clickPostButton(params, event, attempt + 1);
+      }
       throw new Error('Internet connection may be unstable, media upload failed');
     }
     await waitRandom(3000, 5000);
@@ -410,7 +415,7 @@ export const uploadMedia = async ({
   let isVideoUploaded = false;
 
   const waitForUploadSuccess = async (
-    timeoutMs = 3 * 60 * 1000,
+    timeoutMs = 0.5 * 60 * 1000,
     intervalMs = 3000
   ): Promise<boolean> => {
     const start = Date.now();
