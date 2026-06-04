@@ -604,7 +604,14 @@ export const clickEditLatestPostButton = async ({
       linkPost = `${prefix}${getRandomLink(folder)}`;
     }
     await page.keyboard.type(linkPost, { delay: 100 });
-    await waitRandom(1000, 3000);
+    await waitRandom(1000, 2000);
+    await page.keyboard.press('Enter');
+    await waitRandom(1000, 2000);
+    if (!isVietnamese) {
+      const suffix = '#Ad #AffiliateLink #Amazon';
+      await page.keyboard.type(suffix, { delay: 100 });
+      await waitRandom(1000, 2000);
+    }
 
     // find div with class = xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
     const doneBtn = await page.$(POST_BUTTON_SUBMIT);
