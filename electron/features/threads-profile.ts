@@ -608,7 +608,7 @@ export const clickEditLatestPostButton = async ({
     await page.keyboard.press('Enter');
     await waitRandom(1000, 2000);
     if (!isVietnamese) {
-      const suffix = '#Ad #AffiliateLink #Amazon';
+      const suffix = '#ad #CommissionsEarned';
       await page.keyboard.type(suffix, { delay: 100 });
       await waitRandom(1000, 2000);
     }
