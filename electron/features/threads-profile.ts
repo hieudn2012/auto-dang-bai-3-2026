@@ -122,7 +122,6 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     reportName,
     isAuto,
   } = params;
-  const caption = mode === 'affiliate' ? getRandomCaption(folder) : cutSexyCaption();
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -219,6 +218,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       await textArea.click();
       await waitRandom(1000, 2000);
       sendMessage(event, { id, username, message: 'Đang nhập caption...' });
+      const caption = mode === 'affiliate' ? getRandomCaption(folder) : cutSexyCaption();
       await page.keyboard.type(caption, { delay: 100 });
     } else {
       throw new Error('Cannot find caption text area');
