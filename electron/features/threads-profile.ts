@@ -105,11 +105,13 @@ export interface PostParams {
 }
 
 const POST_BUTTON_SELECTOR = 'div.xc26acl';
-const FIRST_POST_SELECTOR = `div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7`
+const LATEST_POST_SELECTOR = 'div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7'
 const REPOST_BUTTON_SELECTOR = `div.x4vbgl9 svg[aria-label="Repost"]`
+const QUOTE_BUTTON_SELECTOR = `svg[aria-label="Quote"]`
 const MODAL_SELECTOR = 'div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is'
 const TEXT_AREA_CAPTION = 'div[aria-label="Empty text field. Type to compose a new post."]'
 const POST_BUTTON_SUBMIT = 'div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5'
+const MORE_BUTTON_SELECTOR = 'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4jnvo svg[aria-label="More"]'
 
 export const clickPostButton = async (params: PostParams, event: IpcMainEvent, attempt = 1): Promise<void> => {
   const {
@@ -152,14 +154,20 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
 
     if (type === 'post') {
       const els = await page.$$(POST_BUTTON_SELECTOR);
+      let postButton = null;
 
       for (const el of els) {
         const text = await page.evaluate(e => e?.textContent?.trim(), el);
         if (text === 'Post' || text === 'Đăng') {
-          await el.click();
+          postButton = el;
           break;
         }
       }
+
+      if (!postButton) {
+        throw new Error('Cannot find post button');
+      }
+      await postButton.click();
     }
 
     if (type === 'quote') {
@@ -168,30 +176,29 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       await waitRandom(2000, 4000);
 
       // Đợi DOM load
-      await page.waitForSelector(FIRST_POST_SELECTOR, { timeout: 10000 });
+      await page.waitForSelector(LATEST_POST_SELECTOR, { timeout: 10000 });
 
       // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
-      const firstDiv = await page.$(FIRST_POST_SELECTOR);
-      await firstDiv?.click();
+      const firstDiv = await page.$(LATEST_POST_SELECTOR);
+      if (!firstDiv) {
+        throw new Error('Cannot find first post');
+      }
+      await firstDiv.click();
       await waitRandom(2000, 4000);
 
       const repostSvg = await page.$(REPOST_BUTTON_SELECTOR);
-
-      if (repostSvg) {
-        await repostSvg.click();
-        await waitRandom(3000, 5000);
-        const spans = await page.$$('div.x17zd0t2 span')
-
-        for (const span of spans) {
-          const text = await span.evaluate(el => el.textContent?.trim())
-          if (text === 'Quote' || text === 'Trích dẫn') {
-            await span.click()
-            break
-          }
-        }
-      } else {
+      if (!repostSvg) {
         throw new Error('Cannot find repost button');
       }
+      await repostSvg.click();
+      await waitRandom(3000, 5000);
+
+      const quoteButton = await page.$(QUOTE_BUTTON_SELECTOR);
+      if (!quoteButton) {
+        throw new Error('Cannot find quote button');
+      }
+      await quoteButton.click();
+      await waitRandom(3000, 5000);
     }
 
     sendMessage(event, { id, username, message: 'Đang tải media...' });
@@ -213,6 +220,9 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     }
     // find div aria-label="Empty text field. Type to compose a new post." and click
     const textArea = await modal.$(TEXT_AREA_CAPTION);
+    if (!textArea) {
+      throw new Error('Cannot find caption text area');
+    }
 
     if (textArea) {
       await textArea.click();
@@ -220,33 +230,29 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       sendMessage(event, { id, username, message: 'Đang nhập caption...' });
       const caption = mode === 'affiliate' ? getRandomCaption(folder) : cutSexyCaption();
       await page.keyboard.type(caption, { delay: 100 });
-    } else {
-      throw new Error('Cannot find caption text area');
     }
-
     // in modal find div with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
     const postButton = await modal.$(POST_BUTTON_SUBMIT);
-    if (postButton) {
-      await postButton.click();
-      const waitForSelectorPromise = await page.waitForFunction(
-        () => [...document.querySelectorAll('div.html-div')]
-          .some(el => el.textContent === 'Posted')
-      );
-      if (!waitForSelectorPromise) {
-        throw new Error('Post may not be successful, cannot find success selector');
-      } else {
-        sendMessage(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
-        saveReport({
-          reportName,
-          description: type === 'post' ? 'Post completed ✅' : 'Quote completed ✅',
-          userId: id,
-          status: 'completed',
-          username,
-          type,
-        })
-      }
+    if (!postButton) {
+      throw new Error('Cannot find post button submit');
+    }
+    await postButton.click();
+    const waitForSelectorPromise = await page.waitForFunction(
+      () => [...document.querySelectorAll('div.html-div')]
+        .some(el => el.textContent === 'Posted')
+    );
+    if (!waitForSelectorPromise) {
+      throw new Error('Post may not be successful, cannot find success selector');
     } else {
-      throw new Error('Cannot find post button');
+      sendMessage(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
+      saveReport({
+        reportName,
+        description: type === 'post' ? 'Post completed ✅' : 'Quote completed ✅',
+        userId: id,
+        status: 'completed',
+        username,
+        type,
+      })
     }
   } catch (error) {
     console.error(error);
@@ -446,6 +452,9 @@ export const uploadMedia = async ({
 
   // find input type = file
   const inputFile = await page.$('input[type="file"]');
+  if (!inputFile) {
+    throw new Error('Cannot find input file selector');
+  }
 
   const uploadImage = async () => {
     // filter only image files
@@ -550,29 +559,27 @@ export const clickEditLatestPostButton = async ({
     await page.evaluate(() => window.scrollTo(0, 0));
     await waitRandom(2000, 4000);
 
-    // Đợi DOM load
-    const firstPostSelector = 'div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7';
-    await page.waitForSelector(firstPostSelector, { timeout: 10000 });
+    sendMessage(event, { id, username, message: 'Đang tìm bài viết mới nhất...' });
 
     // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
-    const firstDiv = await page.$(firstPostSelector);
-    await firstDiv?.click();
+    const latestPost = await page.$(LATEST_POST_SELECTOR);
+    if (!latestPost) {
+      throw new Error('Cannot find latest post');
+    }
+    sendMessage(event, { id, username, message: 'Đang click bài viết mới nhất...' });
+    await latestPost.click();
     await waitRandom(2000, 4000);
 
     // scroll to top
     await page.evaluate(() => window.scrollTo(0, 0));
     await waitRandom(2000, 4000);
 
-    // Tìm svg aria-label="More" nằm trong xkqq1k2 x91jh78 x1xkn691 x4oqio7 x1qx5ct2 xw4jnvo
-    const moreBtn = await page.$(
-      'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4jnvo svg[aria-label="More"]'
-    );
-    const moreBtnVn = await page.$(
-      'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4jnvo svg[aria-label="Xem thêm"]'
-    );
+    const moreBtn = await page.$(MORE_BUTTON_SELECTOR);
 
-    await moreBtn?.click();
-    await moreBtnVn?.click();
+    if (!moreBtn) {
+      throw new Error('Cannot find more button');
+    }
+    await moreBtn.click();
     await waitRandom(3000, 5000);
 
     sendMessage(event, { id, username, message: 'Đang edit...' });
@@ -588,7 +595,10 @@ export const clickEditLatestPostButton = async ({
       }
     }
 
-    await (editSpan as any)?.click();
+    if (!editSpan) {
+      throw new Error('Cannot find edit span');
+    }
+    await editSpan.click();
     await waitRandom(5000, 10000);
     // enter
     await page.keyboard.press('Enter');
@@ -601,7 +611,11 @@ export const clickEditLatestPostButton = async ({
       linkPost = `${cutSexyLink()}`;
     } else {
       const prefix = isVietnamese ? 'Mua ở đây: ' : 'Product link 👉 ';
-      linkPost = `${prefix}${getRandomLink(folder)}`;
+      const link = getRandomLink(folder);
+      if (!link) {
+        throw new Error('Hết link sản phẩm, vui lòng thêm link mới');
+      }
+      linkPost = `${prefix}${link}`;
     }
     await page.keyboard.type(linkPost, { delay: 100 });
     await waitRandom(1000, 2000);
@@ -615,7 +629,10 @@ export const clickEditLatestPostButton = async ({
 
     // find div with class = xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
     const doneBtn = await page.$(POST_BUTTON_SUBMIT);
-    await (doneBtn as any)?.click();
+    if (!doneBtn) {
+      throw new Error('Cannot find done button');
+    }
+    await doneBtn.click();
     await waitRandom(1000, 3000);
 
     const waitForSelectorPromise = await page.waitForFunction(
