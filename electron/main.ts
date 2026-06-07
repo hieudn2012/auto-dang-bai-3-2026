@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { spawn } from 'child_process'
 import { InvokeChannel } from './types'
 import {
   createProductFolder,
@@ -35,6 +34,7 @@ import { getFanpageLinks } from './features/fanpage'
 import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 import { getAffShopeeLink } from './features/shopee'
 import { deletePost } from './features/threads-delete'
+import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -59,26 +59,6 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
 let win: BrowserWindow | null
-let serverProcess: any = null
-
-function startServer() {
-  const serverPath = path.join(__dirname, '..', 'server', 'index.ts')
-  console.log('Starting server from:', serverPath)
-
-  serverProcess = spawn('npx', ['tsx', serverPath], {
-    stdio: 'inherit',
-    shell: true,
-    cwd: path.join(__dirname, '..')
-  })
-
-  serverProcess.on('error', (error: any) => {
-    console.error('Failed to start server:', error)
-  })
-
-  serverProcess.on('close', (code: any) => {
-    console.log(`Server process exited with code ${code}`)
-  })
-}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -298,14 +278,23 @@ handle(InvokeChannel.CAPTURE_PRODUCT_IMAGE, async (_event, params) => {
   return captureProductImage(params);
 });
 
+handle(InvokeChannel.GENERATE_PROFILE, async (_event, params) => {
+  return generateProfile(params);
+});
+
+handle(InvokeChannel.GET_PROFILES, async () => {
+  return getProfiles();
+});
+
+handle(InvokeChannel.CHANGE_PROFILE_INFO, async (_event, params) => {
+  return changeProfileInfo(params, _event);
+});
+
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    if (serverProcess) {
-      serverProcess.kill()
-    }
     app.quit()
     win = null
   }
@@ -316,12 +305,6 @@ app.on('activate', () => {
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
-  }
-})
-
-app.on('before-quit', () => {
-  if (serverProcess) {
-    serverProcess.kill()
   }
 })
 

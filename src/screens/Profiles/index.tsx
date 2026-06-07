@@ -22,6 +22,7 @@ import ProxyModal from "./ProxyModal";
 import { ReportType } from "electron/features/report";
 import { DeletePostOptions } from "electron/features/threads-delete";
 import Switch from "@/components/Switch";
+import { ProfileResult } from "electron/features/profile";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -82,7 +83,12 @@ const Profiles = () => {
   const [mainConfig, setMainConfig] = useState<MainConfig>({});
   const [isAuto, setIsAuto] = useState(false);
   const [isIgnoreQuoteLink, setIsIgnoreQuoteLink] = useState(false);
+  const [profileResult, setProfileResult] = useState<ProfileResult>({});
+  const [sex, setSex] = useState<'male' | 'female'>('male');
   const profiles = data?.data?.data?.data || [];
+
+  console.log(profileResult, 'profileResult');
+
 
   const handleRandomFolder = async (profile_id: number) => {
     const profile = profiles.find((p: any) => p.profile_id === profile_id);
@@ -203,6 +209,11 @@ const Profiles = () => {
     await navigator.clipboard.writeText(ws);
     await windowInstance.api.saveMainConfig({ wsUrl: ws });
     toast.success('Đã copy WebSocket URL');
+  }
+
+  const handleGenerateProfile = async (sex: 'male' | 'female', id: number) => {
+    await windowInstance.api.generateProfile({ sex, id });
+    toast.success('Đã tạo profile mới');
   }
 
   const handleBulkOpenProfile = async (ids: number[]) => {
@@ -354,6 +365,21 @@ const Profiles = () => {
     }
 
     toast.success(`Đã hoàn thành tất cả ${batches.length} batches với ${allSelectedIds.length} users`);
+  }
+
+  const handleLoadProfilesInfo = async () => {
+    const profiles = await windowInstance.api.getProfiles();
+    setProfileResult(profiles);
+    toast.success('Đã tải thông tin profile');
+  }
+
+  const handleChangeProfileInfo = async (id: number) => {
+    await windowInstance.api.changeProfileInfo({
+      ws: openedList?.[id]?.ws,
+      id,
+      username: userMap[id]?.username,
+    });
+    toast.success('Đã thay đổi thông tin profile');
   }
 
   useEffect(() => {
@@ -574,6 +600,23 @@ const Profiles = () => {
                   <i className="fa-solid fa-list-ol mr-1"></i>
                   Select Range
                 </Button>
+                <Button
+                  onClick={() => handleLoadProfilesInfo()}
+                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700"
+                >
+                  <i className="fa-solid fa-download mr-1" />
+                  Load Profiles Info
+                </Button>
+                <div>
+                  <Select
+                    value={sex}
+                    onChange={(e) => setSex(e.target.value as 'male' | 'female')}
+                    options={[
+                      { value: 'male', label: 'Male' },
+                      { value: 'female', label: 'Female' },
+                    ]}
+                  />
+                </div>
               </div>
               <div className="text-sm text-gray-500">
                 Total: {data?.data?.data?.data?.length || 0} profiles
@@ -618,6 +661,11 @@ const Profiles = () => {
                             <div className="text-sm text-gray-500">
                               <i className="fas fa-network-wired mr-1"></i>
                               {profile.proxy_ip}:{profile.proxy_port}
+                            </div>
+                            <div className="text-xs text-green-500">
+                              {profileResult?.[profile.profile_id]?.username}
+                              {` - `}
+                              {profileResult?.[profile.profile_id]?.sex}
                             </div>
                           </div>
 
@@ -723,6 +771,20 @@ const Profiles = () => {
                                 onClick={() => windowInstance.api.openProfileFolder(profile.profile_id)}
                               >
                                 <i className="fa-solid fa-folder-open"></i>
+                              </Button>
+                              <Button
+                                tooltip="Generate profile"
+                                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"
+                                onClick={() => handleGenerateProfile(sex, profile.profile_id)}
+                              >
+                                <i className="fa-brands fa-hubspot"></i>
+                              </Button>
+                              <Button
+                                tooltip="Change profile info"
+                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
+                                onClick={() => handleChangeProfileInfo(profile.profile_id)}
+                              >
+                                <i className="fa-regular fa-address-book"></i>
                               </Button>
                               <Button
                                 tooltip="Delete latest post"

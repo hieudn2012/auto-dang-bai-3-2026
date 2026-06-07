@@ -8,6 +8,7 @@ import { FanpageLinkParams } from './features/fanpage'
 import { DeletePostOptions } from './features/threads-delete'
 import { GenerateCaptionsParams } from './features/gemini'
 import { CaptureProductImageParams } from './features/amz'
+import { ChangeProfileInfoParams, GenerateProfileParams } from './features/profile'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -94,7 +95,10 @@ contextBridge.exposeInMainWorld('api', {
   deletePost: (params: DeletePostOptions) => invoke(InvokeChannel.DELETE_POST, params),
   getReportNamesV2: () => invoke(InvokeChannel.GET_REPORT_NAMES_V2),
   getReportByName: (reportName: string) => invoke(InvokeChannel.GET_REPORT_BY_NAME, reportName),
-  captureProductImage: (params: CaptureProductImageParams) => invoke(InvokeChannel.CAPTURE_PRODUCT_IMAGE, params)
+  captureProductImage: (params: CaptureProductImageParams) => invoke(InvokeChannel.CAPTURE_PRODUCT_IMAGE, params),
+  generateProfile: (params: GenerateProfileParams) => invoke(InvokeChannel.GENERATE_PROFILE, params),
+  getProfiles: () => invoke(InvokeChannel.GET_PROFILES),
+  changeProfileInfo: (params: ChangeProfileInfoParams) => invoke(InvokeChannel.CHANGE_PROFILE_INFO, params),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

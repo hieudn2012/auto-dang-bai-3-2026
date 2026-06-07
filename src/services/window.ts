@@ -12,6 +12,7 @@ import { DeletePostOptions } from "electron/features/threads-delete";
 import { ReportResult } from "electron/features/report";
 import { GenerateCaptionsParams } from "electron/features/gemini";
 import { CaptureProductImageParams } from "electron/features/amz";
+import { ChangeProfileInfoParams, GenerateProfileParams, ProfileResult } from "electron/features/profile";
 
 type WindownInstance = typeof window & {
   api: {
@@ -70,7 +71,10 @@ type WindownInstance = typeof window & {
     deletePost: (params: DeletePostOptions) => Promise<any>,
     getReportNamesV2: () => Promise<string[]>,
     getReportByName: (reportName: string) => Promise<ReportResult>,
-    captureProductImage: (params: CaptureProductImageParams) => Promise<any>
+    captureProductImage: (params: CaptureProductImageParams) => Promise<any>,
+    generateProfile: (params: GenerateProfileParams) => Promise<any>,
+    getProfiles: () => Promise<ProfileResult>,
+    changeProfileInfo: (params: ChangeProfileInfoParams) => Promise<any>,
   }
 }
 
