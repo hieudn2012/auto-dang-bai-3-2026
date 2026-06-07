@@ -162,6 +162,7 @@ export const getRandomLink = (p: string) => {
     
     const data = fs.readFileSync(filePath, 'utf-8').trim();
     const normalizedData = data.replace(/\r\n/g, '\n');
+    const firstLink = normalizedData.split('\n')[0].trim();
     const links = normalizedData.split('\n').filter(link => link.trim().length > 0).slice(1);
     
     if (links.length === 0) {
@@ -171,7 +172,7 @@ export const getRandomLink = (p: string) => {
     
     const randomIndex = Math.floor(Math.random() * links.length);
     const newLinks = links.filter((_, index) => index !== randomIndex);
-    fs.writeFileSync(filePath, newLinks.join('\n'));
+    fs.writeFileSync(filePath, [firstLink, ...newLinks].join('\n'));
 
     return links[randomIndex];
   } catch (error) {
