@@ -148,7 +148,7 @@ export const getRandomCap = (data: string) => {
 
 export const getRandomLink = (p: string) => {
   try {
-    // Check if path is a directory, if so, look for link.txt file
+    // Check if path is a directory, if so, look for link.txt fileπ
     let filePath = p;
     if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
       filePath = path.join(p, 'link.txt');
@@ -160,7 +160,7 @@ export const getRandomLink = (p: string) => {
       return ''; // Return empty string if file doesn't exist
     }
     
-    const data = fs.readFileSync(filePath, 'utf-8');
+    const data = fs.readFileSync(filePath, 'utf-8').trim();
     const normalizedData = data.replace(/\r\n/g, '\n');
     const links = normalizedData.split('\n').filter(link => link.trim().length > 0).slice(1);
     
