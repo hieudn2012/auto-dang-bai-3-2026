@@ -165,7 +165,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       }
 
       if (!postButton) {
-        throw new Error('Cannot find post button');
+        throw new Error('Không tìm thấy nút "Post"');
       }
       await postButton.click();
     }
@@ -181,21 +181,21 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
       const firstDiv = await page.$(LATEST_POST_SELECTOR);
       if (!firstDiv) {
-        throw new Error('Cannot find first post');
+        throw new Error('Không tìm thấy bài viết mới nhất');
       }
       await firstDiv.click();
       await waitRandom(2000, 4000);
 
       const repostSvg = await page.$(REPOST_BUTTON_SELECTOR);
       if (!repostSvg) {
-        throw new Error('Cannot find repost button');
+        throw new Error('Không tìm thấy nút "Repost"');
       }
       await repostSvg.click();
       await waitRandom(3000, 5000);
 
       const quoteButton = await page.$(QUOTE_BUTTON_SELECTOR);
       if (!quoteButton) {
-        throw new Error('Cannot find quote button');
+        throw new Error('Không tìm thấy nút "Quote"');
       }
       await quoteButton.click();
       await waitRandom(3000, 5000);
@@ -208,7 +208,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
         sendMessage(event, { id, username, message: `Tải media thất bại, thử lại lần ${attempt + 1}/3...` });
         return await clickPostButton(params, event, attempt + 1);
       }
-      throw new Error('Internet connection may be unstable, media upload failed');
+      throw new Error('Kết nối internet có thể không ổn định, tải media thất bại');
     }
     await waitRandom(3000, 5000);
 
@@ -216,12 +216,12 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     const modal = await page.$(MODAL_SELECTOR);
 
     if (!modal) {
-      throw new Error('Cannot find caption modal');
+      throw new Error('Không tìm thấy modal caption');
     }
     // find div aria-label="Empty text field. Type to compose a new post." and click
     const textArea = await modal.$(TEXT_AREA_CAPTION);
     if (!textArea) {
-      throw new Error('Cannot find caption text area');
+      throw new Error('Không tìm thấy textarea caption');
     }
 
     if (textArea) {
@@ -234,7 +234,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     // in modal find div with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
     const postButton = await modal.$(POST_BUTTON_SUBMIT);
     if (!postButton) {
-      throw new Error('Cannot find post button submit');
+      throw new Error('Không tìm thấy nút "Post"');
     }
     await postButton.click();
     const waitForSelectorPromise = await page.waitForFunction(
@@ -242,7 +242,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
         .some(el => el.textContent === 'Posted')
     );
     if (!waitForSelectorPromise) {
-      throw new Error('Post may not be successful, cannot find success selector');
+      throw new Error('Đăng bài không thành công, không tìm thấy selector thành công');
     } else {
       sendMessage(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
       saveReport({
@@ -256,7 +256,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     }
   } catch (error) {
     console.error(error);
-    const message = error instanceof Error ? error.message : 'Đăng bài thất bại ❌';
+    const message = error instanceof Error ? error.message : 'Đăng bài viết thất bại ❌';
     sendMessage(event, { id, username, message: message });
     saveReport({
       reportName,
@@ -308,13 +308,13 @@ export const setupNewAccount = async ({
         // Kiểm tra mất kết nối hoặc content rỗng
         if (!pageContent || pageContent.trim() === '') {
           console.log('Page content is empty, possible internet connection issue');
-          throw new Error('Empty page content');
+          throw new Error('Nội dung trang rỗng, có thể do kết nối internet không ổn định');
         }
 
         // Kiểm tra lỗi 429
         if (pageContent.includes('HTTP ERROR 429')) {
           console.log('HTTP ERROR 429 detected, retrying...');
-          throw new Error('HTTP ERROR 429');
+          throw new Error('HTTP ERROR 429, vui lòng thử lại sau');
         }
 
         // Nếu không có lỗi, break ra khỏi vòng lặp
@@ -337,7 +337,7 @@ export const setupNewAccount = async ({
 
         // Nếu đã thử 3 lần vẫn thất bại
         if (retryCount >= 3) {
-          console.error('Failed to load page after 3 retries');
+          console.error('Không thể tải trang sau 3 lần thử lại');
           sendMessage(event, { id, username, message: 'Không thể tải trang sau 3 lần thử lại' });
           return;
         }
@@ -564,7 +564,7 @@ export const clickEditLatestPostButton = async ({
     // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
     const latestPost = await page.$(LATEST_POST_SELECTOR);
     if (!latestPost) {
-      throw new Error('Cannot find latest post');
+      throw new Error('Không tìm thấy bài viết mới nhất');
     }
     sendMessage(event, { id, username, message: 'Đang click bài viết mới nhất...' });
     await latestPost.click();
@@ -577,7 +577,7 @@ export const clickEditLatestPostButton = async ({
     const moreBtn = await page.$(MORE_BUTTON_SELECTOR);
 
     if (!moreBtn) {
-      throw new Error('Cannot find more button');
+      throw new Error('Không tìm thấy nút "Xem thêm"');
     }
     await moreBtn.click();
     await waitRandom(3000, 5000);
@@ -596,7 +596,7 @@ export const clickEditLatestPostButton = async ({
     }
 
     if (!editSpan) {
-      throw new Error('Cannot find edit span');
+      throw new Error('Không tìm thấu nút "Chỉnh sửa"');
     }
     await editSpan.click();
     await waitRandom(5000, 10000);
@@ -613,7 +613,7 @@ export const clickEditLatestPostButton = async ({
       const prefix = isVietnamese ? 'Mua ở đây: ' : 'Product link 👉 ';
       const link = getRandomLink(folder);
       if (!link) {
-        throw new Error('Hết link sản phẩm, vui lòng thêm link mới');
+        throw new Error('Không tìm thấy link sản phẩm, vui lòng thêm link mới');
       }
       linkPost = `${prefix}${link}`;
     }
@@ -630,7 +630,7 @@ export const clickEditLatestPostButton = async ({
     // find div with class = xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
     const doneBtn = await page.$(POST_BUTTON_SUBMIT);
     if (!doneBtn) {
-      throw new Error('Cannot find done button');
+      throw new Error('Không tìm thấy nút "Done"');
     }
     await doneBtn.click();
     await waitRandom(1000, 3000);
@@ -641,12 +641,12 @@ export const clickEditLatestPostButton = async ({
     );
 
     if (!waitForSelectorPromise) {
-      throw new Error('Edit may not be successful, cannot find success selector');
+      throw new Error('Chỉnh sửa bài viết không thành công, không tìm thấy selector thành công');
     } else {
       sendMessage(event, { id, username, message: 'Edit completed ✅' });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Edit failed ❌';
+    const message = error instanceof Error ? error.message : 'Chỉnh sửa bài viết thất bại ❌';
     sendMessage(event, { id, username, message });
     saveReport({
       reportName,
