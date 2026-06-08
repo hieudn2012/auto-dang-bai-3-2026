@@ -293,6 +293,7 @@ const Profiles = () => {
   }
 
   const handleAutoPost = async (ids: number[]) => {
+    const errorIds: number[] = [];
     await handleBulkOpenProfile(ids);
     await waitFor(2);
     toast.success('Đã mở profile.');
@@ -317,24 +318,36 @@ const Profiles = () => {
     toast.success('Đã random folder.');
 
     const postPromiseFactories = ids.map(id => () => clickPostButton(id, 'post', openList, usMap));
-    await runWithDelay(postPromiseFactories, 3);
+    const postResults = await runWithDelay(postPromiseFactories, 3);
+    postResults.forEach((result, index) => {
+      if (!result) errorIds.push(ids[index]);
+    });
     toast.success(`Đã hoàn thành post.`);
 
-    const editPostPromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap, 'post'));
-    await runWithDelay(editPostPromiseFactories, 0.5);
+    const editPostPromiseFactories = ids.filter(id => !errorIds.includes(id)).map(id => () => clickEditLatestPostButton(id, openList, usMap, 'post'));
+    const editPostResults = await runWithDelay(editPostPromiseFactories, 0.5);
+    editPostResults.forEach((result, index) => {
+      if (!result) errorIds.push(ids[index]);
+    });
     toast.success('Đã hoàn thành edit post.');
 
     const quotePromiseFactories = ids.map(id => () => clickPostButton(id, 'quote', openList, usMap));
-    await runWithDelay(quotePromiseFactories, 3);
+    const quoteResults = await runWithDelay(quotePromiseFactories, 3);
+    quoteResults.forEach((result, index) => {
+      if (!result) errorIds.push(ids[index]);
+    });
     toast.success('Đã hoàn thành quote.');
 
     if (!isIgnoreQuoteLink) {
       const editLatestQuotePromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap, 'quote'));
-      await runWithDelay(editLatestQuotePromiseFactories, 0.5);
+      const editLatestQuoteResults = await runWithDelay(editLatestQuotePromiseFactories, 0.5);
+      editLatestQuoteResults.forEach((result, index) => {
+        if (!result) errorIds.push(ids[index]);
+      });
       toast.success('Đã hoàn thành edit quote.');
     }
 
-    await handleBulkClose(ids, openList);
+    await handleBulkClose(ids.filter(id => !errorIds.includes(id)), openList);
     toast.success('Đã đóng all profile.');
   }
 
