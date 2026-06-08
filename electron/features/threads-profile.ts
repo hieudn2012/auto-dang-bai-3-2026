@@ -417,7 +417,6 @@ export const uploadMedia = async ({
   folder: string,
   mode: 'default' | 'affiliate'
 }): Promise<boolean> => {
-  await page.bringToFront();
   await waitRandom(5000, 10000);
 
   let isVideoUploaded = false;

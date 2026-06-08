@@ -100,9 +100,13 @@ const ScheduleModal = () => {
     setSchedule(prev => ({ ...prev, quoteFolder }));
   };
 
-  const handleSelectFolder = async () => {
+  const handleSelectFolder = async (type: 'post' | 'quote') => {
     const folderPath = await windowInstance.api.openDialogFolder();
-    updateScheduleFolder(folderPath);
+    if (type === 'post') {
+      updateScheduleFolder(folderPath);
+    } else {
+      updateScheduleQuoteFolder(folderPath);
+    }
   };
 
   const getTimeUntilSchedule = (time: string) => {
@@ -341,7 +345,7 @@ const ScheduleModal = () => {
                       className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                     />
                     <Button
-                      onClick={handleSelectFolder}
+                      onClick={() => handleSelectFolder('post')}
                       className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white"
                       tooltip="Chọn thư mục từ hệ thống"
                     >
@@ -364,7 +368,7 @@ const ScheduleModal = () => {
                       className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                     />
                     <Button
-                      onClick={handleSelectFolder}
+                      onClick={() => handleSelectFolder('quote')}
                       className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white"
                       tooltip="Chọn thư mục từ hệ thống"
                     >
