@@ -18,9 +18,11 @@ type ScheduleTime = {
   groupId: number;
   mode: 'default' | 'affiliate';
   folder: string;
+  quoteFolder: string;
   batchSize: number;
   reportName: string;
   captionLabel: string;
+  forMarket: 'shopee' | 'amz' | 'none';
 };
 
 const generateRandomId = () => {
@@ -35,9 +37,11 @@ const ScheduleModal = () => {
     groupId: -1,
     mode: 'default',
     folder: '',
+    quoteFolder: '',
     batchSize: 10,
     reportName: '',
     captionLabel: '',
+    forMarket: 'shopee',
   });
   const [jobs, setJobs] = useState<any[]>([]);
   const [captions, setCaptions] = useState<any[]>([]);
@@ -86,6 +90,14 @@ const ScheduleModal = () => {
 
   const updateScheduleCaptionLabel = (captionLabel: string) => {
     setSchedule(prev => ({ ...prev, captionLabel }));
+  };
+
+  const updateScheduleMarket = (forMarket: 'shopee' | 'amz' | 'none') => {
+    setSchedule(prev => ({ ...prev, forMarket }));
+  };
+
+  const updateScheduleQuoteFolder = (quoteFolder: string) => {
+    setSchedule(prev => ({ ...prev, quoteFolder }));
   };
 
   const handleSelectFolder = async () => {
@@ -142,6 +154,8 @@ const ScheduleModal = () => {
       mode: schedule.mode,
       folder: schedule.folder,
       captionLabel: schedule.captionLabel,
+      forMarket: schedule.forMarket as 'shopee' | 'amz' | 'none',
+      quoteFolder: schedule.quoteFolder,
     };
 
     // Gửi job đến electron main process
@@ -334,6 +348,46 @@ const ScheduleModal = () => {
                       <i className="fas fa-folder-open"></i>
                     </Button>
                   </div>
+                </div>
+
+                {/* Quote Folder Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-folder text-indigo-500"></i>
+                    Thư mục quote
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Chọn thư mục chứa file quote..."
+                      value={schedule.quoteFolder}
+                      onChange={(e) => updateScheduleQuoteFolder(e.target.value)}
+                      className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    />
+                    <Button
+                      onClick={handleSelectFolder}
+                      className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white"
+                      tooltip="Chọn thư mục từ hệ thống"
+                    >
+                      <i className="fas fa-folder-open"></i>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* For Market */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-globe text-yellow-500"></i>
+                    Dành cho
+                  </label>
+                  <Select
+                    value={schedule.forMarket}
+                    onChange={(e) => updateScheduleMarket(e.target.value as 'shopee' | 'amz' | 'none')}
+                    options={[
+                      { value: 'shopee', label: 'Shopee' },
+                      { value: 'amz', label: 'Amazon' },
+                      { value: 'none', label: 'None' },
+                    ]}
+                  />
                 </div>
 
               </div>

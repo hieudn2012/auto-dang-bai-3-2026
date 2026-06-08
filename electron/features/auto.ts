@@ -6,11 +6,23 @@ import { IpcMainEvent } from "electron";
 import { getRandomFolder } from "./foder";
 import { sendLog } from "./event";
 
+const waitFor = (seconds: number) => new Promise(resolve => setTimeout(resolve, seconds * 1000));
+
+async function runWithDelay(promises: (() => Promise<boolean>)[], delaySeconds: number) {
+  const running: Promise<boolean>[] = [];
+  for (let i = 0; i < promises.length; i++) {
+    if (i > 0) await waitFor(delaySeconds);
+    running.push(promises[i]());
+  }
+  return Promise.all(running);
+}
+
 // auto post
 export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
   const config = await loadMainConfig();
   const captions = config?.captions || [];
   const mapFolder: Record<string, string> = {};
+  const mapQuoteFolder: Record<string, string> = {};
   const excludedFolders: string[] = [];
 
 
@@ -68,18 +80,25 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
       message: `Có ${profileOpened.length} profiles đang mở`,
     });
 
+    const errorIds: number[] = [];
+
     const ddTest = async (type: 'post' | 'quote') => {
-      let postCount = 0;
+      const postProfileIds: number[] = [];
+      const postTasks: (() => Promise<boolean>)[] = [];
       for (const profile of batch) {
-        // check if profile is opened
         const isOpened = profileOpened.some((p) => p.profile_id === profile.profile_id);
         const profileInfo = profileOpened.find((p) => p.profile_id === profile.profile_id);
         if (isOpened && profileInfo) {
-          const randomFolder = getRandomFolder(item.folder, excludedFolders);
+          const randomFolder = type === 'post' ? getRandomFolder(item.folder, excludedFolders) : getRandomFolder(item.quoteFolder, excludedFolders);
           excludedFolders.push(randomFolder);
-          mapFolder[profile.profile_id] = randomFolder;
-          try {
-            clickPostButton({
+          if (type === 'post') {
+            mapFolder[profile.profile_id] = randomFolder;
+          } else {
+            mapQuoteFolder[profile.profile_id] = randomFolder;
+          }
+          postProfileIds.push(profile.profile_id);
+          postTasks.push(async () => {
+            const success = await clickPostButton({
               id: profile.profile_id,
               ws: profileInfo.ws,
               username: profile.name,
@@ -90,19 +109,16 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
               reportName: item.reportName,
               isAuto: true,
             }, event);
-            postCount++;
             sendLog(event, {
               username: profile.name,
-              message: `Đã bắt đầu đăng bài cho profile ${profile.profile_id}`,
+              message: success
+                ? `Đã bắt đầu đăng bài cho profile ${profile.profile_id}`
+                : `Lỗi khi đăng bài cho profile ${profile.profile_id}`,
             });
-            await waitRandom(500, 2000);
-          } catch (error) {
-            sendLog(event, {
-              username: profile.name,
-              message: `Lỗi khi đăng bài cho profile ${profile.profile_id}: ${error}`,
-            });
-          }
+            return success;
+          });
         } else {
+          errorIds.push(profile.profile_id);
           sendLog(event, {
             username: profile.name,
             message: `Profile ${profile.profile_id} không mở được, bỏ qua đăng bài`,
@@ -110,74 +126,75 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
         }
       }
 
-      sendLog(event, {
-        username: '',
-        message: `Đã đăng bài cho ${postCount}/${batch.length} profiles trong batch ${batchIndex + 1}`,
+      const postResults = await runWithDelay(postTasks, 3);
+      postResults.forEach((result, index) => {
+        const profileId = postProfileIds[index];
+        if (!result && !errorIds.includes(profileId)) errorIds.push(profileId);
       });
 
       sendLog(event, {
         username: '',
-        message: `Chờ ${60000 / 1000}-${80000 / 1000}s sau khi đăng bài`,
+        message: `Đã đăng bài cho ${postTasks.length - postResults.filter(r => !r).length}/${batch.length} profiles trong batch ${batchIndex + 1}`,
       });
-      await waitRandom(60000, 80000);
 
-      // For Edit
-      let editCount = 0;
+      if (type === 'quote' && item.forMarket === 'shopee') {
+        sendLog(event, {
+          username: '',
+          message: `Đã bỏ qua sửa bài cho quote vì dành cho Shopee`,
+        });
+        await waitRandom(3000, 5000);
+        return;
+      }
+
+      const editProfileIds: number[] = [];
+      const editTasks: (() => Promise<boolean>)[] = [];
       for (const profile of batch) {
-        // check if profile is opened
+        if (type === 'post' && errorIds.includes(profile.profile_id)) continue;
         const isOpened = profileOpened.some((p) => p.profile_id === profile.profile_id);
         const profileInfo = profileOpened.find((p) => p.profile_id === profile.profile_id);
         if (isOpened && profileInfo) {
-          try {
-            clickEditLatestPostButton({
+          editProfileIds.push(profile.profile_id);
+          editTasks.push(async () => {
+            const success = await clickEditLatestPostButton({
               ws: profileInfo.ws,
               username: profile.name,
-              folder: mapFolder[profile.profile_id],
+              folder: type === 'post' ? mapFolder[profile.profile_id] : mapQuoteFolder[profile.profile_id],
               mode: item.mode,
               reportName: item.reportName,
               id: profile.profile_id,
               isAuto: true,
             }, event);
-            editCount++;
             sendLog(event, {
               username: profile.name,
-              message: `Đã bắt đầu sửa bài cho profile ${profile.profile_id}`,
+              message: success
+                ? `Đã bắt đầu sửa bài cho profile ${profile.profile_id}`
+                : `Lỗi khi sửa bài cho profile ${profile.profile_id}`,
             });
-            await waitRandom(500, 2000);
-          } catch (error) {
-            sendLog(event, {
-              username: profile.name,
-              message: `Lỗi khi sửa bài cho profile ${profile.profile_id}: ${error}`,
-            });
-          }
-        } else {
-          sendLog(event, {
-            username: profile.name,
-            message: `Profile ${profile.profile_id} không mở được, bỏ qua sửa bài`,
+            return success;
           });
         }
       }
 
-      sendLog(event, {
-        username: '',
-        message: `Đã sửa bài cho ${editCount}/${batch.length} profiles trong batch ${batchIndex + 1}`,
+      const editResults = await runWithDelay(editTasks, 0.5);
+      editResults.forEach((result, index) => {
+        const profileId = editProfileIds[index];
+        if (!result && !errorIds.includes(profileId)) errorIds.push(profileId);
       });
 
       sendLog(event, {
         username: '',
-        message: `Chờ ${60000 / 1000}-${80000 / 1000}s sau khi sửa bài`,
+        message: `Đã sửa bài cho ${editTasks.length - editResults.filter(r => !r).length}/${batch.length} profiles trong batch ${batchIndex + 1}`,
       });
-      await waitRandom(60000, 80000);
+
+      await waitRandom(3000, 5000);
     }
 
     await ddTest('post');
-    // if (item.mode === 'affiliate') {
-    //   await ddTest('quote');
-    // }
+    await ddTest('quote');
 
     // close profiles
     let closeCount = 0;
-    for (const profile of batch) {
+    for (const profile of batch.filter(p => !errorIds.includes(p.profile_id))) {
       const isOpened = profileOpened.some((p) => p.profile_id === profile.profile_id);
       const profileInfo = profileOpened.find((p) => p.profile_id === profile.profile_id);
       if (isOpened && profileInfo) {

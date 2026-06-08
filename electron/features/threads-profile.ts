@@ -113,7 +113,7 @@ const TEXT_AREA_CAPTION = 'div[aria-label="Empty text field. Type to compose a n
 const POST_BUTTON_SUBMIT = 'div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5'
 const MORE_BUTTON_SELECTOR = 'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4jnvo svg[aria-label="More"]'
 
-export const clickPostButton = async (params: PostParams, event: IpcMainEvent, attempt = 1): Promise<void> => {
+export const clickPostButton = async (params: PostParams, event: IpcMainEvent, attempt = 1): Promise<boolean> => {
   const {
     id,
     ws,
@@ -253,6 +253,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
         username,
         type,
       })
+      return true;
     }
   } catch (error) {
     console.error(error);
@@ -269,6 +270,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     if (isAuto) {
       await browser.close();
     }
+    return false;
   } finally {
     await browser.disconnect();
   }
@@ -515,7 +517,7 @@ export const clickEditLatestPostButton = async ({
   mode,
   folder,
   isAuto,
-}: ClickEditLatestPostButtonParams, event: IpcMainEvent) => {
+}: ClickEditLatestPostButtonParams, event: IpcMainEvent): Promise<boolean> => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -644,6 +646,7 @@ export const clickEditLatestPostButton = async ({
       throw new Error('Chỉnh sửa bài viết không thành công, không tìm thấy selector thành công');
     } else {
       sendMessage(event, { id, username, message: 'Edit completed ✅' });
+      return true;
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Chỉnh sửa bài viết thất bại ❌';
@@ -659,6 +662,7 @@ export const clickEditLatestPostButton = async ({
     if (isAuto) {
       await browser.close();
     }
+    return false;
   } finally {
     await browser.disconnect();
   }

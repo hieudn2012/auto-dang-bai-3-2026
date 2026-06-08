@@ -10,10 +10,12 @@ export interface ScheduleItem {
   groupName: string;
   mode: 'default' | 'affiliate';
   folder: string;
+  quoteFolder: string;
   jobType: 'auto-post' | 'auto-comment' | 'auto-like' | 'auto-share';
   batchSize: number;
   reportName: string;
   captionLabel: string;
+  forMarket: 'amz' | 'shopee' | 'none';
 }
 
 export const addJobs = (items: ScheduleItem[], event: IpcMainEvent) => {
