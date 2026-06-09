@@ -89,6 +89,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
       const postProfileIds: number[] = [];
       const postTasks: (() => Promise<boolean>)[] = [];
       for (const profile of batch) {
+        if (errorIds.includes(profile.profile_id)) continue;
         const isOpened = profileOpened.some((p) => p.profile_id === profile.profile_id);
         const profileInfo = profileOpened.find((p) => p.profile_id === profile.profile_id);
         if (isOpened && profileInfo) {
@@ -119,12 +120,16 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
                   ? `Đã bắt đầu đăng bài cho profile ${profile.profile_id}`
                   : `Lỗi khi đăng bài cho profile ${profile.profile_id}`,
               });
+              if (!success) {
+                errorIds.push(profile.profile_id);
+              }
               return success;
             } catch (error) {
               sendLog(event, {
                 username: profile.name,
                 message: `Lỗi khi đăng bài cho profile ${profile.profile_id}: ${error}`,
               });
+              errorIds.push(profile.profile_id);
               return false;
             }
           });
@@ -151,7 +156,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
       const editProfileIds: number[] = [];
       const editTasks: (() => Promise<boolean>)[] = [];
       for (const profile of batch) {
-        if (type === 'post' && errorIds.includes(profile.profile_id)) continue;
+        if (errorIds.includes(profile.profile_id)) continue;
         const isOpened = profileOpened.some((p) => p.profile_id === profile.profile_id);
         const profileInfo = profileOpened.find((p) => p.profile_id === profile.profile_id);
         if (isOpened && profileInfo) {

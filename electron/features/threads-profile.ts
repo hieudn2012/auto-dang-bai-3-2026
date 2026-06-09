@@ -259,7 +259,8 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     return true;
   } catch (error) {
     console.error(error);
-    const message = error instanceof Error ? error.message : 'Đăng bài viết thất bại ❌';
+    const subMsg = type === 'post' ? 'Đăng bài viết' : 'Trích dẫn';
+    const message = error instanceof Error ? error.message : `${subMsg} thất bại ❌`;
     sendMessage(event, { id, username, message: message });
     saveReport({
       reportName,

@@ -289,6 +289,9 @@ const ScheduleModal = () => {
                     value={schedule.batchSize}
                     onChange={(e) => updateScheduleBatchSize(Number(e.target.value))}
                     options={[
+                      { value: 1, label: '1 profiles' },
+                      { value: 2, label: '2 profiles' },
+                      { value: 3, label: '3 profiles' },
                       { value: 5, label: '5 profiles' },
                       { value: 10, label: '10 profiles' },
                       { value: 20, label: '20 profiles' },
