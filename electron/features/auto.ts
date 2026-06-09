@@ -137,15 +137,6 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
         message: `Đã đăng bài cho ${postTasks.length - postResults.filter(r => !r).length}/${batch.length} profiles trong batch ${batchIndex + 1}`,
       });
 
-      if (type === 'quote' && item.forMarket === 'shopee') {
-        sendLog(event, {
-          username: '',
-          message: `Đã bỏ qua sửa bài cho quote vì dành cho Shopee`,
-        });
-        await waitRandom(3000, 5000);
-        return;
-      }
-
       const editProfileIds: number[] = [];
       const editTasks: (() => Promise<boolean>)[] = [];
       for (const profile of batch) {
