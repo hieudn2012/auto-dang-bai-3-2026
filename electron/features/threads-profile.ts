@@ -113,6 +113,8 @@ const TEXT_AREA_CAPTION = 'div[aria-label="Empty text field. Type to compose a n
 const POST_BUTTON_SUBMIT = 'div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5'
 const MORE_BUTTON_SELECTOR = 'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4jnvo svg[aria-label="More"]'
 
+const WAIT_FOR_UI_MS = 60_000;
+
 export const clickPostButton = async (params: PostParams, event: IpcMainEvent, attempt = 1): Promise<boolean> => {
   const {
     id,
@@ -124,12 +126,13 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     reportName,
     isAuto,
   } = params;
-  const browser = await puppeteer.connect({
-    browserWSEndpoint: ws,
-    defaultViewport: null,
-  });
+  let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
 
   try {
+    browser = await puppeteer.connect({
+      browserWSEndpoint: ws,
+      defaultViewport: null,
+    });
     // send event to renderer
     sendMessage(event, { id, username, message: 'Đang đăng bài...' });
 
@@ -206,6 +209,8 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     if (!isUploadSuccess) {
       if (attempt < 3) {
         sendMessage(event, { id, username, message: `Tải media thất bại, thử lại lần ${attempt + 1}/3...` });
+        await browser.disconnect();
+        browser = null;
         return await clickPostButton(params, event, attempt + 1);
       }
       throw new Error('Kết nối internet có thể không ổn định, tải media thất bại');
@@ -237,24 +242,21 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       throw new Error('Không tìm thấy nút "Post"');
     }
     await postButton.click();
-    const waitForSelectorPromise = await page.waitForFunction(
+    await page.waitForFunction(
       () => [...document.querySelectorAll('div.html-div')]
-        .some(el => el.textContent === 'Posted')
+        .some(el => el.textContent === 'Posted'),
+      { timeout: WAIT_FOR_UI_MS }
     );
-    if (!waitForSelectorPromise) {
-      throw new Error('Đăng bài không thành công, không tìm thấy selector thành công');
-    } else {
-      sendMessage(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
-      saveReport({
-        reportName,
-        description: type === 'post' ? 'Post completed ✅' : 'Quote completed ✅',
-        userId: id,
-        status: 'completed',
-        username,
-        type,
-      })
-      return true;
-    }
+    sendMessage(event, { id, username, message: type === 'post' ? 'Đăng bài thành công ✅' : 'Trích dẫn thành công ✅' });
+    saveReport({
+      reportName,
+      description: type === 'post' ? 'Post completed ✅' : 'Quote completed ✅',
+      userId: id,
+      status: 'completed',
+      username,
+      type,
+    });
+    return true;
   } catch (error) {
     console.error(error);
     const message = error instanceof Error ? error.message : 'Đăng bài viết thất bại ❌';
@@ -267,12 +269,14 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       username,
       type,
     });
-    if (isAuto) {
-      await browser.close();
+    if (isAuto && browser) {
+      await browser.close().catch(() => {});
     }
     return false;
   } finally {
-    await browser.disconnect();
+    if (browser) {
+      await browser.disconnect().catch(() => {});
+    }
   }
 }
 
@@ -517,13 +521,14 @@ export const clickEditLatestPostButton = async ({
   folder,
   isAuto,
 }: ClickEditLatestPostButtonParams, event: IpcMainEvent): Promise<boolean> => {
-  const browser = await puppeteer.connect({
-    browserWSEndpoint: ws,
-    defaultViewport: null,
-  });
+  let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
   const config = await loadMainConfig();
   const isVietnamese = config?.gemini?.lang === 'vi';
   try {
+    browser = await puppeteer.connect({
+      browserWSEndpoint: ws,
+      defaultViewport: null,
+    });
     // Lấy tất cả tabs
     // const pages = await browser.pages();
 
@@ -636,17 +641,13 @@ export const clickEditLatestPostButton = async ({
     await doneBtn.click();
     await waitRandom(1000, 3000);
 
-    const waitForSelectorPromise = await page.waitForFunction(
+    await page.waitForFunction(
       () => [...document.querySelectorAll('div.html-div')]
-        .some(el => el.textContent === 'Edited')
+        .some(el => el.textContent === 'Edited'),
+      { timeout: WAIT_FOR_UI_MS }
     );
-
-    if (!waitForSelectorPromise) {
-      throw new Error('Chỉnh sửa bài viết không thành công, không tìm thấy selector thành công');
-    } else {
-      sendMessage(event, { id, username, message: 'Edit completed ✅' });
-      return true;
-    }
+    sendMessage(event, { id, username, message: 'Edit completed ✅' });
+    return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Chỉnh sửa bài viết thất bại ❌';
     sendMessage(event, { id, username, message });
@@ -658,12 +659,14 @@ export const clickEditLatestPostButton = async ({
       username,
       type: 'edit',
     });
-    if (isAuto) {
-      await browser.close();
+    if (isAuto && browser) {
+      await browser.close().catch(() => {});
     }
     return false;
   } finally {
-    await browser.disconnect();
+    if (browser) {
+      await browser.disconnect().catch(() => {});
+    }
   }
 }
 

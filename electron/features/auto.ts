@@ -12,9 +12,12 @@ async function runWithDelay(promises: (() => Promise<boolean>)[], delaySeconds: 
   const running: Promise<boolean>[] = [];
   for (let i = 0; i < promises.length; i++) {
     if (i > 0) await waitFor(delaySeconds);
-    running.push(promises[i]());
+    running.push(
+      promises[i]().catch(() => false)
+    );
   }
-  return Promise.all(running);
+  const results = await Promise.allSettled(running);
+  return results.map(r => (r.status === 'fulfilled' ? r.value : false));
 }
 
 // auto post
@@ -98,24 +101,32 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
           }
           postProfileIds.push(profile.profile_id);
           postTasks.push(async () => {
-            const success = await clickPostButton({
-              id: profile.profile_id,
-              ws: profileInfo.ws,
-              username: profile.name,
-              folder: randomFolder,
-              type: type,
-              mode: item.mode,
-              captionData: captions.find(cap => cap.label === item.captionLabel)?.value || '',
-              reportName: item.reportName,
-              isAuto: true,
-            }, event);
-            sendLog(event, {
-              username: profile.name,
-              message: success
-                ? `Đã bắt đầu đăng bài cho profile ${profile.profile_id}`
-                : `Lỗi khi đăng bài cho profile ${profile.profile_id}`,
-            });
-            return success;
+            try {
+              const success = await clickPostButton({
+                id: profile.profile_id,
+                ws: profileInfo.ws,
+                username: profile.name,
+                folder: randomFolder,
+                type: type,
+                mode: item.mode,
+                captionData: captions.find(cap => cap.label === item.captionLabel)?.value || '',
+                reportName: item.reportName,
+                isAuto: true,
+              }, event);
+              sendLog(event, {
+                username: profile.name,
+                message: success
+                  ? `Đã bắt đầu đăng bài cho profile ${profile.profile_id}`
+                  : `Lỗi khi đăng bài cho profile ${profile.profile_id}`,
+              });
+              return success;
+            } catch (error) {
+              sendLog(event, {
+                username: profile.name,
+                message: `Lỗi khi đăng bài cho profile ${profile.profile_id}: ${error}`,
+              });
+              return false;
+            }
           });
         } else {
           errorIds.push(profile.profile_id);
@@ -146,22 +157,30 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
         if (isOpened && profileInfo) {
           editProfileIds.push(profile.profile_id);
           editTasks.push(async () => {
-            const success = await clickEditLatestPostButton({
-              ws: profileInfo.ws,
-              username: profile.name,
-              folder: type === 'post' ? mapFolder[profile.profile_id] : mapQuoteFolder[profile.profile_id],
-              mode: item.mode,
-              reportName: item.reportName,
-              id: profile.profile_id,
-              isAuto: true,
-            }, event);
-            sendLog(event, {
-              username: profile.name,
-              message: success
-                ? `Đã bắt đầu sửa bài cho profile ${profile.profile_id}`
-                : `Lỗi khi sửa bài cho profile ${profile.profile_id}`,
-            });
-            return success;
+            try {
+              const success = await clickEditLatestPostButton({
+                ws: profileInfo.ws,
+                username: profile.name,
+                folder: type === 'post' ? mapFolder[profile.profile_id] : mapQuoteFolder[profile.profile_id],
+                mode: item.mode,
+                reportName: item.reportName,
+                id: profile.profile_id,
+                isAuto: true,
+              }, event);
+              sendLog(event, {
+                username: profile.name,
+                message: success
+                  ? `Đã bắt đầu sửa bài cho profile ${profile.profile_id}`
+                  : `Lỗi khi sửa bài cho profile ${profile.profile_id}`,
+              });
+              return success;
+            } catch (error) {
+              sendLog(event, {
+                username: profile.name,
+                message: `Lỗi khi sửa bài cho profile ${profile.profile_id}: ${error}`,
+              });
+              return false;
+            }
           });
         }
       }
