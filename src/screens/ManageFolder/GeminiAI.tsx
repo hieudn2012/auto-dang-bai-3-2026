@@ -80,7 +80,6 @@ const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, lang
             label="Language"
             icon="fa-solid fa-language"
           />
-
         </div>
         <div>
           <Input

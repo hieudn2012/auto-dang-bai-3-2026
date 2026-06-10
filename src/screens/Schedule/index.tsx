@@ -10,6 +10,10 @@ import Layout from '@/components/Layout';
 import { Group } from '../../components/Group';
 import { toast } from '@/components/ToastContainer';
 import { useGetGroupList } from '@/services/profiles';
+import moment from 'moment';
+
+export type Lang = 'vi' | 'en';
+export type ForMarket = 'shopee' | 'amz' | 'none';
 
 type ScheduleTime = {
   id: string;
@@ -22,7 +26,8 @@ type ScheduleTime = {
   batchSize: number;
   reportName: string;
   captionLabel: string;
-  forMarket: 'shopee' | 'amz' | 'none';
+  forMarket: ForMarket;
+  lang: Lang;
 };
 
 const generateRandomId = () => {
@@ -32,37 +37,25 @@ const generateRandomId = () => {
 const ScheduleModal = () => {
   const [schedule, setSchedule] = useState<ScheduleTime>({
     id: generateRandomId(),
-    time: '',
+    time: moment().add(2, 'minutes').format('HH:mm'),
     enabled: true,
     groupId: -1,
-    mode: 'default',
+    mode: 'affiliate',
     folder: '',
     quoteFolder: '',
     batchSize: 10,
-    reportName: '',
+    reportName: moment().format('DD_MM_HH_mm_A'),
     captionLabel: '',
     forMarket: 'shopee',
+    lang: 'en',
   });
   const [jobs, setJobs] = useState<any[]>([]);
-  const [captions, setCaptions] = useState<any[]>([]);
   const [{ data: groupListData }] = useGetGroupList();
   const groups = groupListData?.data?.data?.data || [];
 
   useEffect(() => {
     handleLoadJobs();
-    loadCaptions();
   }, []);
-
-  const loadCaptions = async () => {
-    try {
-      const config = await windowInstance.api.loadMainConfig();
-      const captionsData = config?.captions || [];
-      setCaptions(captionsData);
-    } catch (error) {
-      console.error('Failed to load captions:', error);
-    }
-  };
-
 
   const updateSchedule = (time: string) => {
     setSchedule(prev => ({ ...prev, time }));
@@ -88,16 +81,16 @@ const ScheduleModal = () => {
     setSchedule(prev => ({ ...prev, reportName }));
   };
 
-  const updateScheduleCaptionLabel = (captionLabel: string) => {
-    setSchedule(prev => ({ ...prev, captionLabel }));
-  };
-
-  const updateScheduleMarket = (forMarket: 'shopee' | 'amz' | 'none') => {
+  const updateScheduleMarket = (forMarket: ForMarket) => {
     setSchedule(prev => ({ ...prev, forMarket }));
   };
 
   const updateScheduleQuoteFolder = (quoteFolder: string) => {
     setSchedule(prev => ({ ...prev, quoteFolder }));
+  };
+
+  const updateScheduleLang = (lang: Lang) => {
+    setSchedule(prev => ({ ...prev, lang }));
   };
 
   const handleSelectFolder = async (type: 'post' | 'quote') => {
@@ -128,8 +121,8 @@ const ScheduleModal = () => {
 
   const startScheduling = () => {
     // Validate schedule has all required fields
-    if (!schedule.time || schedule.groupId <= -1 || !schedule.folder || !schedule.reportName || !schedule.captionLabel) {
-      toast.error('Vui lòng điền đầy đủ thông tin: thời gian, nhóm, thư mục, tên báo cáo và caption label');
+    if (!schedule.time || schedule.groupId <= -1 || !schedule.folder || !schedule.reportName) {
+      toast.error('Vui lòng điền đầy đủ thông tin: thời gian, nhóm, thư mục, tên báo cáo');
       return;
     }
 
@@ -160,6 +153,7 @@ const ScheduleModal = () => {
       captionLabel: schedule.captionLabel,
       forMarket: schedule.forMarket as 'shopee' | 'amz' | 'none',
       quoteFolder: schedule.quoteFolder,
+      lang: schedule.lang,
     };
 
     // Gửi job đến electron main process
@@ -210,6 +204,8 @@ const ScheduleModal = () => {
     return `${minutes}m`;
   };
 
+  const isDisabled = !schedule.time || !schedule.folder || schedule.groupId === -1 || !schedule.reportName || !schedule.quoteFolder || !schedule.lang;
+
   return (
     <Layout>
       <div className="p-6">
@@ -241,18 +237,51 @@ const ScheduleModal = () => {
             {/* Card Body */}
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Time Input */}
+
+                {/* Folder Selection */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <i className="fa-solid fa-clock text-amber-500"></i>
-                    Thời gian chạy
+                    <i className="fa-solid fa-folder text-indigo-500"></i>
+                    Thư mục nội dung
                   </label>
-                  <Input
-                    type="time"
-                    value={schedule.time}
-                    onChange={(e) => updateSchedule(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Chọn thư mục chứa file nội dung..."
+                      value={schedule.folder}
+                      onChange={(e) => updateScheduleFolder(e.target.value)}
+                      className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    />
+                    <Button
+                      onClick={() => handleSelectFolder('post')}
+                      className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white"
+                      tooltip="Chọn thư mục từ hệ thống"
+                    >
+                      <i className="fas fa-folder-open"></i>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Quote Folder Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-folder text-indigo-500"></i>
+                    Thư mục quote
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Chọn thư mục chứa file quote..."
+                      value={schedule.quoteFolder}
+                      onChange={(e) => updateScheduleQuoteFolder(e.target.value)}
+                      className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                    />
+                    <Button
+                      onClick={() => handleSelectFolder('quote')}
+                      className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white"
+                      tooltip="Chọn thư mục từ hệ thống"
+                    >
+                      <i className="fas fa-folder-open"></i>
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Group Selection */}
@@ -317,69 +346,6 @@ const ScheduleModal = () => {
                   />
                 </div>
 
-                {/* Caption Label Selection */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <i className="fa-solid fa-tag text-purple-500"></i>
-                    Caption Label
-                  </label>
-                  <Select
-                    value={schedule.captionLabel}
-                    onChange={(e) => updateScheduleCaptionLabel(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                    options={[
-                      { value: "", label: "Chọn caption label" },
-                      ...captions.map(cap => ({ value: cap.label, label: cap.label }))
-                    ]}
-                  />
-                </div>
-
-                {/* Folder Selection */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <i className="fa-solid fa-folder text-indigo-500"></i>
-                    Thư mục nội dung
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Chọn thư mục chứa file nội dung..."
-                      value={schedule.folder}
-                      onChange={(e) => updateScheduleFolder(e.target.value)}
-                      className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                    />
-                    <Button
-                      onClick={() => handleSelectFolder('post')}
-                      className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white"
-                      tooltip="Chọn thư mục từ hệ thống"
-                    >
-                      <i className="fas fa-folder-open"></i>
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Quote Folder Selection */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                    <i className="fa-solid fa-folder text-indigo-500"></i>
-                    Thư mục quote
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Chọn thư mục chứa file quote..."
-                      value={schedule.quoteFolder}
-                      onChange={(e) => updateScheduleQuoteFolder(e.target.value)}
-                      className="flex-1 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                    />
-                    <Button
-                      onClick={() => handleSelectFolder('quote')}
-                      className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white"
-                      tooltip="Chọn thư mục từ hệ thống"
-                    >
-                      <i className="fas fa-folder-open"></i>
-                    </Button>
-                  </div>
-                </div>
-
                 {/* For Market */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -394,6 +360,35 @@ const ScheduleModal = () => {
                       { value: 'amz', label: 'Amazon' },
                       { value: 'none', label: 'None' },
                     ]}
+                  />
+                </div>
+
+                {/* Language */}
+                <div>
+                  <Select
+                    value={schedule.lang}
+                    onChange={(e) => updateScheduleLang(e.target.value as Lang)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    options={[
+                      { label: 'English', value: 'en' },
+                      { label: 'Vietnamese', value: 'vi' },
+                    ]}
+                    label="Language"
+                    icon="fa-solid fa-language"
+                  />
+                </div>
+
+                {/* Time Input */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-clock text-amber-500"></i>
+                    Thời gian chạy
+                  </label>
+                  <Input
+                    type="time"
+                    value={schedule.time}
+                    onChange={(e) => updateSchedule(e.target.value)}
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                   />
                 </div>
 
@@ -415,7 +410,7 @@ const ScheduleModal = () => {
 
                   <Button
                     onClick={startScheduling}
-                    disabled={!schedule.time || !schedule.folder || schedule.groupId <= -1}
+                    disabled={isDisabled}
                     className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed"
                   >
                     <i className="fa-solid fa-play mr-2"></i>

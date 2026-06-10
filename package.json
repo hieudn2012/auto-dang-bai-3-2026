@@ -13,7 +13,8 @@
     "electron-dev": "concurrently \"npm run dev\" \"npm run server\" \"wait-on http://localhost:5173 && electron .\"",
     "server": "tsx server/index.ts",
     "server:build": "tsc server/index.ts --outDir dist-server",
-    "start": "concurrently \"npm run server\" \"npm run dev\""
+    "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "dev2": "git pull origin master && vite"
   },
   "dependencies": {
     "@google/genai": "^1.39.0",

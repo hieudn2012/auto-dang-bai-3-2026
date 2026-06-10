@@ -7,7 +7,7 @@ import { Product } from "electron/features/product";
 import { FolderData, MoveData } from "electron/features/foder";
 import { MoveFolderParams } from "electron/features/threads-folder";
 import { FanpageLinkParams } from "electron/features/fanpage";
-import { PostParams } from "electron/features/threads-profile";
+import { ClickEditLatestPostButtonParams, PostParams } from "electron/features/threads-profile";
 import { DeletePostOptions } from "electron/features/threads-delete";
 import { ReportResult } from "electron/features/report";
 import { GenerateCaptionsParams } from "electron/features/gemini";
@@ -33,7 +33,7 @@ type WindownInstance = typeof window & {
     randomQuoteFolderNotUsed: (exclude: string[]) => Promise<{ name: string, path: string }>,
     getFolderInfo: (path: string) => Promise<{ cap: string, link: string }>,
     clickPostButton: (info: PostParams) => Promise<any>,
-    clickEditLatestPostButton: (info: PostParams) => Promise<any>,
+    clickEditLatestPostButton: (info: ClickEditLatestPostButtonParams) => Promise<any>,
     saveHistoryTxt: ({ profile_id, folder }: { profile_id: number, folder: string }) => Promise<any>,
     setupNewAccount: (info: { ws: string, username: string }) => Promise<any>,
     checkLiveAccounts: (info: { ws: string, accounts: string[], batchSize?: number }) => Promise<{ liveAccounts: string[], deadAccounts: string[] }>,

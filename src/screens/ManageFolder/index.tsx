@@ -18,7 +18,6 @@ interface Caption {
 const ManageFolder = () => {
   const [workingFolder, setWorkingFolder] = useState('');
   const [profileFolder, setProfileFolder] = useState('');
-  const [linkPost, setLinkPost] = useState('');
   const [caption, setCaption] = useState('');
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [proxy, setProxy] = useState('');
@@ -49,7 +48,6 @@ const ManageFolder = () => {
       workingDir: workingFolder,
       profileDir: profileFolder,
       quoteWorkingDir,
-      linkPost,
       caption,
       captions,
       proxy,
@@ -68,7 +66,6 @@ const ManageFolder = () => {
     setWorkingFolder(config?.workingDir || '');
     setProfileFolder(config?.profileDir || '');
     setQuoteWorkingDir(config?.quoteWorkingDir || '');
-    setLinkPost(config?.linkPost || '');
     setCaption(config?.caption || '');
     setCaptions(config?.captions || []);
     setProxy(config?.proxy || '');
@@ -168,8 +165,6 @@ const ManageFolder = () => {
                 setWorkingFolder={setWorkingFolder}
                 profileFolder={profileFolder}
                 setProfileFolder={setProfileFolder}
-                linkPost={linkPost}
-                setLinkPost={setLinkPost}
                 onChangeWorkingFolder={handleOpenWorkingFolder}
                 onChangeProfileFolder={handleOpenProfileFolder}
                 quoteWorkingDir={quoteWorkingDir}

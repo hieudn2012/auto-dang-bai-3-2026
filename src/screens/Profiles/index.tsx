@@ -10,7 +10,6 @@ import {
   useOpenProfile
 } from "@/services/profiles";
 import { windowInstance } from "@/services/window";
-import { MainConfig } from "electron/types";
 import { find, map, split } from "lodash";
 import { useEffect, useState } from "react";
 import { toast } from "@/components/ToastContainer";
@@ -23,6 +22,7 @@ import { ReportType } from "electron/features/report";
 import { DeletePostOptions } from "electron/features/threads-delete";
 import Switch from "@/components/Switch";
 import { ProfileResult } from "electron/features/profile";
+import { Lang } from "../Schedule";
 
 const shortName = (name: string) => {
   const maxLength = 10;
@@ -76,13 +76,12 @@ const Profiles = () => {
   const [batchSize, setBatchSize] = useState(20);
   const [reportName, setReportName] = useState('');
   const [mode, setMode] = useState<'default' | 'affiliate'>('affiliate');
+  const [lang, setLang] = useState<Lang>('en');
   const [showProxyModal, setShowProxyModal] = useState(false);
   const [showRangeModal, setShowRangeModal] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
-  const [mainConfig, setMainConfig] = useState<MainConfig>({});
   const [isAuto, setIsAuto] = useState(false);
-  const [isIgnoreQuoteLink, setIsIgnoreQuoteLink] = useState(false);
   const [profileResult, setProfileResult] = useState<ProfileResult>({});
   const [sex, setSex] = useState<'male' | 'female'>('male');
   const profiles = data?.data?.data?.data || [];
@@ -173,6 +172,7 @@ const Profiles = () => {
         mode,
         isAuto,
         captionData: '',
+        lang: 'vi' as Lang
       }
       await windowInstance.api.clickEditLatestPostButton(data);
       return true;
@@ -338,14 +338,12 @@ const Profiles = () => {
     });
     toast.success('Đã hoàn thành quote.');
 
-    if (!isIgnoreQuoteLink) {
-      const editLatestQuotePromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap, 'quote'));
-      const editLatestQuoteResults = await runWithDelay(editLatestQuotePromiseFactories, 0.5);
-      editLatestQuoteResults.forEach((result, index) => {
-        if (!result) errorIds.push(ids[index]);
-      });
-      toast.success('Đã hoàn thành edit quote.');
-    }
+    const editLatestQuotePromiseFactories = ids.map(id => () => clickEditLatestPostButton(id, openList, usMap, 'quote'));
+    const editLatestQuoteResults = await runWithDelay(editLatestQuotePromiseFactories, 0.5);
+    editLatestQuoteResults.forEach((result, index) => {
+      if (!result) errorIds.push(ids[index]);
+    });
+    toast.success('Đã hoàn thành edit quote.');
 
     await handleBulkClose(ids.filter(id => !errorIds.includes(id)), openList);
     toast.success('Đã đóng all profile.');
@@ -418,13 +416,10 @@ const Profiles = () => {
       const mainConfig = await windowInstance.api.loadMainConfig();
       if (mainConfig?.profile?.groupId) {
         setGroupId(mainConfig.profile.groupId);
-        setMainConfig(mainConfig);
       }
     };
     loadMainConfig();
   }, []);
-
-  const isVietnamese = mainConfig?.gemini?.lang === 'vi';
 
   return (
     <Layout>
@@ -441,23 +436,6 @@ const Profiles = () => {
                 <p className="text-gray-600">
                   Quản lý và điều khiển các profile tài khoản mạng xã hội
                 </p>
-              </div>
-              <div className="flex gap-4 items-center">
-                <div className="">
-                  {isVietnamese ? 'Bạn đang dùng chế độ shopee' : 'Current mode: '}
-                </div>
-                <div className="flex items-center gap-4">
-                  {isVietnamese && <i className="fa-solid fa-bag-shopping text-5xl text-orange-500"></i>}
-                  {!isVietnamese && (
-                    <div>
-                      {mode === 'default' ? (
-                        <i className="fas fa-at text-5xl text-black"></i>
-                      ) : (
-                        <i className="fab fa-amazon text-5xl text-orange-500"></i>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -487,17 +465,21 @@ const Profiles = () => {
                       onChange={setMode}
                     />
                   </div>
-                  <div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <span>Tự động tắt browser khi gặp lỗi</span>
-                    </label>
-                    <Switch enabled={isAuto} onChange={(enabled) => setIsAuto(enabled)} />
+                  <div className="flex-1 min-w-[200px]">
+                    <Select
+                      value={lang}
+                      onChange={(e) => setLang(e.target.value as Lang)}
+                      options={[
+                        { value: 'vi', label: 'Vietnamese' },
+                        { value: 'en', label: 'English' },
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <span>Bỏ qua quote link</span>
+                      <span>Auto</span>
                     </label>
-                    <Switch enabled={isIgnoreQuoteLink} onChange={(enabled) => setIsIgnoreQuoteLink(enabled)} />
+                    <Switch enabled={isAuto} onChange={(enabled) => setIsAuto(enabled)} />
                   </div>
                 </div>
 
@@ -566,6 +548,7 @@ const Profiles = () => {
                     options={[
                       { value: 1, label: '1' },
                       { value: 2, label: '2' },
+                      { value: 3, label: '3' },
                       { value: 5, label: '5' },
                       { value: 10, label: '10' },
                       { value: 20, label: '20' },
@@ -576,7 +559,10 @@ const Profiles = () => {
                     className="w-20"
                   />
                 </div>
-                <Button onClick={handleBatch} tooltip="Batch" className="px-3 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                <Button
+                  onClick={handleBatch} tooltip="Batch"
+                  disabled={!reportName}
+                  className="px-3 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                   <i className="fa-solid fa-play mr-2"></i>
                   Batch
                 </Button>

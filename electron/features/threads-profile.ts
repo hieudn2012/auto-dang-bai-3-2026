@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
-import { loadMainConfig, waitRandom } from "./common";
+import { waitRandom } from "./common";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
@@ -9,6 +9,7 @@ import { getRandomCaption, getRandomLink } from "./caption";
 import { sendMessage } from "./event";
 import { cutSexyCaption, cutSexyLink } from './file';
 import { ReportType, saveReport } from './report';
+import { Lang } from '@/screens/Schedule';
 
 export function getScreenSize() {
   const platform = os.platform()
@@ -503,7 +504,7 @@ export const uploadMedia = async ({
 }
 
 
-interface ClickEditLatestPostButtonParams {
+export interface ClickEditLatestPostButtonParams {
   ws: string,
   username: string,
   reportName: string,
@@ -511,6 +512,7 @@ interface ClickEditLatestPostButtonParams {
   folder: string,
   mode: 'default' | 'affiliate',
   isAuto: boolean;
+  lang: Lang;
 }
 
 export const clickEditLatestPostButton = async ({
@@ -521,10 +523,9 @@ export const clickEditLatestPostButton = async ({
   mode,
   folder,
   isAuto,
+  lang,
 }: ClickEditLatestPostButtonParams, event: IpcMainEvent): Promise<boolean> => {
   let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
-  const config = await loadMainConfig();
-  const isVietnamese = config?.gemini?.lang === 'vi';
   try {
     browser = await puppeteer.connect({
       browserWSEndpoint: ws,
@@ -617,7 +618,7 @@ export const clickEditLatestPostButton = async ({
     if (mode === 'default') {
       linkPost = `${cutSexyLink()}`;
     } else {
-      const prefix = isVietnamese ? 'Mua ở đây: ' : 'Product link 👉 ';
+      const prefix = lang === 'vi' ? 'Mua ở đây: ' : 'Product link 👉 ';
       const link = getRandomLink(folder);
       if (!link) {
         throw new Error('Không tìm thấy link sản phẩm, vui lòng thêm link mới');
@@ -628,7 +629,7 @@ export const clickEditLatestPostButton = async ({
     await waitRandom(1000, 2000);
     await page.keyboard.press('Enter');
     await waitRandom(1000, 2000);
-    if (!isVietnamese && mode === 'affiliate') {
+    if (lang === 'en' && mode === 'affiliate') {
       const suffix = '#ad #CommissionsEarned';
       await page.keyboard.type(suffix, { delay: 100 });
       await waitRandom(1000, 2000);

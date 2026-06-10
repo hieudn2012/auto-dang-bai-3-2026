@@ -1,6 +1,7 @@
 import { IpcMainEvent } from "electron";
 import { autoPost } from "./auto";
 import jobQueue from "./job-queue";
+import { ForMarket, Lang } from "@/screens/Schedule";
 
 export interface ScheduleItem {
   id: string;
@@ -15,7 +16,8 @@ export interface ScheduleItem {
   batchSize: number;
   reportName: string;
   captionLabel: string;
-  forMarket: 'amz' | 'shopee' | 'none';
+  forMarket: ForMarket;
+  lang: Lang;
 }
 
 export const addJobs = (items: ScheduleItem[], event: IpcMainEvent) => {

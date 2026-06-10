@@ -28,7 +28,6 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
   const mapQuoteFolder: Record<string, string> = {};
   const excludedFolders: string[] = [];
 
-
   // get profile list
   const profiles = await getProfileList(item.groupId);
   sendLog(event, {
@@ -171,6 +170,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
                 reportName: item.reportName,
                 id: profile.profile_id,
                 isAuto: true,
+                lang: item.lang as 'vi' | 'en',
               }, event);
               sendLog(event, {
                 username: profile.name,
