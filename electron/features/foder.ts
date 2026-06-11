@@ -40,7 +40,7 @@ export const getRandomFolder = (
     const linkPath = path.join(finalPath, 'link.txt');
     const linkLength = fs.readFileSync(linkPath, 'utf-8').trim().split('\n').length;
 
-    if (capLength < 2 && linkLength < 2) {
+    if (capLength < 2 || linkLength < 2) {
       if (retry >= maxRetry) {
         console.error('Max retry random folder reached:', maxRetry);
         return '';
