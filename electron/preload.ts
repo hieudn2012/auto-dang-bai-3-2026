@@ -99,6 +99,7 @@ contextBridge.exposeInMainWorld('api', {
   generateProfile: (params: GenerateProfileParams) => invoke(InvokeChannel.GENERATE_PROFILE, params),
   getProfiles: () => invoke(InvokeChannel.GET_PROFILES),
   changeProfileInfo: (params: ChangeProfileInfoParams) => invoke(InvokeChannel.CHANGE_PROFILE_INFO, params),
+  deleteOldestReportNames: () => invoke(InvokeChannel.DELETE_OLDEST_REPORT_NAMES),
 })
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

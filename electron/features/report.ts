@@ -1,5 +1,6 @@
 import { app } from 'electron';
 import fs from 'node:fs';
+import path from 'node:path';
 
 export type ReportStatus = 'failed' | 'completed';
 export type ReportType = 'post' | 'quote' | 'edit';
@@ -76,8 +77,28 @@ export const getReportNamesV2 = async (): Promise<string[]> => {
     return [];
   }
   const files = fs.readdirSync(reportsFolderPath);
-  const reportNames = files
+  return files
     .filter(file => file.endsWith('.txt'))
-    .map(file => file.replace('.txt', ''));
-  return reportNames;
+    .map(file => {
+      const filePath = `${reportsFolderPath}/${file}`;
+      const stat = fs.statSync(filePath);
+      const createdAt = stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.ctimeMs;
+      return { name: file.replace('.txt', ''), createdAt };
+    })
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .map(item => item.name);
+}
+
+// delete 10 report names oldest
+export const deleteOldestReportNames = async () => {
+  const appConfig = app.getPath('userData');
+  const reportsFolderPath = `${appConfig}/reports`;
+  if (!fs.existsSync(reportsFolderPath)) {
+    return;
+  }
+  const files = fs.readdirSync(reportsFolderPath);
+  const oldestFiles = files.sort((a, b) => fs.statSync(path.join(reportsFolderPath, a)).birthtimeMs - fs.statSync(path.join(reportsFolderPath, b)).birthtimeMs).slice(0, 10);
+  oldestFiles.forEach(file => {
+    fs.unlinkSync(path.join(reportsFolderPath, file));
+  });
 }

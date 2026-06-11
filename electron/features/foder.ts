@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { isHistoryExists } from './history';
 
 export interface MoveData {
   data: string;
@@ -36,12 +35,14 @@ export const getRandomFolder = (
       validFolders[Math.floor(Math.random() * validFolders.length)];
 
     const finalPath = path.join(rootPath, randomFolder);
+    const capPath = path.join(finalPath, 'cap.txt');
+    const capLength = fs.readFileSync(capPath, 'utf-8').trim().split('\n\n\n\n').length;
+    const linkPath = path.join(finalPath, 'link.txt');
+    const linkLength = fs.readFileSync(linkPath, 'utf-8').trim().split('\n').length;
 
-    const isExists = isHistoryExists(finalPath);
-
-    if (isExists) {
+    if (capLength > 1 && linkLength > 1) {
       if (retry >= maxRetry) {
-        console.error('Max retry reached:', maxRetry);
+        console.error('Max retry random folder reached:', maxRetry);
         return '';
       }
 

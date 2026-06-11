@@ -75,6 +75,7 @@ type WindownInstance = typeof window & {
     generateProfile: (params: GenerateProfileParams) => Promise<any>,
     getProfiles: () => Promise<ProfileResult>,
     changeProfileInfo: (params: ChangeProfileInfoParams) => Promise<any>,
+    deleteOldestReportNames: () => Promise<void>,
   }
 }
 

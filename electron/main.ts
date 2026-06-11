@@ -20,7 +20,7 @@ import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNew
 import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
-import { getReportByName, getReportNamesV2 } from './features/report'
+import { deleteOldestReportNames, getReportByName, getReportNamesV2 } from './features/report'
 import { updateProfileProxy } from './features/proxy'
 import { bulkToggleDismissButton } from './features/instagram'
 import { registerNewAccounts } from './features/register'
@@ -288,6 +288,10 @@ handle(InvokeChannel.GET_PROFILES, async () => {
 
 handle(InvokeChannel.CHANGE_PROFILE_INFO, async (_event, params) => {
   return changeProfileInfo(params, _event);
+});
+
+handle(InvokeChannel.DELETE_OLDEST_REPORT_NAMES, async () => {
+  return deleteOldestReportNames();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

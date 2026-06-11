@@ -34,7 +34,7 @@ const ReportModal = () => {
   const loadReportNames = async () => {
     try {
       const names = await windowInstance.api.getReportNamesV2();
-      setReportNames(names.reverse());
+      setReportNames(names);
     } catch (error) {
       console.error('Error loading report names:', error);
       toast.error('Không thể tải danh sách báo cáo');
@@ -137,6 +137,18 @@ const ReportModal = () => {
     }
   };
 
+  const handleDeleteOldestReportNames = async () => {
+    try {
+      await windowInstance.api.deleteOldestReportNames();
+      toast.success('Đã xóa 10 report cũ nhất');
+      loadReportNames();
+    } catch (error) {
+      console.log(error);
+      
+      toast.error('Có lỗi xảy ra khi xóa 10 report cũ nhất');
+    }
+  };
+
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -156,14 +168,24 @@ const ReportModal = () => {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Xem và quản lý báo cáo tự động</p>
                   </div>
                 </div>
-                <Button
-                  onClick={loadReportNames}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-300 hover:scale-105"
-                  tooltip="Tải lại danh sách báo cáo"
-                >
-                  <i className="fas fa-sync-alt mr-2"></i>
-                  Tải lại
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleDeleteOldestReportNames}
+                    className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg shadow-red-500/25 transition-all duration-300 hover:scale-105"
+                    tooltip="Xóa 10 report cũ nhất"
+                  >
+                    <i className="fas fa-trash mr-2"></i>
+                    Xóa 10 report cũ nhất
+                  </Button>
+                  <Button
+                    onClick={loadReportNames}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-300 hover:scale-105"
+                    tooltip="Tải lại danh sách báo cáo"
+                  >
+                    <i className="fas fa-sync-alt mr-2"></i>
+                    Tải lại
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -348,8 +370,8 @@ const ReportModal = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-xs font-bold">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">
                                     {item.username.charAt(0).toUpperCase()}
                                   </span>
                                 </div>

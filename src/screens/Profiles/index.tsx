@@ -86,9 +86,6 @@ const Profiles = () => {
   const [sex, setSex] = useState<'male' | 'female'>('male');
   const profiles = data?.data?.data?.data || [];
 
-  console.log(profileResult, 'profileResult');
-
-
   const handleRandomFolder = async (profile_id: number) => {
     const profile = profiles.find((p: any) => p.profile_id === profile_id);
     const currentPaths = map(userMap, (item) => item.path);

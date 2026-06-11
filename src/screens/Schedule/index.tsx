@@ -44,9 +44,9 @@ const ScheduleModal = () => {
     folder: '',
     quoteFolder: '',
     batchSize: 10,
-    reportName: moment().format('DD_MM_HH_mm_A'),
+    reportName: moment().add(2, 'minutes').format('DD_MM_HH_mm_A'),
     captionLabel: '',
-    forMarket: 'shopee',
+    forMarket: 'amz',
     lang: 'en',
   });
   const [jobs, setJobs] = useState<any[]>([]);

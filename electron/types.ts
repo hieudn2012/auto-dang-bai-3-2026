@@ -56,6 +56,7 @@ export enum InvokeChannel {
   GENERATE_PROFILE = 'generate-profile',
   GET_PROFILES = 'get-profiles',
   CHANGE_PROFILE_INFO = 'change-profile-info',
+  DELETE_OLDEST_REPORT_NAMES = 'delete-oldest-report-names',
 }
 
 export type MainConfig = {
