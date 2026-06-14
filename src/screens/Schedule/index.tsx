@@ -11,6 +11,7 @@ import { Group } from '../../components/Group';
 import { toast } from '@/components/ToastContainer';
 import { useGetGroupList } from '@/services/profiles';
 import moment from 'moment';
+import Switch from '@/components/Switch';
 
 export type Lang = 'vi' | 'en';
 export type ForMarket = 'shopee' | 'amz' | 'none';
@@ -28,6 +29,7 @@ type ScheduleTime = {
   captionLabel: string;
   forMarket: ForMarket;
   lang: Lang;
+  isIncludeQuote: boolean;
 };
 
 const generateRandomId = () => {
@@ -48,6 +50,7 @@ const ScheduleModal = () => {
     captionLabel: '',
     forMarket: 'amz',
     lang: 'en',
+    isIncludeQuote: false,
   });
   const [jobs, setJobs] = useState<any[]>([]);
   const [{ data: groupListData }] = useGetGroupList();
@@ -91,6 +94,10 @@ const ScheduleModal = () => {
 
   const updateScheduleLang = (lang: Lang) => {
     setSchedule(prev => ({ ...prev, lang }));
+  };
+
+  const updateScheduleIsIncludeQuote = (isIncludeQuote: boolean) => {
+    setSchedule(prev => ({ ...prev, isIncludeQuote }));
   };
 
   const handleSelectFolder = async (type: 'post' | 'quote') => {
@@ -154,6 +161,7 @@ const ScheduleModal = () => {
       forMarket: schedule.forMarket as 'shopee' | 'amz' | 'none',
       quoteFolder: schedule.quoteFolder,
       lang: schedule.lang,
+      isIncludeQuote: schedule.isIncludeQuote,
     };
 
     // Gửi job đến electron main process
@@ -368,7 +376,7 @@ const ScheduleModal = () => {
                   <Select
                     value={schedule.lang}
                     onChange={(e) => updateScheduleLang(e.target.value as Lang)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                     options={[
                       { label: 'English', value: 'en' },
                       { label: 'Vietnamese', value: 'vi' },
@@ -389,6 +397,18 @@ const ScheduleModal = () => {
                     value={schedule.time}
                     onChange={(e) => updateSchedule(e.target.value)}
                     className="w-full bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+
+                {/* Include Quote */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-quote-left text-red-500"></i>
+                    Bao gồm quote
+                  </label>
+                  <Switch
+                    enabled={schedule.isIncludeQuote}
+                    onChange={(value) => updateScheduleIsIncludeQuote(value)}
                   />
                 </div>
 

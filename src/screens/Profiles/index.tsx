@@ -84,6 +84,7 @@ const Profiles = () => {
   const [isAuto, setIsAuto] = useState(false);
   const [profileResult, setProfileResult] = useState<ProfileResult>({});
   const [sex, setSex] = useState<'male' | 'female'>('male');
+  const [isIncludeQuote, setIsIncludeQuote] = useState(false);
   const profiles = data?.data?.data?.data || [];
 
   const handleRandomFolder = async (profile_id: number) => {
@@ -328,6 +329,12 @@ const Profiles = () => {
     });
     toast.success('Đã hoàn thành edit post.');
 
+    if (!isIncludeQuote) {
+      await handleBulkClose(ids.filter(id => !errorIds.includes(id)), openList);
+      toast.success('Đã đóng all profile.');
+      return;
+    }
+
     const quotePromiseFactories = ids.map(id => () => clickPostButton(id, 'quote', openList, usMap));
     const quoteResults = await runWithDelay(quotePromiseFactories, 3);
     quoteResults.forEach((result, index) => {
@@ -388,6 +395,10 @@ const Profiles = () => {
       username: userMap[id]?.username,
     });
     toast.success('Đã thay đổi thông tin profile');
+  }
+
+  const updateIsIncludeQuote = (isIncludeQuote: boolean) => {
+    setIsIncludeQuote(isIncludeQuote);
   }
 
   useEffect(() => {
@@ -477,6 +488,13 @@ const Profiles = () => {
                       <span>Auto</span>
                     </label>
                     <Switch enabled={isAuto} onChange={(enabled) => setIsAuto(enabled)} />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span>Bao gồm quote</span>
+                    </label>
+                    <Switch enabled={isIncludeQuote} onChange={(enabled) => updateIsIncludeQuote(enabled)} />
                   </div>
                 </div>
 

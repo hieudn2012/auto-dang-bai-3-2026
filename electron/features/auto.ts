@@ -84,7 +84,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
 
     const errorIds: number[] = [];
 
-    const ddTest = async (type: 'post' | 'quote') => {
+    const runPostAndEdit = async (type: 'post' | 'quote') => {
       const postProfileIds: number[] = [];
       const postTasks: (() => Promise<boolean>)[] = [];
       for (const profile of batch) {
@@ -204,8 +204,11 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
       await waitRandom(3000, 5000);
     }
 
-    await ddTest('post');
-    await ddTest('quote');
+    await runPostAndEdit('post');
+
+    if (item.isIncludeQuote) {
+      await runPostAndEdit('quote');
+    }
 
     // close profiles
     let closeCount = 0;
