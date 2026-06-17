@@ -75,8 +75,7 @@ export const getAllFolder = (rootPath: string): FolderData[] => {
     return data.map((folder) => {
       // get link.txt in folder
       const linkPath = path.join(rootPath, folder, 'link.txt');
-      console.log(`Đọc folder: ${folder}`);
-      if (folder.trim()) {
+      if (!folder.trim()) {
         console.error(`Folder ${folder} không hợp lệ`);
       }
 
