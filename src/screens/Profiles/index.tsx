@@ -199,8 +199,8 @@ const Profiles = () => {
     }
   }
 
-  const setupNewAccount = async (ws: string, username: string) => {
-    await windowInstance.api.setupNewAccount({ ws, username });
+  const setupNewAccount = async ({ id, ws, username }: { id: number, ws: string, username: string }) => {
+    await windowInstance.api.setupNewAccount({ id, ws, username, reportName, isAuto: false });
   }
 
   const handleCopyWs = async (ws: string) => {
@@ -756,7 +756,7 @@ const Profiles = () => {
                                 <i className="fa-solid fa-retweet"></i>
                               </Button>
                               <Button
-                                onClick={() => setupNewAccount(openedList?.[profile.profile_id]?.ws, profile.name)}
+                                onClick={() => setupNewAccount({ id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
                                 tooltip="Setup new account"
                                 id={`setup-new-account-${profile.profile_id}`}
                                 className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"

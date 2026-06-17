@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export type ReportStatus = 'failed' | 'completed';
-export type ReportType = 'post' | 'quote' | 'edit';
+export type ReportType = 'post' | 'quote' | 'edit' | 'setup-new-account';
 export interface ReportItem {
   userId: number;
   username: string;

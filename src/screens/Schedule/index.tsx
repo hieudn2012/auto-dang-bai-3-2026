@@ -8,7 +8,6 @@ import Mode from '@/components/Mode';
 import { windowInstance } from '@/services/window';
 import Layout from '@/components/Layout';
 import { Group } from '../../components/Group';
-import { toast } from '@/components/ToastContainer';
 import { useGetGroupList } from '@/services/profiles';
 import moment from 'moment';
 import Switch from '@/components/Switch';
@@ -30,6 +29,7 @@ type ScheduleTime = {
   forMarket: ForMarket;
   lang: Lang;
   isIncludeQuote: boolean;
+  jobType: 'auto-post' | 'auto-setup-new-account';
 };
 
 const generateRandomId = () => {
@@ -51,6 +51,7 @@ const ScheduleModal = () => {
     forMarket: 'amz',
     lang: 'en',
     isIncludeQuote: false,
+    jobType: 'auto-post',
   });
   const [jobs, setJobs] = useState<any[]>([]);
   const [{ data: groupListData }] = useGetGroupList();
@@ -100,7 +101,11 @@ const ScheduleModal = () => {
     setSchedule(prev => ({ ...prev, isIncludeQuote }));
   };
 
-  const handleSelectFolder = async (type: 'post' | 'quote') => {
+  const updateScheduleJobType = (jobType: 'auto-post' | 'auto-setup-new-account') => {
+    setSchedule(prev => ({ ...prev, jobType }));
+  };
+
+    const handleSelectFolder = async (type: 'post' | 'quote') => {
     const folderPath = await windowInstance.api.openDialogFolder();
     if (type === 'post') {
       updateScheduleFolder(folderPath);
@@ -127,12 +132,6 @@ const ScheduleModal = () => {
   };
 
   const startScheduling = () => {
-    // Validate schedule has all required fields
-    if (!schedule.time || schedule.groupId <= -1 || !schedule.folder || !schedule.reportName) {
-      toast.error('Vui lòng điền đầy đủ thông tin: thời gian, nhóm, thư mục, tên báo cáo');
-      return;
-    }
-
     const [hours, minutes] = schedule.time.split(':').map(Number);
     const now = new Date();
     const scheduledTime = new Date();
@@ -150,7 +149,7 @@ const ScheduleModal = () => {
       id: `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       runAt,
       enabled: true,
-      jobType: 'auto-post' as const,
+      jobType: schedule.jobType as 'auto-post' | 'auto-setup-new-account',
       batchSize: schedule.batchSize,
       reportName: schedule.reportName,
       groupName: '',
@@ -212,7 +211,15 @@ const ScheduleModal = () => {
     return `${minutes}m`;
   };
 
-  const isDisabled = !schedule.time || !schedule.folder || schedule.groupId === -1 || !schedule.reportName || !schedule.quoteFolder || !schedule.lang;
+  const getDisabledReason = () => {
+    if (schedule.jobType === 'auto-post') {
+      return !schedule.time || !schedule.folder || schedule.groupId === -1 || !schedule.reportName || !schedule.quoteFolder || !schedule.lang;
+    } else {
+      return !schedule.time || schedule.groupId === -1 || !schedule.reportName;
+    }
+  }
+
+  const isDisabled = getDisabledReason();
 
   return (
     <Layout>
@@ -409,6 +416,22 @@ const ScheduleModal = () => {
                   <Switch
                     enabled={schedule.isIncludeQuote}
                     onChange={(value) => updateScheduleIsIncludeQuote(value)}
+                  />
+                </div>
+
+                {/* Select job type */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-list-ul text-blue-500"></i>
+                    Loại job
+                  </label>
+                  <Select
+                    value={schedule.jobType}
+                    onChange={(e) => updateScheduleJobType(e.target.value as 'auto-post' | 'auto-setup-new-account')}
+                    options={[
+                      { value: 'auto-post', label: 'Auto post' },
+                      { value: 'auto-setup-new-account', label: 'Auto setup new account' },
+                    ]}
                   />
                 </div>
 

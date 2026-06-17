@@ -4,22 +4,12 @@ import { toast } from "@/components/ToastContainer";
 import { windowInstance } from "@/services/window";
 import { useEffect, useState } from "react";
 import GlobalConfig from "./GlobalConfig";
-import CaptionConfig from "./CaptionConfig";
-import MultipleCaption from "./MultipleCaption";
 import ProxyConfig from "./ProxyConfig";
 import GeminiAI from "./GeminiAI";
-import SexyContent from "./SexyContent";
-
-interface Caption {
-  label: string;
-  value: string;
-}
 
 const ManageFolder = () => {
   const [workingFolder, setWorkingFolder] = useState('');
   const [profileFolder, setProfileFolder] = useState('');
-  const [caption, setCaption] = useState('');
-  const [captions, setCaptions] = useState<Caption[]>([]);
   const [proxy, setProxy] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [lang, setLang] = useState('en');
@@ -48,8 +38,6 @@ const ManageFolder = () => {
       workingDir: workingFolder,
       profileDir: profileFolder,
       quoteWorkingDir,
-      caption,
-      captions,
       proxy,
       gemini: {
         apiKey: geminiApiKey,
@@ -66,8 +54,6 @@ const ManageFolder = () => {
     setWorkingFolder(config?.workingDir || '');
     setProfileFolder(config?.profileDir || '');
     setQuoteWorkingDir(config?.quoteWorkingDir || '');
-    setCaption(config?.caption || '');
-    setCaptions(config?.captions || []);
     setProxy(config?.proxy || '');
     setGeminiApiKey(config?.gemini?.apiKey || '');
     setLang(config?.gemini?.lang || '');
@@ -105,36 +91,6 @@ const ManageFolder = () => {
                 Global config
               </button>
               <button
-                onClick={() => setActiveTab('caption')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'caption'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                <i className="fas fa-closed-captioning mr-2"></i>
-                Caption config
-              </button>
-              <button
-                onClick={() => setActiveTab('sexy-content')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'sexy-content'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                <i className="fas fa-heart mr-2"></i>
-                Sexy Content
-              </button>
-              <button
-                onClick={() => setActiveTab('multiple')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'multiple'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                <i className="fas fa-list mr-2"></i>
-                MultipleCaption
-              </button>
-              <button
                 onClick={() => setActiveTab('proxy')}
                 className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'proxy'
                   ? 'border-blue-500 text-blue-600'
@@ -170,24 +126,6 @@ const ManageFolder = () => {
                 quoteWorkingDir={quoteWorkingDir}
                 setQuoteWorkingDir={setQuoteWorkingDir}
                 onChangeQuoteWorkingDir={handleOpenQuoteWorkingDir}
-              />
-            )}
-
-            {activeTab === 'caption' && (
-              <CaptionConfig
-                caption={caption}
-                setCaption={setCaption}
-              />
-            )}
-
-            {activeTab === 'sexy-content' && (
-              <SexyContent />
-            )}
-
-            {activeTab === 'multiple' && (
-              <MultipleCaption
-                captions={captions}
-                setCaptions={setCaptions}
               />
             )}
 

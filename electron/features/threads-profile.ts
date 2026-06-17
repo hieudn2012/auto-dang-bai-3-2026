@@ -6,7 +6,7 @@ import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
 import { getRandomCaption, getRandomLink } from "./caption";
-import { sendMessage } from "./event";
+import { sendLog, sendMessage } from "./event";
 import { cutSexyCaption, cutSexyLink } from './file';
 import { ReportType, saveReport } from './report';
 import { Lang } from '@/screens/Schedule';
@@ -272,12 +272,12 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       type,
     });
     if (isAuto && browser) {
-      await browser.close().catch(() => {});
+      await browser.close().catch(() => { });
     }
     return false;
   } finally {
     if (browser) {
-      await browser.disconnect().catch(() => {});
+      await browser.disconnect().catch(() => { });
     }
   }
 }
@@ -286,12 +286,16 @@ export interface SetupNewAccountParams {
   id: number,
   ws: string,
   username: string,
+  isAuto: boolean,
+  reportName: string,
 }
 
 export const setupNewAccount = async ({
   id,
   ws,
   username,
+  isAuto,
+  reportName,
 }: SetupNewAccountParams, event: IpcMainEvent) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
@@ -300,114 +304,84 @@ export const setupNewAccount = async ({
 
   try {
     // open new tab
-    let page = await browser.newPage();
+    const page = await browser.newPage();
     await page.goto(`https://threads.com/login`);
     await waitRandom(5000, 10000);
 
-    // check page
-    let pageContent = '';
-    let retryCount = 0;
-    let currentPage = page;
-
-    while (retryCount < 3) {
-      try {
-        pageContent = await currentPage.content();
-
-        // Kiểm tra mất kết nối hoặc content rỗng
-        if (!pageContent || pageContent.trim() === '') {
-          console.log('Page content is empty, possible internet connection issue');
-          throw new Error('Nội dung trang rỗng, có thể do kết nối internet không ổn định');
-        }
-
-        // Kiểm tra lỗi 429
-        if (pageContent.includes('HTTP ERROR 429')) {
-          console.log('HTTP ERROR 429 detected, retrying...');
-          throw new Error('HTTP ERROR 429, vui lòng thử lại sau');
-        }
-
-        // Nếu không có lỗi, break ra khỏi vòng lặp
-        break;
-
-      } catch (error: any) {
-        console.log(`Retry ${retryCount + 1}: ${error.message}`);
-
-        // Đóng tab hiện tại nếu có
-        if (currentPage && currentPage !== page) {
-          await currentPage.close();
-        }
-
-        // Tạo tab mới và thử lại
-        currentPage = await browser.newPage();
-        await currentPage.goto(`https://threads.com/login`);
-        await waitRandom(5000, 10000);
-
-        retryCount++;
-
-        // Nếu đã thử 3 lần vẫn thất bại
-        if (retryCount >= 3) {
-          console.error('Không thể tải trang sau 3 lần thử lại');
-          sendMessage(event, { id, username, message: 'Không thể tải trang sau 3 lần thử lại' });
-          return;
-        }
-      }
-    }
-
-    // Gán lại page nếu đã tạo page mới
-    if (currentPage !== page) {
-      page = currentPage;
-    }
-
     sendMessage(event, { id, username, message: 'Đang setup account...' });
 
-    // find span with "Continue with Instagram"
-    const spans = await page.$$('span');
-    let continueWithInstagram = null;
-    for (const span of spans) {
-      const text = await page.evaluate(el => el.textContent?.trim(), span);
-      if (text === 'Continue with Instagram') {
-        continueWithInstagram = span;
-        sendMessage(event, { id, username, message: 'Đang click "Continue with Instagram"...' });
-      }
+    // find continue button with class x78zum5 xdt5ytf x1iyjqo2 x1cy8zhl x106a9eq
+    const continueButton = await page.$('div.x78zum5.xdt5ytf.x1iyjqo2.x1cy8zhl.x106a9eq');
+    if (!continueButton) {
+      throw new Error('Không tìm thấy nút "Continue with Instagram"');
     }
-
-    if (continueWithInstagram) {
-      await continueWithInstagram.click();
-      await waitRandom(20000, 30000);
-    }
-
-    // find div with class x6s0dn4 x78zum5 x1iyjqo2 xyqm7xq x109j2v6 x1hhzuzn x1x5flf6
-    const divWithClass = await page.$('div.x6s0dn4.x78zum5.x1iyjqo2.xyqm7xq.x109j2v6.x1hhzuzn.x1x5flf6');
-    if (divWithClass) {
-      await divWithClass.click();
-      await waitRandom(20000, 30000);
-    }
+    await continueButton.click();
+    sendMessage(event, { id, username, message: 'Đang click "Continue with Instagram"...' });
+    await waitRandom(10000, 20000);
 
     // find div with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
     const nextButton = await page.$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
+    if (!nextButton) {
+      throw new Error('Không tìm thấy nút "Next public profile"');
+    }
+    await nextButton.click();
+    sendMessage(event, { id, username, message: 'Đang click "Next public profile"...' });
+    await waitRandom(10000, 20000);
 
-    if (nextButton) {
-      await nextButton.click();
-      await waitRandom(20000, 30000);
-      sendMessage(event, { id, username, message: 'Đang click "Next" lần 1...' });
+    // find join div x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
+    const joinButtons = await page.$$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
+    if (!joinButtons?.[1]) {
+      throw new Error('Không tìm thấy nút "Join Threads"');
+    }
+    await joinButtons[1].click();
+    sendMessage(event, { id, username, message: 'Đang click "Join Threads", chờ vào trang profile...' });
+    await waitRandom(10000, 20000);
+
+    // find post button x1i10hfl x1ypdohk xdl72j9 x2lah0s x3ct3a4 xdj266r x14z9mp xat24cr x1lziwak x2lwn1j xeuugli xexx8yu xyri2b x18d9i69 x1c1uobl x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1q0g3np x1lku1pv x1a2a7pz x6s0dn4 x9f619 x3nfvp2 x1s688f xl56j7k x87ps6o xuxw1ft xc9qbxq x193iq5w x1g2r6go x12w9bfk x11xpdln xz4gly6 x19kf12q x9dqhi0 xz6dhga x79t38 x1qv9dbp x121z25r x16qb05n xi7iut8 x1dm3dyd x1pv694p x13fuv20 x18b5jzi x1q0q8m5 x1t7ytsu x178xt8z x1lun4ml xso031l xpilrb4 xw2npq5
+    const postButton = await page.$('div.x1i10hfl.x1ypdohk.xdl72j9.x2lah0s.x3ct3a4.xdj266r.x14z9mp.xat24cr.x1lziwak.x2lwn1j.xeuugli.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x1n2onr6.x16tdsg8.x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x1lku1pv.x1a2a7pz.x6s0dn4.x9f619.x3nfvp2.x1s688f.xl56j7k.x87ps6o.xuxw1ft.xc9qbxq.x193iq5w.x1g2r6go.x12w9bfk.x11xpdln.xz4gly6.x19kf12q.x9dqhi0.xz6dhga.x79t38.x1qv9dbp.x121z25r.x16qb05n.xi7iut8.x1dm3dyd.x1pv694p.x13fuv20.x18b5jzi.x1q0q8m5.x1t7ytsu.x178xt8z.x1lun4ml.xso031l.xpilrb4.xw2npq5');
+    if (!postButton) {
+      throw new Error('Chưa vào được trang profile ❌');
     }
 
-    // find divs with class x1d90nhi xwajptj x560nyf xixxii4 xh8yej3 x1vjfegm x1y8xhbf x1ss9l1f
-    const divs = await page.$$('div.x1d90nhi.xwajptj.x560nyf.xixxii4.xh8yej3.x1vjfegm.x1y8xhbf.x1ss9l1f');
-
-    // each div with content = "Join Threads" then click
-    for (const div of divs) {
-      const text = await page.evaluate(el => el.textContent?.trim(), div);
-      if (text === 'Join Threads') {
-        await div.click();
-        await waitRandom(5000, 10000);
-        sendMessage(event, { id, username, message: 'Setup new account success ✅' });
-      }
+    // scroll auto 5s
+    const startTime = Date.now();
+    while (Date.now() - startTime < 5000) {
+      await page.evaluate(() => {
+        window.scrollBy(0, 100);
+      });
+      await waitRandom(1000, 2000);
     }
+
+    sendMessage(event, { id, username, message: 'Setup new account success ✅' });
+    sendLog(event, { id, username, message: `Setup new account success cho ${id}` });
+    saveReport({
+      reportName,
+      description: 'Setup new account success ✅',
+      userId: id,
+      status: 'completed',
+      username,
+      type: 'setup-new-account',
+    });
   } catch (error) {
     console.error(error);
-    sendMessage(event, { id, username, message: 'Setup new account failed ❌' });
+    const message = error instanceof Error ? error.message : 'Setup new account failed ❌';
+    sendMessage(event, { id, username, message });
+    sendLog(event, { id, username, message: `Setup new account failed cho ${id}` });
+    saveReport({
+      reportName,
+      description: message,
+      userId: id,
+      status: 'failed',
+      username,
+      type: 'setup-new-account',
+    });
   } finally {
-    await browser.disconnect();
+    if (isAuto) {
+      await browser?.close().catch(() => { });
+    }
+    if (browser) {
+      await browser?.disconnect().catch(() => { });
+    }
   }
 }
 
@@ -662,12 +636,12 @@ export const clickEditLatestPostButton = async ({
       type: 'edit',
     });
     if (isAuto && browser) {
-      await browser.close().catch(() => {});
+      await browser.close().catch(() => { });
     }
     return false;
   } finally {
     if (browser) {
-      await browser.disconnect().catch(() => {});
+      await browser.disconnect().catch(() => { });
     }
   }
 }

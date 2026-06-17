@@ -7,7 +7,6 @@ import CheckValidFolder from "./CheckValidFolder";
 // import Product from "./Product";
 import AmzLink from "./AmzLink";
 import GeminiAI from "./GeminiAI";
-import Fanpage from "./Fanpage";
 
 type Tab = 'cookie' | 'setup' | 'check-live' | 'check-valid-folder' | 'product' | 'amz-link' | 'gemini-ai' | 'fanpage';
 
@@ -21,7 +20,6 @@ const ImportSheet = () => {
     // { id: 'product', label: 'Product', icon: 'fas fa-box' },
     { id: 'amz-link', label: 'Amazon Link', icon: 'fas fa-link' },
     { id: 'gemini-ai', label: 'Gemini AI', icon: 'fas fa-robot' },
-    { id: 'fanpage', label: 'Fanpage', icon: 'fas fa-users' },
   ] as const;
 
   return (
@@ -67,7 +65,6 @@ const ImportSheet = () => {
               {/* {tab === 'product' && <Product />} */}
               {tab === 'amz-link' && <AmzLink />}
               {tab === 'gemini-ai' && <GeminiAI />}
-              {tab === 'fanpage' && <Fanpage />}
             </div>
           </div>
         </div>

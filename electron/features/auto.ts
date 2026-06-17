@@ -1,10 +1,12 @@
 import { ScheduleItem } from "./job";
 import { closeProfile, getOpenedProfileList, getProfileList, openProfile } from "./ixbrowser-api";
 import { loadMainConfig, waitRandom } from "./common";
-import { clickEditLatestPostButton, clickPostButton } from "./threads-profile";
+import { clickEditLatestPostButton, clickPostButton, setupNewAccount } from "./threads-profile";
 import { IpcMainEvent } from "electron";
 import { getRandomFolder } from "./foder";
 import { sendLog } from "./event";
+import { bulkChangeM2Proxy } from "./m2-proxy";
+import { saveReport } from "./report";
 
 const waitFor = (seconds: number) => new Promise(resolve => setTimeout(resolve, seconds * 1000));
 
@@ -65,6 +67,14 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
         sendLog(event, {
           username: profile.name,
           message: `Lỗi khi mở profile ${profile.profile_id}: ${error}`,
+        });
+        saveReport({
+          userId: profile.profile_id,
+          username: profile.name,
+          status: 'failed',
+          description: error instanceof Error ? error.message : 'Lỗi khi mở profile',
+          reportName: item.reportName,
+          type: 'post',
         });
       }
     }
@@ -244,3 +254,151 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
   });
 }
 
+export const autoSetupNewAccount = async (item: ScheduleItem, event: IpcMainEvent) => {
+  // get profile list
+  const profiles = await getProfileList(item.groupId);
+  sendLog(event, {
+    username: '',
+    message: `Tìm thấy ${profiles.length} profiles`,
+  });
+  
+  const batches = [];
+  for (let i = 0; i < profiles.length; i += item.batchSize) {
+    batches.push(profiles.slice(i, i + item.batchSize));
+  }
+  sendLog(event, {
+    username: '',
+    message: `Chia thành ${batches.length} batch`,
+  });
+
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    let lastChangeProxyTime = Date.now();
+    const batch = batches[batchIndex];
+    sendLog(event, {
+      username: '',
+      message: `Bắt đầu xử lý batch ${batchIndex + 1}/${batches.length} với ${batch.length} profiles`,
+    });
+
+    // Open profiles in batch concurrently with 3s stagger
+    const openTasks = batch.map(profile => async () => {
+      try {
+        await openProfile(profile.profile_id);
+        sendLog(event, {
+          username: profile.name,
+          message: `Đã mở profile ${profile.profile_id}`,
+        });
+        return true;
+      } catch (error) {
+        sendLog(event, {
+          username: profile.name,
+          message: `Lỗi khi mở profile ${profile.profile_id}: ${error}`,
+        });
+        saveReport({
+          userId: profile.profile_id,
+          username: profile.name,
+          status: 'failed',
+          description: error instanceof Error ? error.message : 'Lỗi khi mở profile',
+          reportName: item.reportName,
+          type: 'setup-new-account',
+        });
+        return false;
+      }
+    });
+    await runWithDelay(openTasks, 3);
+
+    sendLog(event, {
+      username: '',
+      message: `Chờ 5-10s trước khi setup account`,
+    });
+    await waitRandom(5000, 10000);
+
+    const profileOpened = await getOpenedProfileList();
+    sendLog(event, {
+      username: '',
+      message: `Có ${profileOpened.length} profiles đang mở`,
+    });
+
+    const errorIds: number[] = [];
+
+    // Run setupNewAccount concurrently with 3s stagger
+    const setupProfileIds: number[] = [];
+    const setupTasks: (() => Promise<boolean>)[] = [];
+    for (const profile of batch) {
+      const isOpened = profileOpened.some((p) => p.profile_id === profile.profile_id);
+      const profileInfo = profileOpened.find((p) => p.profile_id === profile.profile_id);
+      if (isOpened && profileInfo) {
+        setupProfileIds.push(profile.profile_id);
+        setupTasks.push(async () => {
+          try {
+            await setupNewAccount({
+              id: profile.profile_id,
+              ws: profileInfo.ws,
+              username: profile.name,
+              isAuto: true,
+              reportName: item.reportName,
+            }, event);
+            sendLog(event, {
+              username: profile.name,
+              message: `Setup account thành công cho profile ${profile.profile_id}`,
+            });
+            return true;
+          } catch (error) {
+            sendLog(event, {
+              username: profile.name,
+              message: `Lỗi khi setup account cho profile ${profile.profile_id}: ${error}`,
+            });
+            errorIds.push(profile.profile_id);
+            return false;
+          }
+        });
+      } else {
+        errorIds.push(profile.profile_id);
+        sendLog(event, {
+          username: profile.name,
+          message: `Profile ${profile.profile_id} không mở được, bỏ qua setup`,
+        });
+      }
+    }
+
+    const setupResults = await runWithDelay(setupTasks, 3);
+    setupResults.forEach((result, index) => {
+      const profileId = setupProfileIds[index];
+      if (!result && !errorIds.includes(profileId)) errorIds.push(profileId);
+    });
+
+    sendLog(event, {
+      username: '',
+      message: `Setup thành công ${setupTasks.length - setupResults.filter(r => !r).length}/${batch.length} profiles trong batch ${batchIndex + 1}`,
+    });
+
+    // so sánh với lastChangeProxyTime nếu đủ 4 phút thì change proxy còn không đủ thì chờ đủ 4 phút rồi change proxy
+    if (Date.now() - lastChangeProxyTime > 1000 * 60 * 4) {
+      await bulkChangeM2Proxy();
+      lastChangeProxyTime = Date.now();
+      sendLog(event, {
+        username: '',
+        message: `Đã change proxy sau ${Date.now() - lastChangeProxyTime}ms`,
+      });
+    } else {
+      const waitTime = 1000 * 60 * 4 - (Date.now() - lastChangeProxyTime);
+      sendLog(event, {
+        username: '',
+        message: `Chờ đủ ${waitTime / 1000}s để change proxy`,
+      });
+
+      await waitRandom(waitTime, waitTime);
+      await bulkChangeM2Proxy();
+      lastChangeProxyTime = Date.now();
+      sendLog(event, {
+        username: '',
+        message: `Đã change proxy sau ${Date.now() - lastChangeProxyTime}ms`,
+      });
+    }
+
+  }
+
+  sendLog(event, {
+    username: '',
+    message: `Hoàn thành auto setup new account cho tất cả ${batches.length} batches`,
+  });
+}

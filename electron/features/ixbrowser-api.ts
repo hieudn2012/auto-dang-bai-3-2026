@@ -74,17 +74,13 @@ export const getGroupList = async (): Promise<Group[]> => {
 
 // /api/v2/profile-open
 export const openProfile = async (profileId: number): Promise<OpenedProfileData> => {
-  try {
-    const response = await axios.post(`${BASE_URL}/api/v2/profile-open`, {
-      profile_id: profileId
-    });
-    if (response.data.error.code === 1003) {
-      throw new Error('Proxy detection failed');
-    }
-    return response.data;
-  } catch (error) {
-    throw error;
+  const response = await axios.post(`${BASE_URL}/api/v2/profile-open`, {
+    profile_id: profileId
+  });
+  if (response.data.error.code === 1003) {
+    throw new Error('Proxy detection failed');
   }
+  return response.data;
 };
 
 // /api/v2/profile-close

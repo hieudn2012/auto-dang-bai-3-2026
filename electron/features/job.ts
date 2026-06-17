@@ -1,5 +1,5 @@
 import { IpcMainEvent } from "electron";
-import { autoPost } from "./auto";
+import { autoPost, autoSetupNewAccount } from "./auto";
 import jobQueue from "./job-queue";
 import { ForMarket, Lang } from "@/screens/Schedule";
 
@@ -12,7 +12,7 @@ export interface ScheduleItem {
   mode: 'default' | 'affiliate';
   folder: string;
   quoteFolder: string;
-  jobType: 'auto-post' | 'auto-comment' | 'auto-like' | 'auto-share';
+  jobType: 'auto-post' | 'auto-comment' | 'auto-like' | 'auto-share' | 'auto-setup-new-account';
   batchSize: number;
   reportName: string;
   captionLabel: string;
@@ -37,6 +37,9 @@ export const handleRunJob = async (job: ScheduleItem, event: IpcMainEvent) => {
   switch (job.jobType) {
     case 'auto-post':
       await autoPost(job, event);
+      break;
+    case 'auto-setup-new-account':
+      await autoSetupNewAccount(job, event);
       break;
     case 'auto-comment':
       // TODO: comment
