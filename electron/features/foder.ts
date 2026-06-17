@@ -75,7 +75,10 @@ export const getAllFolder = (rootPath: string): FolderData[] => {
     return data.map((folder) => {
       // get link.txt in folder
       const linkPath = path.join(rootPath, folder, 'link.txt');
-      console.log(`Reading folder: ${folder}...`);
+      console.log(`Đọc folder: ${folder}`);
+      if (folder.trim()) {
+        console.error(`Folder ${folder} không hợp lệ`);
+      }
 
       let totalLink = 0;
       let totalCap = 0;
