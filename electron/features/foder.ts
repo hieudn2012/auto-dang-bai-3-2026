@@ -80,6 +80,11 @@ export const getAllFolder = (rootPath: string): FolderData[] => {
         console.error(`Folder ${folder} không hợp lệ`);
       }
 
+      // check link.txt có tồn tại không
+      if (!fs.existsSync(linkPath)) {
+        console.error(`Link.txt không tồn tại trong folder ${folder}`);
+      }
+
       let totalLink = 0;
       let totalCap = 0;
       let defaultLink = '';
