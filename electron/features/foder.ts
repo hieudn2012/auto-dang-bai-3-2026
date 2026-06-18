@@ -23,7 +23,7 @@ export const getRandomFolder = (
     const folders = fs.readdirSync(rootPath);
 
     const validFolders = folders.filter(
-      folder => folder !== '.DS_Store' && folder !== 'desktop.ini' && !excludeFolders.includes(path.join(rootPath, folder))
+      folder => folder !== '.DS_Store' && folder !== 'desktop.ini'
     );
 
     if (validFolders.length === 0) {
