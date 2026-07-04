@@ -78,15 +78,16 @@ export const checkValidCaptionOrLink = async (workingDir: string) => {
 const checkValid = (data: string, path: string, type: 'cap' | 'link') => {
   // Chuẩn hóa ký tự xuống dòng để xử lý cả Windows (\r\n) và Unix (\n)
   const normalizedData = data.replace(/\r\n/g, '\n');
+  const newsData = normalizedData.trim().replace(/(\r?\n)\s*(\r?\n)+/g, '\n');
   const errors: string[] = [];
   // Quy tắc 1: Caption không được rỗng hoặc chỉ chứa khoảng trắng
-  if (!normalizedData || normalizedData.trim().length === 0) {
+  if (!newsData || newsData.trim().length === 0) {
     errors.push("Dữ liệu không được để trống");
     return { isValid: false, errors, path };
   }
 
   // Quy tắc 2: Caption không được chứa quá nhiều dòng trống liên tiếp (tối đa 4)
-  const emptyLineGroups = normalizedData.match(type === 'cap' ? /\n{5,}/g : /\n{2,}/g);
+  const emptyLineGroups = newsData.match(type === 'cap' ? /\n{5,}/g : /\n{2,}/g);
   if (emptyLineGroups) {
     errors.push(`Dữ liệu chứa quá nhiều dòng trống liên tiếp (tối đa ${type === 'cap' ? 4 : 1} dòng cho phép)`);
   }
@@ -95,7 +96,7 @@ const checkValid = (data: string, path: string, type: 'cap' | 'link') => {
     isValid: errors.length === 0,
     errors,
     path,
-    totalItems: normalizedData.split(type === 'cap' ? '\n\n\n\n' : '\n').length,
+    totalItems: normalizedData.split('\n').length,
   };
 }
 
@@ -115,7 +116,8 @@ export const getRandomCaption = (p: string) => {
     
     const data = fs.readFileSync(filePath, 'utf-8');
     const normalizedData = data.replace(/\r\n/g, '\n');
-    const captions = normalizedData.split('\n\n\n').filter(caption => caption.trim().length > 0);
+    const newsData = normalizedData.trim().replace(/(\r?\n)\s*(\r?\n)+/g, '\n');
+    const captions = newsData.split('\n').filter(caption => caption.trim().length > 0);
     
     if (captions.length === 0) {
       console.error(`No captions found in file: ${filePath}`);
@@ -125,7 +127,7 @@ export const getRandomCaption = (p: string) => {
     const randomIndex = Math.floor(Math.random() * captions.length);
     // remove caption in file
     const newCaptions = captions.filter((_, index) => index !== randomIndex);
-    fs.writeFileSync(filePath, newCaptions.join('\n\n\n'));
+    fs.writeFileSync(filePath, newCaptions.join('\n'));
 
     return captions[randomIndex];
   } catch (error) {
@@ -136,7 +138,8 @@ export const getRandomCaption = (p: string) => {
 
 export const getRandomCap = (data: string) => {
   const normalizedData = data.replace(/\r\n/g, '\n');
-  const captions = normalizedData.split('\n\n\n').filter(caption => caption.trim().length > 0);
+  const newsData = normalizedData.trim().replace(/(\r?\n)\s*(\r?\n)+/g, '\n');
+  const captions = newsData.split('\n').filter(caption => caption.trim().length > 0);
   
   if (captions.length === 0) {
     return ''; // Return empty string if no captions
@@ -162,8 +165,9 @@ export const getRandomLink = (p: string) => {
     
     const data = fs.readFileSync(filePath, 'utf-8').trim();
     const normalizedData = data.replace(/\r\n/g, '\n');
-    const firstLink = normalizedData.split('\n')[0].trim();
-    const links = normalizedData.split('\n').filter(link => link.trim().length > 0).slice(1);
+    const newsData = normalizedData.trim().replace(/(\r?\n)\s*(\r?\n)+/g, '\n');
+    const firstLink = newsData.split('\n')[0].trim();
+    const links = newsData.split('\n').filter(link => link.trim().length > 0).slice(1);
     
     if (links.length === 0) {
       console.error(`No links found in file: ${filePath}`);

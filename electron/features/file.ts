@@ -20,8 +20,8 @@ export const cutSexyCaption = () => {
   const appConfig = app.getPath('userData');
   const filePath = path.join(appConfig, 'sexy-cap.txt');
   const data = fs.readFileSync(filePath, 'utf-8').trim();
-  const [caption, ...rest] = data.split('\n\n\n\n');
-  const newData = rest.join('\n\n\n\n').trim();
+  const [caption, ...rest] = data.split('\n');
+  const newData = rest.join('\n').trim();
   fs.writeFileSync(filePath, newData);
   return caption.trim();
 }

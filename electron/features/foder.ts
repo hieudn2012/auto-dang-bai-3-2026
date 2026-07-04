@@ -36,9 +36,11 @@ export const getRandomFolder = (
 
     const finalPath = path.join(rootPath, randomFolder);
     const capPath = path.join(finalPath, 'cap.txt');
-    const capLength = fs.readFileSync(capPath, 'utf-8').trim().split('\n\n\n\n').length;
+    const capData = fs.readFileSync(capPath, 'utf-8').trim();
+    const capLength = capData.replace(/(\r?\n)\s*(\r?\n)+/g, '\n').split('\n').length;
     const linkPath = path.join(finalPath, 'link.txt');
-    const linkLength = fs.readFileSync(linkPath, 'utf-8').trim().split('\n').length;
+    const linkData = fs.readFileSync(linkPath, 'utf-8').trim();
+    const linkLength = linkData.replace(/(\r?\n)\s*(\r?\n)+/g, '\n').split('\n').length;
 
     if (capLength < 2 || linkLength < 2) {
       if (retry >= maxRetry) {
@@ -89,7 +91,7 @@ export const getAllFolder = (rootPath: string): FolderData[] => {
       let defaultLink = '';
       if (fs.existsSync(linkPath)) {
         const linkData = fs.readFileSync(linkPath, 'utf-8');
-        const normalizedData = linkData.replace(/\r\n/g, '\n');
+        const normalizedData = linkData.replace(/(\r?\n)\s*(\r?\n)+/g, '\n');
         const links = normalizedData.split('\n').filter(link => link.trim().length > 0);
         totalLink = links.length;
         if (links.length > 0) {
@@ -100,7 +102,8 @@ export const getAllFolder = (rootPath: string): FolderData[] => {
       const capPath = path.join(rootPath, folder, 'cap.txt');
       if (fs.existsSync(capPath)) {
         const capData = fs.readFileSync(capPath, 'utf-8').trim();
-        const caps = capData.split('\n\n\n\n').filter(cap => cap.trim().length > 0);
+        const newsCap = capData.replace(/(\r?\n)\s*(\r?\n)+/g, '\n');
+        const caps = newsCap.split('\n').filter(cap => cap.trim().length > 0);
         totalCap = caps.length;
       }
 
