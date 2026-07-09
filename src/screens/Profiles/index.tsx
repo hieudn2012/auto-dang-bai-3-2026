@@ -170,7 +170,7 @@ const Profiles = () => {
         mode,
         isAuto,
         captionData: '',
-        lang: 'vi' as Lang
+        lang,
       }
       await windowInstance.api.clickEditLatestPostButton(data);
       return true;
