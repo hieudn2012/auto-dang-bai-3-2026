@@ -19,26 +19,31 @@ export const getAffAmzLink = async ({ ws, links, numberToGet = 20 }: GetAffAmzLi
   try {
     // open new tab
     const call = async (link: string) => {
-      const data = [];
+      const data: string[] = [];
       const page = await browser.newPage();
       await page.goto(link);
+      const button = await page.$("#amzn-ss-get-link-button");
+      await button?.click();
+      if (!button) {
+        throw Error('Button get link not found')
+      }
+      await waitRandom(2000, 3000);
+
+      page.on("response", async (response: any) => {
+        const url = response.url();
+      
+        if (url.includes("getShortUrl")) {
+          const res = JSON.parse(await response.text())
+          const value = res.shortUrl;
+          data.push(value);
+        }
+      });
 
       for (let i = 0; i < numberToGet; i++) {
-        // button id amzn-ss-get-link-button
-        const button = await page.$("#amzn-ss-get-link-button");
-        if (button) {
-          await button.click();
-          await waitRandom(1000, 2000);
-          // get value text area amzn-ss-text-shortlink-textarea
-          const textarea = await page.$("#amzn-ss-text-shortlink-textarea");
-          const value = await textarea?.evaluate(el => el.textContent);
-          // esc keyboard
-          await page.keyboard.press('Escape');
-          console.log(value, i);
-          if (value) {
-            data.push(value);
-          }
-        }
+        // button id amzn-ss-copy-affiliate-link-btn-announce
+        const btnCopyAffLink = await page.$("#amzn-ss-copy-affiliate-link-btn-announce");
+        await btnCopyAffLink?.click();
+        await waitRandom(3000, 4000);
       }
       const resultString = data.join("\n").trim();
       page?.close();
@@ -55,8 +60,6 @@ export const getAffAmzLink = async ({ ws, links, numberToGet = 20 }: GetAffAmzLi
   } catch (error) {
     console.error(error);
     return "";
-  } finally {
-    await browser.disconnect();
   }
 }
 
