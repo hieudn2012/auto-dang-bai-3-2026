@@ -156,6 +156,10 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       steps: 20,
     });
 
+    // keyboard press escape
+    await page.keyboard.press('Escape');
+    await waitRandom(1000, 2000);
+
     if (type === 'post') {
       const els = await page.$$(POST_BUTTON_SELECTOR);
       let postButton = null;
@@ -537,6 +541,10 @@ export const clickEditLatestPostButton = async ({
 
     await page.goto(`https://threads.com/@${username}`);
     await waitRandom(5000, 10000);
+
+    // Keyboard press escape
+    await page.keyboard.press('Escape');
+    await waitRandom(1000, 2000);
 
     // scroll to top
     await page.evaluate(() => window.scrollTo(0, 0));
