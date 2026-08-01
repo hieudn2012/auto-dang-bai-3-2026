@@ -181,6 +181,7 @@ export const autoPost = async (item: ScheduleItem, event: IpcMainEvent) => {
                 id: profile.profile_id,
                 isAuto: true,
                 lang: item.lang as 'vi' | 'en',
+                isTag: item.isTag,
               }, event);
               sendLog(event, {
                 username: profile.name,
