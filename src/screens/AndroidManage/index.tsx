@@ -1,8 +1,10 @@
 import Button from "@/components/Button";
+import Input from "@/components/Input";
 import Layout from "@/components/Layout";
+import { toast } from "@/components/ToastContainer";
 import { windowInstance } from "@/services/window";
 import { Android } from "electron/features/android";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const formatBytes = (bytes: number) => {
   if (!bytes) return "-";
@@ -14,20 +16,76 @@ const AndroidManage = () => {
   const [androidList, setAndroidList] = useState<Android[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionIndex, setActionIndex] = useState<string | null>(null);
+  const [selectedIndexes, setSelectedIndexes] = useState<string[]>([]);
+  const [inputAccount, setInputAccount] = useState("");
+  const [outputAccount, setOutputAccount] = useState("");
 
   const fetchAndroidList = useCallback(async () => {
     setLoading(true);
     try {
       const list = await windowInstance.api.getAndroidList();
       setAndroidList(list);
+      setSelectedIndexes((prev) =>
+        prev.filter((index) => list.some((item) => item.index === index))
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const loadAndroidFolders = useCallback(async () => {
+    const config = await windowInstance.api.loadMainConfig();
+    setInputAccount(config?.android?.inputAccount || "");
+    setOutputAccount(config?.android?.outputAccount || "");
+  }, []);
+
   useEffect(() => {
     fetchAndroidList();
-  }, [fetchAndroidList]);
+    loadAndroidFolders();
+  }, [fetchAndroidList, loadAndroidFolders]);
+
+  const allSelected = useMemo(
+    () => androidList.length > 0 && selectedIndexes.length === androidList.length,
+    [androidList.length, selectedIndexes.length]
+  );
+
+  const selectedAndroids = useMemo(
+    () => androidList.filter((item) => selectedIndexes.includes(item.index)),
+    [androidList, selectedIndexes]
+  );
+
+  const toggleSelect = (index: string) => {
+    setSelectedIndexes((prev) =>
+      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelectedIndexes([]);
+    else setSelectedIndexes(androidList.map((item) => item.index));
+  };
+
+  const saveAndroidFolder = async (
+    key: "inputAccount" | "outputAccount",
+    folderPath: string
+  ) => {
+    const config = await windowInstance.api.loadMainConfig();
+    await windowInstance.api.saveMainConfig({
+      android: {
+        ...config?.android,
+        [key]: folderPath,
+      },
+    });
+    if (key === "inputAccount") setInputAccount(folderPath);
+    else setOutputAccount(folderPath);
+    toast.success("Đã lưu thư mục");
+  };
+
+  const handleSetFolder = async (key: "inputAccount" | "outputAccount") => {
+    const folderPath = await windowInstance.api.openDialogFolder();
+    if (!folderPath) return;
+    await saveAndroidFolder(key, folderPath);
+  };
 
   const handleOpen = async (android: Android) => {
     setActionIndex(android.index);
@@ -49,6 +107,39 @@ const AndroidManage = () => {
     }
   };
 
+  const handleRandomName = async (android: Android) => {
+    setActionIndex(android.index);
+    try {
+      const newName = await windowInstance.api.randomMuMuName(android);
+      toast.success(`Đã đổi tên: ${newName}`);
+      await fetchAndroidList();
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const runBulk = async (
+    action: (android: Android) => Promise<void>,
+    filter?: (android: Android) => boolean
+  ) => {
+    const targets = selectedAndroids.filter(filter || (() => true));
+    if (targets.length === 0) {
+      toast.error("Không có Android phù hợp trong danh sách chọn");
+      return;
+    }
+    for (const android of targets) {
+      setActionIndex(android.index);
+      try {
+        await action(android);
+      } catch (error) {
+        console.error(error);
+        toast.error(`Lỗi tại index ${android.index}`);
+      }
+    }
+    setActionIndex(null);
+    await fetchAndroidList();
+  };
+
   return (
     <Layout>
       <div className="p-6">
@@ -66,12 +157,148 @@ const AndroidManage = () => {
           </div>
         </div>
 
+        <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              <i className="fas fa-folder text-blue-400 mr-1"></i>
+              Input Account
+            </label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Chọn thư mục input account"
+                value={inputAccount}
+                onChange={(e) => setInputAccount(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                onClick={() => handleSetFolder("inputAccount")}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <i className="fas fa-folder-open"></i>
+              </Button>
+              <Button
+                onClick={() => saveAndroidFolder("inputAccount", inputAccount)}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white"
+              >
+                <i className="fas fa-save"></i>
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              <i className="fas fa-folder text-blue-400 mr-1"></i>
+              Output Account
+            </label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Chọn thư mục output account"
+                value={outputAccount}
+                onChange={(e) => setOutputAccount(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                onClick={() => handleSetFolder("outputAccount")}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <i className="fas fa-folder-open"></i>
+              </Button>
+              <Button
+                onClick={() => saveAndroidFolder("outputAccount", outputAccount)}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white"
+              >
+                <i className="fas fa-save"></i>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-sm text-gray-600">
+            Selected: <b>{selectedIndexes.length}</b>
+          </span>
+          <Button
+            disabled={selectedIndexes.length === 0 || !!actionIndex}
+            onClick={() =>
+              runBulk(
+                (android) => windowInstance.api.openAndroid(android).then(() => undefined),
+                (android) => !android.is_android_started
+              )
+            }
+            className="px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-play mr-1"></i>
+            Open selected
+          </Button>
+          <Button
+            disabled={selectedIndexes.length === 0 || !!actionIndex}
+            onClick={() =>
+              runBulk(
+                (android) => windowInstance.api.closeAndroid(android).then(() => undefined),
+                (android) => android.is_android_started
+              )
+            }
+            className="px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-stop mr-1"></i>
+            Close selected
+          </Button>
+          <Button
+            disabled={selectedIndexes.length === 0 || !!actionIndex}
+            onClick={() =>
+              runBulk(async (android) => {
+                const newName = await windowInstance.api.randomMuMuName(android);
+                toast.success(`Đã đổi tên: ${newName}`);
+              })
+            }
+            className="px-3 py-1.5 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-shuffle mr-1"></i>
+            Random name selected
+          </Button>
+          <Button
+            disabled={selectedIndexes.length === 0 || !!actionIndex}
+            onClick={async () => {
+              try {
+                setActionIndex('assign');
+                // giữ thứ tự selectedIndexes (thứ tự chọn)
+                const ordered = selectedIndexes
+                  .map((index) => androidList.find((item) => item.index === index))
+                  .filter(Boolean) as Android[];
+                const result = await windowInstance.api.assignAccountsToAndroids(ordered);
+                toast.success(
+                  `Đã gán ${result.assigned} account, còn ${result.remaining} trong input`
+                );
+                await fetchAndroidList();
+              } catch (error) {
+                console.error(error);
+                toast.error(error instanceof Error ? error.message : 'Gán account thất bại');
+              } finally {
+                setActionIndex(null);
+              }
+            }}
+            className="px-3 py-1.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-file-import mr-1"></i>
+            Assign accounts
+          </Button>
+        </div>
+
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 cursor-pointer"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Index</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Account</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Version</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ADB</th>
@@ -83,10 +310,25 @@ const AndroidManage = () => {
             <tbody className="divide-y divide-gray-100 bg-white">
               {androidList.map((item) => {
                 const busy = actionIndex === item.index;
+                const checked = selectedIndexes.includes(item.index);
                 return (
-                  <tr key={item.index} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={item.index}
+                    className={`hover:bg-gray-50 transition-colors ${checked ? "bg-blue-50/50" : ""}`}
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleSelect(item.index)}
+                        className="h-4 w-4 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">{item.index}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.name}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                      {item.account?.username || "-"}
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">{item.android_version}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                       <span
@@ -124,6 +366,14 @@ const AndroidManage = () => {
                         >
                           <i className="fa-solid fa-stop"></i>
                         </Button>
+                        <Button
+                          disabled={busy}
+                          onClick={() => handleRandomName(item)}
+                          tooltip="Random name"
+                          className="px-2 py-1 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-shuffle"></i>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -131,7 +381,7 @@ const AndroidManage = () => {
               })}
               {!loading && androidList.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={10} className="px-4 py-8 text-center text-sm text-gray-500">
                     No Android devices found
                   </td>
                 </tr>

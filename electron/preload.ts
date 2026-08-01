@@ -104,6 +104,8 @@ contextBridge.exposeInMainWorld('api', {
   getAndroidList: () => invoke(InvokeChannel.GET_ANDROID_LIST),
   openAndroid: (android: Android) => invoke(InvokeChannel.OPEN_ANDROID, android),
   closeAndroid: (android: Android) => invoke(InvokeChannel.CLOSE_ANDROID, android),
+  randomMuMuName: (android: Android) => invoke(InvokeChannel.RANDOM_MUMU_NAME, android),
+  assignAccountsToAndroids: (androids: Android[]) => invoke(InvokeChannel.ASSIGN_ACCOUNTS_TO_ANDROIDS, androids),
 });
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

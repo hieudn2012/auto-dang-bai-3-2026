@@ -60,6 +60,8 @@ export enum InvokeChannel {
   GET_ANDROID_LIST = 'get-android-list',
   OPEN_ANDROID = 'open-android',
   CLOSE_ANDROID = 'close-android',
+  RANDOM_MUMU_NAME = 'random-mumu-name',
+  ASSIGN_ACCOUNTS_TO_ANDROIDS = 'assign-accounts-to-androids',
 }
 
 export type MainConfig = {
@@ -85,7 +87,11 @@ export type MainConfig = {
     propmts?: { label: string, value: string }[];
   },
   macId?: string
-  wsUrl?: string
+  wsUrl?: string,
+  android?: {
+    inputAccount?: string,
+    outputAccount?: string,
+  }
 }
 
 export type History = {

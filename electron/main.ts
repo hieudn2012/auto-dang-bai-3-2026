@@ -35,7 +35,7 @@ import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 import { getAffShopeeLink } from './features/shopee'
 import { deletePost } from './features/threads-delete'
 import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
-import { closeAndroid, getAndroidList, openAndroid } from './features/android'
+import { assignAccountsToAndroids, closeAndroid, getAndroidList, openAndroid, randomMuMuName } from './features/android'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -305,6 +305,14 @@ handle(InvokeChannel.OPEN_ANDROID, async (_event, android) => {
 
 handle(InvokeChannel.CLOSE_ANDROID, async (_event, android) => {
   return closeAndroid(android);
+});
+
+handle(InvokeChannel.RANDOM_MUMU_NAME, async (_event, android) => {
+  return randomMuMuName(android);
+});
+
+handle(InvokeChannel.ASSIGN_ACCOUNTS_TO_ANDROIDS, async (_event, androids) => {
+  return assignAccountsToAndroids(androids);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
