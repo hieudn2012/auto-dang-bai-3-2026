@@ -492,6 +492,7 @@ export interface ClickEditLatestPostButtonParams {
   mode: 'default' | 'affiliate',
   isAuto: boolean;
   lang: Lang;
+  isTag: boolean;
 }
 
 export const clickEditLatestPostButton = async ({
@@ -503,6 +504,7 @@ export const clickEditLatestPostButton = async ({
   folder,
   isAuto,
   lang,
+  isTag,
 }: ClickEditLatestPostButtonParams, event: IpcMainEvent): Promise<boolean> => {
   let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
   try {
@@ -612,7 +614,7 @@ export const clickEditLatestPostButton = async ({
     await waitRandom(1000, 2000);
     await page.keyboard.press('Enter');
     await waitRandom(1000, 2000);
-    if (lang === 'en' && mode === 'affiliate') {
+    if (lang === 'en' && mode === 'affiliate' && isTag) {
       const suffix = '#ad #CommissionsEarned';
       await page.keyboard.type(suffix, { delay: 100 });
       await waitRandom(1000, 2000);

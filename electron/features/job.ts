@@ -19,6 +19,7 @@ export interface ScheduleItem {
   forMarket: ForMarket;
   lang: Lang;
   isIncludeQuote: boolean;
+  isTag: boolean;
 }
 
 export const addJobs = (items: ScheduleItem[], event: IpcMainEvent) => {

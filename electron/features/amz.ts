@@ -8,9 +8,10 @@ interface GetAffAmzLinkParams {
   ws: string;
   links: string[];
   numberToGet: number;
+  isGlobal: boolean;
 }
 
-export const getAffAmzLink = async ({ ws, links, numberToGet = 20 }: GetAffAmzLinkParams) => {
+export const getAffAmzLink = async ({ ws, links, numberToGet = 20, isGlobal = false }: GetAffAmzLinkParams) => {
   const browser = await puppeteer.connect({
     browserWSEndpoint: ws,
     defaultViewport: null,
@@ -29,9 +30,26 @@ export const getAffAmzLink = async ({ ws, links, numberToGet = 20 }: GetAffAmzLi
       }
       await waitRandom(2000, 3000);
 
+      if (!isGlobal) {
+        // button id amzn-ss-ga-switch
+        const buttonGaSwitch = await page.$("#amzn-ss-ga-switch");
+        // get class value
+        const classValue = await buttonGaSwitch?.evaluate(el => el.getAttribute('class'));
+        console.log('classValue', classValue);
+        if (classValue?.includes('a-active')) {
+          // in buttonGaSwitch, find div with class a-switch a-declarative and get position and click to position
+          const divSwitch = await buttonGaSwitch?.$('div.a-switch.a-declarative');
+          if (divSwitch) {
+            await divSwitch.scrollIntoView();
+            await divSwitch.click();
+          }
+        }
+        await waitRandom(1000, 2000);
+      }
+
       page.on("response", async (response: any) => {
         const url = response.url();
-      
+
         if (url.includes("getShortUrl")) {
           const res = JSON.parse(await response.text())
           const value = res.shortUrl;

@@ -36,6 +36,7 @@ const GeminiAI = () => {
   const [indexSelected, setIndexSelected] = useState<number[]>([]);
   const [linkMode, setLinkMode] = useState<'amz' | 'shopee'>('amz');
   const [isViewImg, setIsViewImg] = useState(false);
+  const [isGlobal, setIsGlobal] = useState(false);
 
   const rowRefs = items.reduce((acc, _, index) => {
     acc[index] = React.createRef();
@@ -146,7 +147,7 @@ const GeminiAI = () => {
           icon="fas fa-link"
         />
       </div>
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         <div>
           <Select
             label="Link Mode"
@@ -192,6 +193,13 @@ const GeminiAI = () => {
             enabled={isViewImg}
             onChange={setIsViewImg}
           />
+        </div>
+        <div>
+          <label className="flex items-center gap-2 mb-4">
+            <i className="fas fa-image"></i>
+            Global
+          </label>
+          <Switch enabled={isGlobal} onChange={setIsGlobal} />
         </div>
       </div>
       <div className="flex justify-between gap-4 mt-5">
@@ -278,6 +286,7 @@ const GeminiAI = () => {
               realProductImage={item.realProductImage}
               isViewImg={isViewImg}
               isMapping={item.isMapping}
+              isGlobal={isGlobal}
             />
           ))}
 
@@ -303,6 +312,7 @@ interface RowProps {
   realProductImage: string;
   isViewImg: boolean;
   isMapping: boolean;
+  isGlobal: boolean;
 }
 
 const Row = forwardRef(({
@@ -321,6 +331,7 @@ const Row = forwardRef(({
   realProductImage,
   isViewImg,
   isMapping,
+  isGlobal,
 }: RowProps, ref) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGettingLinks, setIsGettingLinks] = useState(false);
@@ -362,7 +373,7 @@ const Row = forwardRef(({
   const handleGetLinks = async () => {
     try {
       setIsGettingLinks(true);
-      const links = await windowInstance.api.getAffAmzLink({ links: [link], ws, numberToGet: 20, linkMode });
+      const links = await windowInstance.api.getAffAmzLink({ links: [link], ws, numberToGet: 20, linkMode, isGlobal });
       setLinks(links);
     } catch (error) {
       toast.error((error as Error).message);
@@ -487,16 +498,18 @@ const Row = forwardRef(({
           >
             <i className="fas fa-robot"></i>
           </Button>
-          <Button
-            className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-700 border border-indigo-200"
-            onClick={handleGetLinks}
-            tooltip="Generate links"
-            disabled={!link || isGettingLinks}
-            loading={isGettingLinks}
-            id={`get-links-btn-${numberIndex}`}
-          >
-            <i className="fas fa-wand-magic-sparkles"></i>
-          </Button>
+          <div className="flex flex-col items-center gap-1">
+            <Button
+              className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-700 border border-indigo-200"
+              onClick={handleGetLinks}
+              tooltip="Generate links"
+              disabled={!link || isGettingLinks}
+              loading={isGettingLinks}
+              id={`get-links-btn-${numberIndex}`}
+            >
+              <i className="fas fa-wand-magic-sparkles"></i>
+            </Button>
+          </div>
 
           <Button
             className="px-3 py-1 text-sm bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border border-emerald-200"

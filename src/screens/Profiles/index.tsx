@@ -85,6 +85,7 @@ const Profiles = () => {
   const [profileResult, setProfileResult] = useState<ProfileResult>({});
   const [sex, setSex] = useState<'male' | 'female'>('male');
   const [isIncludeQuote, setIsIncludeQuote] = useState(false);
+  const [isTag, setIsTag] = useState(true);
   const profiles = data?.data?.data?.data || [];
 
   const handleRandomFolder = async (profile_id: number) => {
@@ -171,6 +172,7 @@ const Profiles = () => {
         isAuto,
         captionData: '',
         lang,
+        isTag,
       }
       await windowInstance.api.clickEditLatestPostButton(data);
       return true;
@@ -492,9 +494,16 @@ const Profiles = () => {
 
                   <div>
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <span>Bao gồm quote</span>
+                      <span>Quote</span>
                     </label>
                     <Switch enabled={isIncludeQuote} onChange={(enabled) => updateIsIncludeQuote(enabled)} />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span>Tag</span>
+                    </label>
+                    <Switch enabled={isTag} onChange={setIsTag} />
                   </div>
                 </div>
 

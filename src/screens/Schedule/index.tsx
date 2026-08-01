@@ -29,6 +29,7 @@ type ScheduleTime = {
   forMarket: ForMarket;
   lang: Lang;
   isIncludeQuote: boolean;
+  isTag: boolean;
   jobType: 'auto-post' | 'auto-setup-new-account';
 };
 
@@ -51,6 +52,7 @@ const ScheduleModal = () => {
     forMarket: 'amz',
     lang: 'en',
     isIncludeQuote: false,
+    isTag: true,
     jobType: 'auto-post',
   });
   const [jobs, setJobs] = useState<any[]>([]);
@@ -99,6 +101,10 @@ const ScheduleModal = () => {
 
   const updateScheduleIsIncludeQuote = (isIncludeQuote: boolean) => {
     setSchedule(prev => ({ ...prev, isIncludeQuote }));
+  };
+
+  const updateScheduleIsTag = (isTag: boolean) => {
+    setSchedule(prev => ({ ...prev, isTag }));
   };
 
   const updateScheduleJobType = (jobType: 'auto-post' | 'auto-setup-new-account') => {
@@ -161,6 +167,7 @@ const ScheduleModal = () => {
       quoteFolder: schedule.quoteFolder,
       lang: schedule.lang,
       isIncludeQuote: schedule.isIncludeQuote,
+      isTag: schedule.isTag,
     };
 
     // Gửi job đến electron main process
@@ -416,6 +423,18 @@ const ScheduleModal = () => {
                   <Switch
                     enabled={schedule.isIncludeQuote}
                     onChange={(value) => updateScheduleIsIncludeQuote(value)}
+                  />
+                </div>
+
+                {/* Tag */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i className="fa-solid fa-tag text-pink-500"></i>
+                    Tag
+                  </label>
+                  <Switch
+                    enabled={schedule.isTag}
+                    onChange={(value) => updateScheduleIsTag(value)}
                   />
                 </div>
 
