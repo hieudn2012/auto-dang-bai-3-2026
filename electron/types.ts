@@ -57,6 +57,9 @@ export enum InvokeChannel {
   GET_PROFILES = 'get-profiles',
   CHANGE_PROFILE_INFO = 'change-profile-info',
   DELETE_OLDEST_REPORT_NAMES = 'delete-oldest-report-names',
+  GET_ANDROID_LIST = 'get-android-list',
+  OPEN_ANDROID = 'open-android',
+  CLOSE_ANDROID = 'close-android',
 }
 
 export type MainConfig = {

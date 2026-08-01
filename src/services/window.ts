@@ -13,6 +13,7 @@ import { ReportResult } from "electron/features/report";
 import { GenerateCaptionsParams } from "electron/features/gemini";
 import { CaptureProductImageParams } from "electron/features/amz";
 import { ChangeProfileInfoParams, GenerateProfileParams, ProfileResult } from "electron/features/profile";
+import { Android } from "electron/features/android";
 
 type WindownInstance = typeof window & {
   api: {
@@ -76,6 +77,9 @@ type WindownInstance = typeof window & {
     getProfiles: () => Promise<ProfileResult>,
     changeProfileInfo: (params: ChangeProfileInfoParams) => Promise<any>,
     deleteOldestReportNames: () => Promise<void>,
+    getAndroidList: () => Promise<Android[]>,
+    openAndroid: (android: Android) => Promise<string>,
+    closeAndroid: (android: Android) => Promise<string>,
   }
 }
 

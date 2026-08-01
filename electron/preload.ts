@@ -9,6 +9,7 @@ import { DeletePostOptions } from './features/threads-delete'
 import { GenerateCaptionsParams } from './features/gemini'
 import { CaptureProductImageParams } from './features/amz'
 import { ChangeProfileInfoParams, GenerateProfileParams } from './features/profile'
+import { Android } from './features/android'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -100,7 +101,10 @@ contextBridge.exposeInMainWorld('api', {
   getProfiles: () => invoke(InvokeChannel.GET_PROFILES),
   changeProfileInfo: (params: ChangeProfileInfoParams) => invoke(InvokeChannel.CHANGE_PROFILE_INFO, params),
   deleteOldestReportNames: () => invoke(InvokeChannel.DELETE_OLDEST_REPORT_NAMES),
-})
+  getAndroidList: () => invoke(InvokeChannel.GET_ANDROID_LIST),
+  openAndroid: (android: Android) => invoke(InvokeChannel.OPEN_ANDROID, android),
+  closeAndroid: (android: Android) => invoke(InvokeChannel.CLOSE_ANDROID, android),
+});
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
   ipcRenderer.send(channel, data)

@@ -69,6 +69,13 @@ const getRouters = (flags: Flags) => {
     });
   }
 
+  result.push({
+    path: routerPath.android_manage,
+    name: 'Android',
+    icon: <i className="fab fa-android"></i>,
+    description: 'Quản lý Android'
+  });
+
   return result;
 };
 

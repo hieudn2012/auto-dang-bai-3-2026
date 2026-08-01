@@ -35,6 +35,7 @@ import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 import { getAffShopeeLink } from './features/shopee'
 import { deletePost } from './features/threads-delete'
 import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
+import { closeAndroid, getAndroidList, openAndroid } from './features/android'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -292,6 +293,18 @@ handle(InvokeChannel.CHANGE_PROFILE_INFO, async (_event, params) => {
 
 handle(InvokeChannel.DELETE_OLDEST_REPORT_NAMES, async () => {
   return deleteOldestReportNames();
+});
+
+handle(InvokeChannel.GET_ANDROID_LIST, async () => {
+  return getAndroidList();
+});
+
+handle(InvokeChannel.OPEN_ANDROID, async (_event, android) => {
+  return openAndroid(android);
+});
+
+handle(InvokeChannel.CLOSE_ANDROID, async (_event, android) => {
+  return closeAndroid(android);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
