@@ -35,7 +35,7 @@ import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 import { getAffShopeeLink } from './features/shopee'
 import { deletePost } from './features/threads-delete'
 import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
-import { assignAccountsToAndroids, closeAndroid, getAndroidList, openAndroid, randomMuMuName } from './features/android'
+import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, getAndroidList, openAndroid, randomMuMuName, setupProxiesOnAndroids } from './features/android'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -313,6 +313,18 @@ handle(InvokeChannel.RANDOM_MUMU_NAME, async (_event, android) => {
 
 handle(InvokeChannel.ASSIGN_ACCOUNTS_TO_ANDROIDS, async (_event, androids) => {
   return assignAccountsToAndroids(androids);
+});
+
+handle(InvokeChannel.ASSIGN_PROXIES_TO_ANDROIDS, async (_event, androids) => {
+  return assignProxiesToAndroids(androids);
+});
+
+handle(InvokeChannel.SETUP_PROXIES_ON_ANDROIDS, async (_event, androids) => {
+  return setupProxiesOnAndroids(androids);
+});
+
+handle(InvokeChannel.AUTO_REGISTER_ACCOUNTS_ON_ANDROIDS, async (_event, androids) => {
+  return autoRegisterAccountsOnAndroids(androids);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -1,4 +1,5 @@
 import Button from "@/components/Button";
+import Dialog from "@/components/Dialog";
 import Input from "@/components/Input";
 import Layout from "@/components/Layout";
 import { toast } from "@/components/ToastContainer";
@@ -19,6 +20,8 @@ const AndroidManage = () => {
   const [selectedIndexes, setSelectedIndexes] = useState<string[]>([]);
   const [inputAccount, setInputAccount] = useState("");
   const [outputAccount, setOutputAccount] = useState("");
+  const [showMoreActions, setShowMoreActions] = useState(false);
+  const [proxyFolder, setProxyFolder] = useState("");
 
   const fetchAndroidList = useCallback(async () => {
     setLoading(true);
@@ -37,6 +40,7 @@ const AndroidManage = () => {
     const config = await windowInstance.api.loadMainConfig();
     setInputAccount(config?.android?.inputAccount || "");
     setOutputAccount(config?.android?.outputAccount || "");
+    setProxyFolder(config?.android?.proxyFolder || "");
   }, []);
 
   useEffect(() => {
@@ -66,7 +70,7 @@ const AndroidManage = () => {
   };
 
   const saveAndroidFolder = async (
-    key: "inputAccount" | "outputAccount",
+    key: "inputAccount" | "outputAccount" | "proxyFolder",
     folderPath: string
   ) => {
     const config = await windowInstance.api.loadMainConfig();
@@ -77,11 +81,12 @@ const AndroidManage = () => {
       },
     });
     if (key === "inputAccount") setInputAccount(folderPath);
-    else setOutputAccount(folderPath);
+    else if (key === "outputAccount") setOutputAccount(folderPath);
+    else if (key === "proxyFolder") setProxyFolder(folderPath);
     toast.success("Đã lưu thư mục");
   };
 
-  const handleSetFolder = async (key: "inputAccount" | "outputAccount") => {
+  const handleSetFolder = async (key: "inputAccount" | "outputAccount" | "proxyFolder") => {
     const folderPath = await windowInstance.api.openDialogFolder();
     if (!folderPath) return;
     await saveAndroidFolder(key, folderPath);
@@ -118,6 +123,42 @@ const AndroidManage = () => {
     }
   };
 
+  const handleSetupProxy = async (android: Android) => {
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.setupProxiesOnAndroids([android]);
+      if (result.failed > 0) {
+        toast.error(result.results[0]?.error || "Setup proxy thất bại");
+      } else {
+        toast.success(`Đã setup proxy: ${android.name}`);
+      }
+      await fetchAndroidList();
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Setup proxy thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const handleAutoRegister = async (android: Android) => {
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.autoRegisterAccountsOnAndroids([android]);
+      if (result.failed > 0) {
+        toast.error(result.results[0]?.error || "Register thất bại");
+      } else {
+        toast.success(`Đã register: ${android.name}`);
+      }
+      await fetchAndroidList();
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Register thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
   const runBulk = async (
     action: (android: Android) => Promise<void>,
     filter?: (android: Android) => boolean
@@ -148,6 +189,12 @@ const AndroidManage = () => {
           <div className="flex items-center gap-3">
             {loading && <span className="text-sm text-gray-500">Loading...</span>}
             <Button
+              onClick={() => setShowMoreActions(true)}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+            >
+              Settings
+            </Button>
+            <Button
               onClick={fetchAndroidList}
               className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
             >
@@ -157,68 +204,13 @@ const AndroidManage = () => {
           </div>
         </div>
 
-        <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              <i className="fas fa-folder text-blue-400 mr-1"></i>
-              Input Account
-            </label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Chọn thư mục input account"
-                value={inputAccount}
-                onChange={(e) => setInputAccount(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                onClick={() => handleSetFolder("inputAccount")}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                <i className="fas fa-folder-open"></i>
-              </Button>
-              <Button
-                onClick={() => saveAndroidFolder("inputAccount", inputAccount)}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white"
-              >
-                <i className="fas fa-save"></i>
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              <i className="fas fa-folder text-blue-400 mr-1"></i>
-              Output Account
-            </label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Chọn thư mục output account"
-                value={outputAccount}
-                onChange={(e) => setOutputAccount(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                onClick={() => handleSetFolder("outputAccount")}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                <i className="fas fa-folder-open"></i>
-              </Button>
-              <Button
-                onClick={() => saveAndroidFolder("outputAccount", outputAccount)}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white"
-              >
-                <i className="fas fa-save"></i>
-              </Button>
-            </div>
-          </div>
-        </div>
-
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span className="text-sm text-gray-600">
             Selected: <b>{selectedIndexes.length}</b>
           </span>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
+            tooltip="Open selected"
             onClick={() =>
               runBulk(
                 (android) => windowInstance.api.openAndroid(android).then(() => undefined),
@@ -228,10 +220,10 @@ const AndroidManage = () => {
             className="px-3 py-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50"
           >
             <i className="fa-solid fa-play mr-1"></i>
-            Open selected
           </Button>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
+            tooltip="Close selected"
             onClick={() =>
               runBulk(
                 (android) => windowInstance.api.closeAndroid(android).then(() => undefined),
@@ -241,10 +233,10 @@ const AndroidManage = () => {
             className="px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
           >
             <i className="fa-solid fa-stop mr-1"></i>
-            Close selected
           </Button>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
+            tooltip="Random name selected"
             onClick={() =>
               runBulk(async (android) => {
                 const newName = await windowInstance.api.randomMuMuName(android);
@@ -254,10 +246,10 @@ const AndroidManage = () => {
             className="px-3 py-1.5 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50"
           >
             <i className="fa-solid fa-shuffle mr-1"></i>
-            Random name selected
           </Button>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
+            tooltip="Assign accounts"
             onClick={async () => {
               try {
                 setActionIndex('assign');
@@ -280,9 +272,174 @@ const AndroidManage = () => {
             className="px-3 py-1.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
           >
             <i className="fa-solid fa-file-import mr-1"></i>
-            Assign accounts
+          </Button>
+          <Button
+            disabled={selectedIndexes.length === 0 || !!actionIndex}
+            tooltip="Assign proxies"
+            onClick={async () => {
+              try {
+                setActionIndex('assign-proxy');
+                const ordered = selectedIndexes
+                  .map((index) => androidList.find((item) => item.index === index))
+                  .filter(Boolean) as Android[];
+                const result = await windowInstance.api.assignProxiesToAndroids(ordered);
+                toast.success(
+                  `Đã gán proxy cho ${result.assigned} account (${result.proxyCount} file yml)`
+                );
+                await fetchAndroidList();
+              } catch (error) {
+                console.error(error);
+                toast.error(error instanceof Error ? error.message : 'Gán proxy thất bại');
+              } finally {
+                setActionIndex(null);
+              }
+            }}
+            className="px-3 py-1.5 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-network-wired mr-1"></i>
+          </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some((item) => !item.is_android_started)
+            }
+            tooltip="Setup proxy selected"
+            onClick={async () => {
+              try {
+                setActionIndex('setup-proxy');
+                const ordered = selectedIndexes
+                  .map((index) => androidList.find((item) => item.index === index))
+                  .filter(Boolean) as Android[];
+                const result = await windowInstance.api.setupProxiesOnAndroids(ordered);
+                if (result.failed > 0) {
+                  toast.error(`Setup proxy: ${result.success} ok, ${result.failed} lỗi`);
+                } else {
+                  toast.success(`Đã setup proxy cho ${result.success} android`);
+                }
+                await fetchAndroidList();
+              } catch (error) {
+                console.error(error);
+                toast.error(error instanceof Error ? error.message : 'Setup proxy thất bại');
+              } finally {
+                setActionIndex(null);
+              }
+            }}
+            className="px-3 py-1.5 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-bolt mr-1"></i>
+          </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some((item) => !item.is_android_started)
+            }
+            tooltip="Auto register selected"
+            onClick={async () => {
+              try {
+                setActionIndex('auto-register');
+                const ordered = selectedIndexes
+                  .map((index) => androidList.find((item) => item.index === index))
+                  .filter(Boolean) as Android[];
+                const result = await windowInstance.api.autoRegisterAccountsOnAndroids(ordered);
+                if (result.failed > 0) {
+                  toast.error(`Register: ${result.success} ok, ${result.failed} lỗi`);
+                } else {
+                  toast.success(`Đã register ${result.success} android`);
+                }
+                await fetchAndroidList();
+              } catch (error) {
+                console.error(error);
+                toast.error(error instanceof Error ? error.message : 'Register thất bại');
+              } finally {
+                setActionIndex(null);
+              }
+            }}
+            className="px-3 py-1.5 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-user-plus mr-1"></i>
           </Button>
         </div>
+
+        <Dialog open={showMoreActions} onClose={() => setShowMoreActions(false)} className="!max-w-xl">
+          <div className="p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-800">More actions</h3>
+              <Button
+                onClick={() => setShowMoreActions(false)}
+                className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  <i className="fas fa-folder text-blue-400 mr-1"></i>
+                  Input Account
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Chọn thư mục input account"
+                    value={inputAccount}
+                    onChange={(e) => setInputAccount(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={() => handleSetFolder("inputAccount")}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    <i className="fas fa-folder-open"></i>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  <i className="fas fa-folder text-blue-400 mr-1"></i>
+                  Output Account
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Chọn thư mục output account"
+                    value={outputAccount}
+                    onChange={(e) => setOutputAccount(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={() => handleSetFolder("outputAccount")}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    <i className="fas fa-folder-open"></i>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  <i className="fas fa-folder text-blue-400 mr-1"></i>
+                  Proxy Folder
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Chọn thư mục proxy"
+                    value={proxyFolder}
+                    onChange={(e) => setProxyFolder(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={() => handleSetFolder("proxyFolder")}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    <i className="fas fa-folder-open"></i>
+                  </Button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </Dialog>
 
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200">
@@ -299,6 +456,7 @@ const AndroidManage = () => {
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Index</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Account</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Proxy</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Version</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ADB</th>
@@ -328,6 +486,19 @@ const AndroidManage = () => {
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.name}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                       {item.account?.username || "-"}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      <div className="relative group inline-flex">
+                        {item.account?.proxyPath ? (
+                          <i className="fa-solid fa-circle-check text-green-500"></i>
+                        ) : (
+                          <i className="fa-solid fa-circle-xmark text-red-400"></i>
+                        )}
+                        <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-all duration-200 group-hover:opacity-100">
+                          {item.account?.proxyPath || "Chưa gán proxy"}
+                          <div className="absolute left-1/2 top-full -mt-1 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">{item.android_version}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
@@ -374,6 +545,27 @@ const AndroidManage = () => {
                         >
                           <i className="fa-solid fa-shuffle"></i>
                         </Button>
+                        <Button
+                          disabled={busy || !item.is_android_started || !item.account?.proxyPath}
+                          onClick={() => handleSetupProxy(item)}
+                          tooltip="Setup proxy"
+                          className="px-2 py-1 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-bolt"></i>
+                        </Button>
+                        <Button
+                          disabled={
+                            busy ||
+                            !item.is_android_started ||
+                            !item.account?.username ||
+                            !item.account?.password
+                          }
+                          onClick={() => handleAutoRegister(item)}
+                          tooltip="Auto register"
+                          className="px-2 py-1 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-user-plus"></i>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -381,7 +573,7 @@ const AndroidManage = () => {
               })}
               {!loading && androidList.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={11} className="px-4 py-8 text-center text-sm text-gray-500">
                     No Android devices found
                   </td>
                 </tr>

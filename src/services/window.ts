@@ -87,6 +87,24 @@ type WindownInstance = typeof window & {
       outputPath: string
       items: string[]
     }>,
+    assignProxiesToAndroids: (androids: Android[]) => Promise<{
+      assigned: number
+      proxyCount: number
+      outputPath: string
+      items: string[]
+    }>,
+    setupProxiesOnAndroids: (androids: Android[]) => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: { index: string; name: string; ok: boolean; error?: string }[]
+    }>,
+    autoRegisterAccountsOnAndroids: (androids: Android[]) => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: { index: string; name: string; ok: boolean; error?: string }[]
+    }>,
   }
 }
 

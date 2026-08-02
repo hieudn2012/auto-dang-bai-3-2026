@@ -62,6 +62,9 @@ export enum InvokeChannel {
   CLOSE_ANDROID = 'close-android',
   RANDOM_MUMU_NAME = 'random-mumu-name',
   ASSIGN_ACCOUNTS_TO_ANDROIDS = 'assign-accounts-to-androids',
+  ASSIGN_PROXIES_TO_ANDROIDS = 'assign-proxies-to-androids',
+  SETUP_PROXIES_ON_ANDROIDS = 'setup-proxies-on-androids',
+  AUTO_REGISTER_ACCOUNTS_ON_ANDROIDS = 'auto-register-accounts-on-androids',
 }
 
 export type MainConfig = {
@@ -91,6 +94,7 @@ export type MainConfig = {
   android?: {
     inputAccount?: string,
     outputAccount?: string,
+    proxyFolder?: string,
   }
 }
 

@@ -13,7 +13,8 @@ export interface AndroidAccount {
     password: string;
     twoFa: string;
     cookies: string;
-    raw: string; // user||password||2fa||cookies
+    proxyPath: string;
+    raw: string; // user|password|2fa|cookies|proxyPath
 }
 
 export interface Android {
@@ -53,6 +54,8 @@ const run = async (cmd: string, { silent = false } = {}) => {
 
 const runMuMu = (args: string) => run(`"${MUMU_MANAGER_PATH}" ${args}`);
 
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 // info RPC hay cache name cũ khi instance đang chạy — đọc playerName từ config mới đúng
 const getPlayerNameFromConfig = async (index: string, androidVersion = '15.0') => {
     try {
@@ -70,6 +73,35 @@ const getPlayerNameFromConfig = async (index: string, androidVersion = '15.0') =
     }
 };
 
+/** Parse accountRaw: user||password||2fa||cookies[||proxyPath] */
+const parseAccountRaw = (accountRaw: string): Omit<AndroidAccount, 'raw'> => {
+    const parts = accountRaw.split('|');
+    const username = parts[0] || '';
+    const password = parts[1] || '';
+    const twoFa = parts[2] || '';
+    if (parts.length >= 5) {
+        return {
+            username,
+            password,
+            twoFa,
+            cookies: parts.slice(3, -1).join('|'),
+            proxyPath: parts[parts.length - 1] || '',
+        };
+    }
+    return {
+        username,
+        password,
+        twoFa,
+        cookies: parts.slice(3).join('|'),
+        proxyPath: '',
+    };
+};
+
+const buildAccountRaw = (account: Omit<AndroidAccount, 'raw'>) => {
+    const base = `${account.username}|${account.password}|${account.twoFa}|${account.cookies}`;
+    return account.proxyPath ? `${base}|${account.proxyPath}` : base;
+};
+
 /** Đọc outputAccount/account.txt -> Map<name, AndroidAccount> */
 const loadAssignedAccountsByName = async (): Promise<Map<string, AndroidAccount>> => {
     const map = new Map<string, AndroidAccount>();
@@ -84,12 +116,9 @@ const loadAssignedAccountsByName = async (): Promise<Map<string, AndroidAccount>
             if (sep <= 0) continue;
             const name = line.slice(0, sep);
             const accountRaw = line.slice(sep + 2);
-            const [username = '', password = '', twoFa = '', ...cookieParts] = accountRaw.split('||');
+            const parsed = parseAccountRaw(accountRaw);
             map.set(name, {
-                username,
-                password,
-                twoFa,
-                cookies: cookieParts.join('||'),
+                ...parsed,
                 raw: accountRaw,
             });
         }
@@ -147,8 +176,8 @@ export const randomMuMuName = async (androidOrIndex: Android | string | number) 
 
 /**
  * Gán account từ inputAccount/account.txt cho list android đã chọn (theo thứ tự).
- * Input:  user||password||2fa||cookies
- * Output: name--user||password||2fa||cookies  (append vào outputAccount/account.txt)
+ * Input:  user|password|2fa|cookies|proxyPath
+ * Output: name--user|password|2fa|cookies|proxyPath  (append vào outputAccount/account.txt)
  * Sau khi gán: xóa các line đã dùng khỏi input.
  */
 export const assignAccountsToAndroids = async (androids: Android[]) => {
@@ -217,5 +246,400 @@ export const assignAccountsToAndroids = async (androids: Android[]) => {
         remaining: remainingInput.length,
         outputPath,
         items: assignedLines,
+    };
+};
+
+/**
+ * Gán proxy (.yml) từ proxyFolder cho android đã chọn (theo thứ tự).
+ * Output line: name--user|password|2fa|cookies|proxyPath
+ * Nếu số yml < số selected thì lặp lại (cycle).
+ */
+export const assignProxiesToAndroids = async (androids: Android[]) => {
+    if (!androids.length) throw new Error('Chưa chọn Android nào');
+
+    const config = await loadMainConfig();
+    const outputDir = config?.android?.outputAccount;
+    const proxyDir = config?.android?.proxyFolder;
+    if (!outputDir) throw new Error('Chưa set thư mục Output Account');
+    if (!proxyDir) throw new Error('Chưa set thư mục Proxy Folder');
+
+    let proxyFiles: string[] = [];
+    try {
+        const entries = await fs.readdir(proxyDir);
+        proxyFiles = entries
+            .filter((name) => name.toLowerCase().endsWith('.yml') || name.toLowerCase().endsWith('.yaml'))
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+            .map((name) => join(proxyDir, name));
+    } catch {
+        throw new Error(`Không đọc được thư mục proxy: ${proxyDir}`);
+    }
+    if (!proxyFiles.length) throw new Error('Không có file .yml trong Proxy Folder');
+
+    const outputPath = join(outputDir, ACCOUNT_FILE);
+    let outputRaw = '';
+    try {
+        outputRaw = await fs.readFile(outputPath, 'utf8');
+    } catch {
+        throw new Error(`Không đọc được file: ${outputPath}`);
+    }
+
+    const outputLines = outputRaw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    const lineByName = new Map<string, { index: number; line: string }>();
+    outputLines.forEach((line, index) => {
+        const sep = line.indexOf('--');
+        if (sep <= 0) return;
+        lineByName.set(line.slice(0, sep), { index, line });
+    });
+
+    const latestList = await getAndroidList();
+    const updated: string[] = [];
+    const nextLines = [...outputLines];
+
+    for (let i = 0; i < androids.length; i++) {
+        const selected = androids[i];
+        const latest = latestList.find((item) => item.index === selected.index) || selected;
+        const existing = lineByName.get(latest.name);
+        if (!existing) {
+            throw new Error(`Android "${latest.name}" chưa có account trong output`);
+        }
+
+        const accountRaw = existing.line.slice(existing.line.indexOf('--') + 2);
+        const parsed = parseAccountRaw(accountRaw);
+        const proxyPath = proxyFiles[i % proxyFiles.length];
+        const nextRaw = buildAccountRaw({ ...parsed, proxyPath });
+        const nextLine = `${latest.name}--${nextRaw}`;
+        nextLines[existing.index] = nextLine;
+        updated.push(nextLine);
+    }
+
+    await fs.writeFile(outputPath, nextLines.join('\n') + (nextLines.length ? '\n' : ''), 'utf8');
+
+    return {
+        assigned: updated.length,
+        proxyCount: proxyFiles.length,
+        outputPath,
+        items: updated,
+    };
+};
+
+const getAdbSerial = (android: Android) => {
+    if (!android.adb_host_ip || !android.adb_port) {
+        throw new Error(`Android index ${android.index} chưa có ADB address`);
+    }
+    return `${android.adb_host_ip}:${android.adb_port}`;
+};
+
+const connectAndroid = async (android: Android) => {
+    const serial = getAdbSerial(android);
+    await run(`"${MUMU_ADB_PATH}" connect ${serial}`);
+    return serial;
+};
+
+// install apk app
+export const installApk = async (android: Android, apkPath: string) => {
+    const androidInstance = await getAndroid(Number(android.index));
+    const serial = await connectAndroid(androidInstance);
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} install -r "${apkPath}"`);
+};
+
+// remove apk app
+export const removeApk = async (android: Android, packageName: string) => {
+    const androidInstance = await getAndroid(Number(android.index));
+    const serial = await connectAndroid(androidInstance);
+    try {
+        await run(`"${MUMU_ADB_PATH}" -s ${serial} uninstall ${packageName}`);
+    } catch (error: any) {
+        const msg = `${error?.stdout || ''}${error?.stderr || ''}${error?.message || ''}`;
+        if (msg.includes('DELETE_FAILED_INTERNAL_ERROR') || msg.includes('not installed')) {
+            console.log(`Package ${packageName} chưa cài, bỏ qua`);
+            return;
+        }
+        throw error;
+    }
+};
+
+// open app — resolve launcher component rồi am start -n (một số app không mở được bằng -p)
+const openApp = async (android: Android, packageName: string) => {
+    const androidInstance = await getAndroid(Number(android.index));
+    const serial = await connectAndroid(androidInstance);
+    const resolveOut = await run(
+        `"${MUMU_ADB_PATH}" -s ${serial} shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER ${packageName}`,
+        { silent: true }
+    );
+    const component = (resolveOut || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .pop();
+
+    if (component && component.includes('/')) {
+        await run(`"${MUMU_ADB_PATH}" -s ${serial} shell am start -n ${component}`);
+        return;
+    }
+
+    // fallback
+    await run(
+        `"${MUMU_ADB_PATH}" -s ${serial} shell monkey -p ${packageName} -c android.intent.category.LAUNCHER 1`
+    );
+};
+
+// copy file to android
+const copyFileToAndroid = async (android: Android, filePath: string) => {
+    const androidInstance = await getAndroid(Number(android.index));
+    const serial = await connectAndroid(androidInstance);
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} push "${filePath}" /sdcard/Download/`);
+};
+
+const CLASH_META_PACKAGE = 'com.github.metacubex.clash.meta';
+const CLASH_META_APK = 'C:\\AndroidAppData\\apk\\clash-meta.apk';
+const THREADS_PACKAGE = 'com.instagram.barcelona';
+
+// setup proxy trên 1 android (cần account.proxyPath)
+export const setupProxy = async (android: Android, account?: AndroidAccount | null) => {
+    const acc = account || android.account;
+    if (!acc?.proxyPath) {
+        throw new Error(`Android index ${android.index} chưa có proxyPath`);
+    }
+
+    const androidInstance = await getAndroid(Number(android.index));
+    await removeApk(androidInstance, CLASH_META_PACKAGE);
+    await installApk(androidInstance, CLASH_META_APK);
+
+    // copy yml to android
+    await copyFileToAndroid(androidInstance, acc.proxyPath);
+    await sleep(2000);
+
+    // open clash meta app
+    await openApp(androidInstance, CLASH_META_PACKAGE);
+
+    await sleep(3000);
+    const serial = await connectAndroid(androidInstance);
+
+    // touch 452 894 Allow notifications
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 452 894`);
+    await sleep(1000);
+
+    // tapp 466 510 Profile
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 466 510`);
+    await sleep(1000);
+
+    // tap 835 105 add profile
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 835 105`);
+    await sleep(1000);
+
+    // tap 481 219 import file
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 481 219`);
+    await sleep(1000);
+
+    // tap 466 834 Select file
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 466 834`);
+    await sleep(1000);
+
+    // tap 838 228 more import
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 838 228`);
+    await sleep(1000);
+
+    // tap 458 1536 import
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 458 1536`);
+    await sleep(1000);
+
+    // tap 55 92 menu
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 55 92`);
+    await sleep(1000);
+
+    // tap 250 438 download folder
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 250 438`);
+    await sleep(1000);
+
+    // tap 217 669 select yml file
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 217 669`);
+    await sleep(1000);
+
+    // tap 60 102 back
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 60 102`);
+    await sleep(1000);
+
+    // tap 835 102 save
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 835 102`);
+    await sleep(1000);
+
+    // tap 397 230 select profile
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 397 230`);
+    await sleep(1000);
+
+    // tap 70 99 back
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 70 99`);
+    await sleep(1000);
+
+    // tap 418 302 start proxy
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 418 302`);
+    await sleep(1000);
+
+    // tap 763 1043 confirm
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 763 1043`);
+    await sleep(1000);
+
+    // close app
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell am force-stop ${CLASH_META_PACKAGE}`);
+};
+
+/** Setup proxy lần lượt cho list android đã chọn (cần đang chạy + có proxyPath) */
+export const setupProxiesOnAndroids = async (androids: Android[]) => {
+    if (!androids.length) throw new Error('Chưa chọn Android nào');
+
+    const results: { index: string; name: string; ok: boolean; error?: string }[] = [];
+    for (const selected of androids) {
+        try {
+            const android = await getAndroid(Number(selected.index));
+            if (!android.account?.proxyPath) {
+                throw new Error('Chưa gán proxyPath');
+            }
+            await setupProxy(android, android.account);
+            results.push({ index: android.index, name: android.name, ok: true });
+        } catch (error) {
+            results.push({
+                index: selected.index,
+                name: selected.name,
+                ok: false,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    }
+
+    return {
+        total: androids.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
+};
+
+// auto register account on android
+const escapeAdbText = (text: string) =>
+    text
+        .replace(/\\/g, '\\\\')
+        .replace(/ /g, '%s')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/&/g, '\\&')
+        .replace(/</g, '\\<')
+        .replace(/>/g, '\\>')
+        .replace(/\|/g, '\\|')
+        .replace(/;/g, '\\;')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)');
+
+export const autoRegisterAccountOnAndroid = async (
+    android: Android,
+    account?: AndroidAccount | null
+) => {
+    const androidInstance = await getAndroid(Number(android.index));
+    const acc = account || androidInstance.account;
+    if (!acc?.username || !acc?.password) {
+        throw new Error(`Android index ${android.index} chưa có username/password`);
+    }
+
+    // mở Clash Meta rồi bật proxy
+    await openApp(androidInstance, CLASH_META_PACKAGE);
+    await sleep(2000);
+    const serial = await connectAndroid(androidInstance);
+
+    // tap 463 309 start proxy
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 463 309`);
+    await sleep(3000);
+
+    // go home
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input keyevent 3`);
+    await sleep(1000);
+
+    // open threads app
+    await openApp(androidInstance, THREADS_PACKAGE);
+    await sleep(5000);
+
+    // tap 379 918 login with instagram
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 379 918`);
+    await sleep(3000);
+
+    // tap 395 711 username
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 395 711`);
+    await sleep(1000);
+
+    // input username
+    await run(
+        `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(acc.username)}`
+    );
+    await sleep(1000);
+
+    // tap 415 845 password
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 415 845`);
+    await sleep(1000);
+
+    // input password
+    await run(
+        `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(acc.password)}`
+    );
+    await sleep(1000);
+
+    // tap 424 983 submit
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 424 983`);
+    await sleep(5000);
+
+    // tap 460 1550 next pubic profile
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 460 1550`);
+    await sleep(3000);
+
+    // tap 437 1420 confirm and join threads
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 437 1420`);
+    await sleep(20000);
+
+    // tap 455 1000 allow notifications
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 455 850`);
+    await sleep(1000);
+
+    // tap 449 1550 follow all
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 449 1550`);
+    await sleep(3000);
+
+    // lướt feed trong ~1 phút
+    const scrollUntil = Date.now() + 60_000;
+    while (Date.now() < scrollUntil) {
+        // swipe up: giữa màn hình
+        await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input swipe 450 1300 450 400 500`);
+        await sleep(1500 + Math.floor(Math.random() * 1500));
+    }
+};
+
+/** Auto register lần lượt cho list android đã chọn (cần đang chạy + có account) */
+export const autoRegisterAccountsOnAndroids = async (androids: Android[]) => {
+    if (!androids.length) throw new Error('Chưa chọn Android nào');
+
+    const results: { index: string; name: string; ok: boolean; error?: string }[] = [];
+    for (const selected of androids) {
+        try {
+            const android = await getAndroid(Number(selected.index));
+            if (!android.account?.username || !android.account?.password) {
+                throw new Error('Chưa gán account');
+            }
+            await autoRegisterAccountOnAndroid(android, android.account);
+            results.push({ index: android.index, name: android.name, ok: true });
+        } catch (error) {
+            results.push({
+                index: selected.index,
+                name: selected.name,
+                ok: false,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    }
+
+    return {
+        total: androids.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
     };
 };

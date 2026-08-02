@@ -106,6 +106,10 @@ contextBridge.exposeInMainWorld('api', {
   closeAndroid: (android: Android) => invoke(InvokeChannel.CLOSE_ANDROID, android),
   randomMuMuName: (android: Android) => invoke(InvokeChannel.RANDOM_MUMU_NAME, android),
   assignAccountsToAndroids: (androids: Android[]) => invoke(InvokeChannel.ASSIGN_ACCOUNTS_TO_ANDROIDS, androids),
+  assignProxiesToAndroids: (androids: Android[]) => invoke(InvokeChannel.ASSIGN_PROXIES_TO_ANDROIDS, androids),
+  setupProxiesOnAndroids: (androids: Android[]) => invoke(InvokeChannel.SETUP_PROXIES_ON_ANDROIDS, androids),
+  autoRegisterAccountsOnAndroids: (androids: Android[]) =>
+    invoke(InvokeChannel.AUTO_REGISTER_ACCOUNTS_ON_ANDROIDS, androids),
 });
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
