@@ -409,10 +409,6 @@ export const setupProxy = async (android: Android, account?: AndroidAccount | nu
     await removeApk(androidInstance, CLASH_META_PACKAGE);
     await installApk(androidInstance, CLASH_META_APK);
 
-    // copy yml to android
-    await copyFileToAndroid(androidInstance, acc.proxyPath);
-    await sleep(2000);
-
     // open clash meta app
     await openApp(androidInstance, CLASH_META_PACKAGE);
 
@@ -447,17 +443,15 @@ export const setupProxy = async (android: Android, account?: AndroidAccount | nu
     await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 458 1536`);
     await sleep(1000);
 
-    // tap 55 92 menu
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 55 92`);
-    await sleep(1000);
-
-    // tap 250 438 download folder
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 250 438`);
-    await sleep(1000);
-
-    // tap 217 669 select yml file
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 217 669`);
-    await sleep(1000);
+    if (Number(android.index) % 2 === 0) {
+        // tap 217 669 select yml file
+        await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 217 669`);
+        await sleep(1000);
+    } else {
+        // tap 685 651 select yml file
+        await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 685 651`);
+        await sleep(1000);
+    }
 
     // tap 60 102 back
     await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 60 102`);
