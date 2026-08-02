@@ -487,28 +487,30 @@ export const setupProxy = async (android: Android, account?: AndroidAccount | nu
     await run(`"${MUMU_ADB_PATH}" -s ${serial} shell am force-stop ${CLASH_META_PACKAGE}`);
 };
 
-/** Setup proxy lần lượt cho list android đã chọn (cần đang chạy + có proxyPath) */
+/** Setup proxy đồng thời, mỗi android cách nhau 8 giây khi start */
 export const setupProxiesOnAndroids = async (androids: Android[]) => {
     if (!androids.length) throw new Error('Chưa chọn Android nào');
 
-    const results: { index: string; name: string; ok: boolean; error?: string }[] = [];
-    for (const selected of androids) {
+    const tasks = androids.map(async (selected, i) => {
+        if (i > 0) await sleep(i * 8000);
         try {
             const android = await getAndroid(Number(selected.index));
             if (!android.account?.proxyPath) {
                 throw new Error('Chưa gán proxyPath');
             }
             await setupProxy(android, android.account);
-            results.push({ index: android.index, name: android.name, ok: true });
+            return { index: android.index, name: android.name, ok: true as const };
         } catch (error) {
-            results.push({
+            return {
                 index: selected.index,
                 name: selected.name,
-                ok: false,
+                ok: false as const,
                 error: error instanceof Error ? error.message : String(error),
-            });
+            };
         }
-    }
+    });
+
+    const results = await Promise.all(tasks);
 
     return {
         total: androids.length,
