@@ -1,0 +1,29 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+
+proxies:
+  - name: m2proxy
+    type: http
+    server: s20new.m2proxy.com
+    port: 8022
+    username: qqk61
+    password: o0xji
+
+proxy-groups:
+  - name: Proxy
+    type: select
+    proxies:
+      - m2proxy
+      - DIRECT
+
+rules:
+  - MATCH,Proxy

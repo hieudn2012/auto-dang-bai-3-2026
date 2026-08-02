@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { promises as fs } from 'fs';
-import { join } from 'path';
+import { extname, join } from 'path';
 import { promisify } from 'util';
 import { loadMainConfig } from './common';
 
@@ -38,9 +38,9 @@ export interface Android {
     account?: AndroidAccount | null;
 }
 
-const MUMU_MANAGER_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe';
-const MUMU_ADB_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe';
-const MUMU_VMS_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\vms';
+const MUMU_MANAGER_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe';
+const MUMU_ADB_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe';
+const MUMU_VMS_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\vms';
 const MUMU_MANAGER_INFO_COMMAND = 'info --vmindex all';
 
 const run = async (cmd: string, { silent = false } = {}) => {
@@ -642,4 +642,35 @@ export const autoRegisterAccountsOnAndroids = async (androids: Android[]) => {
         failed: results.filter((r) => !r.ok).length,
         results,
     };
+};
+
+// copy file to camera — rename khi push (vd: test.png -> IMG_20260802_185230.png)
+const copyFileToCamera = async (
+    android: Android,
+    filePath: string,
+    newFileName?: string
+) => {
+    const serial = await connectAndroid(android);
+    const ext = extname(filePath) || '.jpg';
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const targetName = newFileName || `IMG_${stamp}${ext}`;
+    const remotePath = `/sdcard/DCIM/Camera/${targetName}`;
+
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell mkdir -p /sdcard/DCIM/Camera`);
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} push "${filePath}" "${remotePath}"`);
+    // refresh gallery
+    await run(
+        `"${MUMU_ADB_PATH}" -s ${serial} shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file://${remotePath}"`,
+        { silent: true }
+    ).catch(() => undefined);
+
+    return remotePath;
+};
+
+// delete all files in camera
+const deleteAllFilesInCamera = async (android: Android) => {
+    const serial = await connectAndroid(android);
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell rm -rf /sdcard/DCIM/Camera/*`);
 };
