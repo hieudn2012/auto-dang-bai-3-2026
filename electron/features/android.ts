@@ -602,39 +602,41 @@ export const autoRegisterAccountOnAndroid = async (
 
     // tap 449 1550 follow all
     await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 449 1550`);
-    await sleep(3000);
+    await sleep(10000);
 
     // lướt feed trong ~1 phút
-    const scrollUntil = Date.now() + 60_000;
-    while (Date.now() < scrollUntil) {
-        // swipe up: giữa màn hình
-        await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input swipe 450 1300 450 400 500`);
-        await sleep(1500 + Math.floor(Math.random() * 1500));
-    }
+    // const scrollUntil = Date.now() + 60_000;
+    // while (Date.now() < scrollUntil) {
+    //     // swipe up: giữa màn hình
+    //     await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input swipe 450 1300 450 400 500`);
+    //     await sleep(1500 + Math.floor(Math.random() * 1500));
+    // }
 };
 
-/** Auto register lần lượt cho list android đã chọn (cần đang chạy + có account) */
+/** Auto register đồng thời, mỗi android cách nhau 8 giây khi start */
 export const autoRegisterAccountsOnAndroids = async (androids: Android[]) => {
     if (!androids.length) throw new Error('Chưa chọn Android nào');
 
-    const results: { index: string; name: string; ok: boolean; error?: string }[] = [];
-    for (const selected of androids) {
+    const tasks = androids.map(async (selected, i) => {
+        if (i > 0) await sleep(i * 8000);
         try {
             const android = await getAndroid(Number(selected.index));
             if (!android.account?.username || !android.account?.password) {
                 throw new Error('Chưa gán account');
             }
             await autoRegisterAccountOnAndroid(android, android.account);
-            results.push({ index: android.index, name: android.name, ok: true });
+            return { index: android.index, name: android.name, ok: true as const };
         } catch (error) {
-            results.push({
+            return {
                 index: selected.index,
                 name: selected.name,
-                ok: false,
+                ok: false as const,
                 error: error instanceof Error ? error.message : String(error),
-            });
+            };
         }
-    }
+    });
+
+    const results = await Promise.all(tasks);
 
     return {
         total: androids.length,
