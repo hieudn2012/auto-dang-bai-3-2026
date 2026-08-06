@@ -284,7 +284,7 @@ const AndroidManage = () => {
                   .filter(Boolean) as Android[];
                 const result = await windowInstance.api.assignProxiesToAndroids(ordered);
                 toast.success(
-                  `Đã gán proxy cho ${result.assigned} account (${result.proxyCount} file yml)`
+                  `Đã gán proxy cho ${result.assigned} account (${result.proxyCount} dòng trong proxy.txt)`
                 );
                 await fetchAndroidList();
               } catch (error) {
@@ -413,6 +413,25 @@ const AndroidManage = () => {
                   >
                     <i className="fas fa-folder-open"></i>
                   </Button>
+                  <Button
+                    disabled={!!actionIndex || !outputAccount}
+                    tooltip="Export account (bỏ name + proxy) → export.txt"
+                    onClick={async () => {
+                      try {
+                        setActionIndex('export');
+                        const result = await windowInstance.api.exportAccountsFromOutput();
+                        toast.success(`Đã export ${result.count} account → export.txt`);
+                      } catch (error) {
+                        console.error(error);
+                        toast.error(error instanceof Error ? error.message : 'Export thất bại');
+                      } finally {
+                        setActionIndex(null);
+                      }
+                    }}
+                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                  >
+                    <i className="fas fa-file-export"></i>
+                  </Button>
                 </div>
               </div>
 
@@ -489,13 +508,13 @@ const AndroidManage = () => {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                       <div className="relative group inline-flex">
-                        {item.account?.proxyPath ? (
+                        {item.account?.proxy ? (
                           <i className="fa-solid fa-circle-check text-green-500"></i>
                         ) : (
                           <i className="fa-solid fa-circle-xmark text-red-400"></i>
                         )}
                         <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-all duration-200 group-hover:opacity-100">
-                          {item.account?.proxyPath || "Chưa gán proxy"}
+                          {item.account?.proxy || "Chưa gán proxy"}
                           <div className="absolute left-1/2 top-full -mt-1 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
                         </div>
                       </div>
@@ -546,7 +565,7 @@ const AndroidManage = () => {
                           <i className="fa-solid fa-shuffle"></i>
                         </Button>
                         <Button
-                          disabled={busy || !item.is_android_started || !item.account?.proxyPath}
+                          disabled={busy || !item.is_android_started || !item.account?.proxy}
                           onClick={() => handleSetupProxy(item)}
                           tooltip="Setup proxy"
                           className="px-2 py-1 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50"

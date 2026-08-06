@@ -65,6 +65,7 @@ export enum InvokeChannel {
   ASSIGN_PROXIES_TO_ANDROIDS = 'assign-proxies-to-androids',
   SETUP_PROXIES_ON_ANDROIDS = 'setup-proxies-on-androids',
   AUTO_REGISTER_ACCOUNTS_ON_ANDROIDS = 'auto-register-accounts-on-androids',
+  EXPORT_ACCOUNTS_FROM_OUTPUT = 'export-accounts-from-output',
 }
 
 export type MainConfig = {

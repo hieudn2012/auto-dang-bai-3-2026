@@ -110,6 +110,7 @@ contextBridge.exposeInMainWorld('api', {
   setupProxiesOnAndroids: (androids: Android[]) => invoke(InvokeChannel.SETUP_PROXIES_ON_ANDROIDS, androids),
   autoRegisterAccountsOnAndroids: (androids: Android[]) =>
     invoke(InvokeChannel.AUTO_REGISTER_ACCOUNTS_ON_ANDROIDS, androids),
+  exportAccountsFromOutput: () => invoke(InvokeChannel.EXPORT_ACCOUNTS_FROM_OUTPUT),
 });
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

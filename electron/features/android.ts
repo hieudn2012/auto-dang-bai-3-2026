@@ -1,20 +1,28 @@
 import { exec } from 'child_process';
 import { promises as fs } from 'fs';
-import { extname, join } from 'path';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { promisify } from 'util';
+import { remote } from 'webdriverio';
 import { loadMainConfig } from './common';
+
+type AppiumDriver = WebdriverIO.Browser;
 
 const execAsync = promisify(exec);
 
 const ACCOUNT_FILE = 'account.txt';
+const EXPORT_FILE = 'export.txt';
+const PROXY_PLACEHOLDER = '##proxy##';
 
 export interface AndroidAccount {
     username: string;
     password: string;
     twoFa: string;
     cookies: string;
-    proxyPath: string;
-    raw: string; // user|password|2fa|cookies|proxyPath
+    raw: string;
+    // 51.79.132.48:8022:qqk61:o0xji -> address:port:username:password
+    // chưa gán thì ##proxy##
+    proxy: string;
 }
 
 export interface Android {
@@ -38,9 +46,9 @@ export interface Android {
     account?: AndroidAccount | null;
 }
 
-const MUMU_MANAGER_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe';
-const MUMU_ADB_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe';
-const MUMU_VMS_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\vms';
+const MUMU_MANAGER_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe';
+const MUMU_ADB_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe';
+const MUMU_VMS_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\vms';
 const MUMU_MANAGER_INFO_COMMAND = 'info --vmindex all';
 
 const run = async (cmd: string, { silent = false } = {}) => {
@@ -73,19 +81,20 @@ const getPlayerNameFromConfig = async (index: string, androidVersion = '15.0') =
     }
 };
 
-/** Parse accountRaw: user||password||2fa||cookies[||proxyPath] */
+/** Parse accountRaw: user|password|2fa|cookies[|proxy] — proxy ##proxy## coi như chưa gán */
 const parseAccountRaw = (accountRaw: string): Omit<AndroidAccount, 'raw'> => {
     const parts = accountRaw.split('|');
     const username = parts[0] || '';
     const password = parts[1] || '';
     const twoFa = parts[2] || '';
     if (parts.length >= 5) {
+        const proxyRaw = parts[parts.length - 1] || '';
         return {
             username,
             password,
             twoFa,
             cookies: parts.slice(3, -1).join('|'),
-            proxyPath: parts[parts.length - 1] || '',
+            proxy: normalizeProxy(proxyRaw),
         };
     }
     return {
@@ -93,13 +102,51 @@ const parseAccountRaw = (accountRaw: string): Omit<AndroidAccount, 'raw'> => {
         password,
         twoFa,
         cookies: parts.slice(3).join('|'),
-        proxyPath: '',
+        proxy: '',
     };
 };
 
+const normalizeProxy = (proxy: string) => {
+    const value = (proxy || '').trim();
+    if (!value || value === PROXY_PLACEHOLDER) return '';
+    return value;
+};
+
+/** true nếu đã gán proxy thật (không phải placeholder) */
+export const hasAssignedProxy = (proxy?: string | null) => {
+    const value = normalizeProxy(proxy || '');
+    return value.split(':').length >= 4;
+};
+
 const buildAccountRaw = (account: Omit<AndroidAccount, 'raw'>) => {
-    const base = `${account.username}|${account.password}|${account.twoFa}|${account.cookies}`;
-    return account.proxyPath ? `${base}|${account.proxyPath}` : base;
+    const proxy = normalizeProxy(account.proxy) || PROXY_PLACEHOLDER;
+    return `${account.username}|${account.password}|${account.twoFa}|${account.cookies}|${proxy}`;
+};
+
+/** Giữ 1 dòng / name (name--...). Line sau ghi đè line trước — hết duplicate. */
+const mergeAccountOutputLines = (existing: string[], upserts: string[] = []): string[] => {
+    const result: string[] = [];
+    const indexByName = new Map<string, number>();
+
+    const apply = (line: string) => {
+        const sep = line.indexOf('--');
+        if (sep <= 0) {
+            result.push(line);
+            return;
+        }
+        const name = line.slice(0, sep);
+        const idx = indexByName.get(name);
+        if (idx === undefined) {
+            indexByName.set(name, result.length);
+            result.push(line);
+            return;
+        }
+        result[idx] = line;
+    };
+
+    for (const line of existing) apply(line);
+    for (const line of upserts) apply(line);
+    return result;
 };
 
 /** Đọc outputAccount/account.txt -> Map<name, AndroidAccount> */
@@ -176,9 +223,10 @@ export const randomMuMuName = async (androidOrIndex: Android | string | number) 
 
 /**
  * Gán account từ inputAccount/account.txt cho list android đã chọn (theo thứ tự).
- * Input:  user|password|2fa|cookies|proxyPath
- * Output: name--user|password|2fa|cookies|proxyPath  (append vào outputAccount/account.txt)
- * Sau khi gán: xóa các line đã dùng khỏi input.
+ * Input:  user|password|2fa|cookies[|proxy]
+ * Output: name--user|password|2fa|cookies|proxy  (append/ghi đè theo name, không duplicate)
+ * proxy là optional, nếu không có thì để ##proxy##
+ * Sau khi gán: xóa các line đã dùng khỏi input. Name đã có trong output thì ghi đè.
  */
 export const assignAccountsToAndroids = async (androids: Android[]) => {
     if (!androids.length) throw new Error('Chưa chọn Android nào');
@@ -216,8 +264,9 @@ export const assignAccountsToAndroids = async (androids: Android[]) => {
     for (let i = 0; i < androids.length; i++) {
         const selected = androids[i];
         const latest = latestList.find((item) => item.index === selected.index) || selected;
-        const accountLine = inputLines[i];
-        assignedLines.push(`${latest.name}--${accountLine}`);
+        const parsed = parseAccountRaw(inputLines[i]);
+        // chưa có proxy thật -> ghi ##proxy##
+        assignedLines.push(`${latest.name}--${buildAccountRaw(parsed)}`);
     }
 
     await fs.mkdir(outputDir, { recursive: true });
@@ -231,7 +280,8 @@ export const assignAccountsToAndroids = async (androids: Android[]) => {
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean);
-    const nextOutput = [...outputExisting, ...assignedLines];
+    // name đã có thì ghi đè, đồng thời xóa duplicate name--
+    const nextOutput = mergeAccountOutputLines(outputExisting, assignedLines);
     await fs.writeFile(outputPath, nextOutput.join('\n') + (nextOutput.length ? '\n' : ''), 'utf8');
 
     const remainingInput = inputLines.slice(androids.length);
@@ -250,9 +300,10 @@ export const assignAccountsToAndroids = async (androids: Android[]) => {
 };
 
 /**
- * Gán proxy (.yml) từ proxyFolder cho android đã chọn (theo thứ tự).
- * Output line: name--user|password|2fa|cookies|proxyPath
- * Nếu số yml < số selected thì lặp lại (cycle).
+ * Gán proxy từ proxyFolder/proxy.txt cho android đã chọn (theo thứ tự).
+ * Mỗi dòng: address:port:username:password  (vd: 51.79.132.48:8022:qqk61:o0xji)
+ * Output line: name--user|password|2fa|cookies|proxy
+ * Thay ##proxy## (hoặc proxy cũ) bằng proxy mới. Cycle nếu thiếu.
  */
 export const assignProxiesToAndroids = async (androids: Android[]) => {
     if (!androids.length) throw new Error('Chưa chọn Android nào');
@@ -263,17 +314,23 @@ export const assignProxiesToAndroids = async (androids: Android[]) => {
     if (!outputDir) throw new Error('Chưa set thư mục Output Account');
     if (!proxyDir) throw new Error('Chưa set thư mục Proxy Folder');
 
-    let proxyFiles: string[] = [];
+    const proxyFilePath = join(proxyDir, 'proxy.txt');
+    let proxyLines: string[] = [];
     try {
-        const entries = await fs.readdir(proxyDir);
-        proxyFiles = entries
-            .filter((name) => name.toLowerCase().endsWith('.yml') || name.toLowerCase().endsWith('.yaml'))
-            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-            .map((name) => join(proxyDir, name));
+        const raw = await fs.readFile(proxyFilePath, 'utf8');
+        proxyLines = raw
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
     } catch {
-        throw new Error(`Không đọc được thư mục proxy: ${proxyDir}`);
+        throw new Error(`Không đọc được file: ${proxyFilePath}`);
     }
-    if (!proxyFiles.length) throw new Error('Không có file .yml trong Proxy Folder');
+    if (!proxyLines.length) throw new Error('proxy.txt không có dòng proxy nào');
+
+    const invalid = proxyLines.find((line) => !hasAssignedProxy(line));
+    if (invalid) {
+        throw new Error(`Sai format proxy (cần address:port:user:pass): ${invalid}`);
+    }
 
     const outputPath = join(outputDir, ACCOUNT_FILE);
     let outputRaw = '';
@@ -283,21 +340,22 @@ export const assignProxiesToAndroids = async (androids: Android[]) => {
         throw new Error(`Không đọc được file: ${outputPath}`);
     }
 
-    const outputLines = outputRaw
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
+    const outputLines = mergeAccountOutputLines(
+        outputRaw
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+    );
 
-    const lineByName = new Map<string, { index: number; line: string }>();
-    outputLines.forEach((line, index) => {
+    const lineByName = new Map<string, string>();
+    for (const line of outputLines) {
         const sep = line.indexOf('--');
-        if (sep <= 0) return;
-        lineByName.set(line.slice(0, sep), { index, line });
-    });
+        if (sep <= 0) continue;
+        lineByName.set(line.slice(0, sep), line);
+    }
 
     const latestList = await getAndroidList();
     const updated: string[] = [];
-    const nextLines = [...outputLines];
 
     for (let i = 0; i < androids.length; i++) {
         const selected = androids[i];
@@ -307,22 +365,69 @@ export const assignProxiesToAndroids = async (androids: Android[]) => {
             throw new Error(`Android "${latest.name}" chưa có account trong output`);
         }
 
-        const accountRaw = existing.line.slice(existing.line.indexOf('--') + 2);
+        const accountRaw = existing.slice(existing.indexOf('--') + 2);
         const parsed = parseAccountRaw(accountRaw);
-        const proxyPath = proxyFiles[i % proxyFiles.length];
-        const nextRaw = buildAccountRaw({ ...parsed, proxyPath });
-        const nextLine = `${latest.name}--${nextRaw}`;
-        nextLines[existing.index] = nextLine;
+        const proxy = proxyLines[i % proxyLines.length];
+        const nextLine = `${latest.name}--${buildAccountRaw({ ...parsed, proxy })}`;
         updated.push(nextLine);
     }
 
+    const nextLines = mergeAccountOutputLines(outputLines, updated);
     await fs.writeFile(outputPath, nextLines.join('\n') + (nextLines.length ? '\n' : ''), 'utf8');
 
     return {
         assigned: updated.length,
-        proxyCount: proxyFiles.length,
+        proxyCount: proxyLines.length,
         outputPath,
         items: updated,
+    };
+};
+
+/**
+ * Đọc outputAccount/account.txt -> ghi export.txt
+ * Bỏ name-- và field proxy → còn user|password|2fa|cookies
+ */
+export const exportAccountsFromOutput = async () => {
+    const config = await loadMainConfig();
+    const outputDir = config?.android?.outputAccount;
+    if (!outputDir) throw new Error('Chưa set thư mục Output Account');
+
+    const inputPath = join(outputDir, ACCOUNT_FILE);
+    const exportPath = join(outputDir, EXPORT_FILE);
+
+    let raw = '';
+    try {
+        raw = await fs.readFile(inputPath, 'utf8');
+    } catch {
+        throw new Error(`Không đọc được file: ${inputPath}`);
+    }
+
+    const lines = raw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    const exported: string[] = [];
+    for (const line of lines) {
+        const sep = line.indexOf('--');
+        const accountRaw = sep > 0 ? line.slice(sep + 2) : line;
+        const parsed = parseAccountRaw(accountRaw);
+        if (!parsed.username && !parsed.password) continue;
+        exported.push(
+            `${parsed.username}|${parsed.password}|${parsed.twoFa}|${parsed.cookies}`
+        );
+    }
+
+    await fs.writeFile(
+        exportPath,
+        exported.join('\n') + (exported.length ? '\n' : ''),
+        'utf8'
+    );
+
+    return {
+        count: exported.length,
+        exportPath,
+        items: exported,
     };
 };
 
@@ -339,10 +444,42 @@ const connectAndroid = async (android: Android) => {
     return serial;
 };
 
-// install apk app
+// install apk app (hỗ trợ .apk và .xapk)
 export const installApk = async (android: Android, apkPath: string) => {
     const androidInstance = await getAndroid(Number(android.index));
     const serial = await connectAndroid(androidInstance);
+
+    const lower = apkPath.toLowerCase();
+    if (lower.endsWith('.xapk')) {
+        const extractDir = join(tmpdir(), `xapk-install-${Date.now()}`);
+        const zipCopy = join(extractDir, 'app.zip');
+        await fs.mkdir(extractDir, { recursive: true });
+        try {
+            await fs.copyFile(apkPath, zipCopy);
+            await run(
+                `powershell -NoProfile -Command "Expand-Archive -LiteralPath '${zipCopy.replace(/'/g, "''")}' -DestinationPath '${extractDir.replace(/'/g, "''")}' -Force"`,
+                { silent: true }
+            );
+            const entries = await fs.readdir(extractDir);
+            const apkFiles = entries
+                .filter((name) => name.toLowerCase().endsWith('.apk'))
+                .map((name) => join(extractDir, name));
+            if (!apkFiles.length) throw new Error(`XAPK không chứa file .apk: ${apkPath}`);
+
+            // ưu tiên base apk (không phải config.*.apk)
+            const baseApk =
+                apkFiles.find((p) => {
+                    const name = p.replace(/^.*[\\/]/, '');
+                    return !name.toLowerCase().startsWith('config.');
+                }) || apkFiles[0];
+
+            await run(`"${MUMU_ADB_PATH}" -s ${serial} install -r "${baseApk}"`);
+        } finally {
+            await fs.rm(extractDir, { recursive: true, force: true }).catch(() => undefined);
+        }
+        return;
+    }
+
     await run(`"${MUMU_ADB_PATH}" -s ${serial} install -r "${apkPath}"`);
 };
 
@@ -394,105 +531,26 @@ const copyFileToAndroid = async (android: Android, filePath: string) => {
     await run(`"${MUMU_ADB_PATH}" -s ${serial} push "${filePath}" /sdcard/Download/`);
 };
 
-const CLASH_META_PACKAGE = 'com.github.metacubex.clash.meta';
-const CLASH_META_APK = 'C:\\AndroidAppData\\apk\\clash-meta.apk';
 const THREADS_PACKAGE = 'com.instagram.barcelona';
-
-// setup proxy trên 1 android (cần account.proxyPath)
-export const setupProxy = async (android: Android, account?: AndroidAccount | null) => {
-    const acc = account || android.account;
-    if (!acc?.proxyPath) {
-        throw new Error(`Android index ${android.index} chưa có proxyPath`);
-    }
-
-    const androidInstance = await getAndroid(Number(android.index));
-    await removeApk(androidInstance, CLASH_META_PACKAGE);
-    await installApk(androidInstance, CLASH_META_APK);
-
-    // open clash meta app
-    await openApp(androidInstance, CLASH_META_PACKAGE);
-
-    await sleep(3000);
-    const serial = await connectAndroid(androidInstance);
-
-    // touch 452 894 Allow notifications
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 452 894`);
-    await sleep(1000);
-
-    // tapp 466 510 Profile
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 466 510`);
-    await sleep(1000);
-
-    // tap 835 105 add profile
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 835 105`);
-    await sleep(1000);
-
-    // tap 481 219 import file
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 481 219`);
-    await sleep(1000);
-
-    // tap 466 834 Select file
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 466 834`);
-    await sleep(1000);
-
-    // tap 838 228 more import
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 838 228`);
-    await sleep(1000);
-
-    // tap 458 1536 import
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 458 1536`);
-    await sleep(1000);
-
-    if (Number(android.index) % 2 === 0) {
-        // tap 217 669 select yml file
-        await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 217 669`);
-        await sleep(1000);
-    } else {
-        // tap 685 651 select yml file
-        await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 685 651`);
-        await sleep(1000);
-    }
-
-    // tap 60 102 back
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 60 102`);
-    await sleep(1000);
-
-    // tap 835 102 save
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 835 102`);
-    await sleep(1000);
-
-    // tap 397 230 select profile
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 397 230`);
-    await sleep(1000);
-
-    // tap 70 99 back
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 70 99`);
-    await sleep(1000);
-
-    // tap 418 302 start proxy
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 418 302`);
-    await sleep(1000);
-
-    // tap 763 1043 confirm
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 763 1043`);
-    await sleep(1000);
-
-    // close app
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell am force-stop ${CLASH_META_PACKAGE}`);
-};
 
 /** Setup proxy đồng thời, mỗi android cách nhau 8 giây khi start */
 export const setupProxiesOnAndroids = async (androids: Android[]) => {
     if (!androids.length) throw new Error('Chưa chọn Android nào');
 
     const tasks = androids.map(async (selected, i) => {
-        if (i > 0) await sleep(i * 8000);
+        if (i > 0) await sleep(i * 3000);
         try {
             const android = await getAndroid(Number(selected.index));
-            if (!android.account?.proxyPath) {
-                throw new Error('Chưa gán proxyPath');
+            if (!hasAssignedProxy(android.account?.proxy)) {
+                throw new Error('Chưa gán proxy');
             }
-            await setupProxy(android, android.account);
+            const [address, port, username, password] = android.account!.proxy.split(':');
+            await setupProxyOnAndroid(android, {
+                address,
+                port,
+                username,
+                password,
+            });
             return { index: android.index, name: android.name, ok: true as const };
         } catch (error) {
             return {
@@ -539,20 +597,9 @@ export const autoRegisterAccountOnAndroid = async (
         throw new Error(`Android index ${android.index} chưa có username/password`);
     }
 
-    // mở Clash Meta rồi bật proxy
-    await openApp(androidInstance, CLASH_META_PACKAGE);
-    await sleep(2000);
     const serial = await connectAndroid(androidInstance);
 
-    // tap 463 309 start proxy
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 463 309`);
-    await sleep(3000);
-
-    // go home
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input keyevent 3`);
-    await sleep(1000);
-
-    // open threads app
+    // open threads app (proxy đã setup qua College Proxy trước đó)
     await openApp(androidInstance, THREADS_PACKAGE);
     await sleep(5000);
 
@@ -642,33 +689,99 @@ export const autoRegisterAccountsOnAndroids = async (androids: Android[]) => {
     };
 };
 
-// copy file to camera — rename khi push (vd: test.png -> IMG_20260802_185230.png)
-const copyFileToCamera = async (
-    android: Android,
-    filePath: string,
-    newFileName?: string
-) => {
-    const serial = await connectAndroid(android);
-    const ext = extname(filePath) || '.jpg';
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-    const targetName = newFileName || `IMG_${stamp}${ext}`;
-    const remotePath = `/sdcard/DCIM/Camera/${targetName}`;
+async function fillIfExists(driver: AppiumDriver, selector: string, value: string) {
+    const [el] = await driver.$$(selector);
+    if (!el) return false;
+    const visible = await el.isDisplayed().catch(() => false);
+    if (!visible) return false;
+    await el.click();
+    await el.clearValue().catch(() => {});
+    await el.setValue(value);
+    console.log(`filled ${selector} = ${value}`);
+    return true;
+}
 
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell mkdir -p /sdcard/DCIM/Camera`);
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} push "${filePath}" "${remotePath}"`);
-    // refresh gallery
-    await run(
-        `"${MUMU_ADB_PATH}" -s ${serial} shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file://${remotePath}"`,
-        { silent: true }
-    ).catch(() => undefined);
+/** Poll button android:id/button1 theo text đến khi hiện rồi click. */
+async function clickButtonByText(driver: AppiumDriver, text: string, { timeoutMs = 30000, intervalMs = 1000 } = {}) {
+    await driver.setTimeout({ implicit: 0 });
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        const buttons = await driver.$$("id:android:id/button1");
+        for (const btn of buttons) {
+            const visible = await btn.isDisplayed().catch(() => false);
+            if (!visible) continue;
+            const t = (await btn.getText().catch(() => "")).trim();
+            if (t !== text) continue;
+            await btn.click();
+            console.log(`clicked: android:id/button1 text="${text}"`);
+            return true;
+        }
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) break;
+        await driver.pause(Math.min(intervalMs, remaining));
+    }
+    console.log(`timeout waiting for button text="${text}"`);
+    return false;
+}
 
-    return remotePath;
+interface SetupProxyParams {
+    address: string;
+    port: string;
+    username: string;
+    password: string;
+}
+
+export const setupProxyOnAndroid = async (android: Android, params: SetupProxyParams) => {
+    const driver = await remote({
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: 4723,
+        path: "/",
+        logLevel: "warn",
+        capabilities: {
+            platformName: "Android",
+            "appium:automationName": "UiAutomator2",
+            "appium:udid": getAdbSerial(android),
+            "appium:appPackage": "com.cell47.College_Proxy",
+            "appium:appActivity": ".user_interface.MainActivity",
+            "appium:noReset": true,
+            "appium:forceAppLaunch": true,
+        },
+    });
+    try {
+        await driver.setTimeout({ implicit: 0 });
+
+        const addressSel = "id:com.cell47.College_Proxy:id/editText_address";
+        const formDeadline = Date.now() + 20000;
+        let formReady = false;
+        while (Date.now() < formDeadline) {
+            const [address] = await driver.$$(addressSel);
+            if (address && (await address.isDisplayed().catch(() => false))) {
+                formReady = true;
+                break;
+            }
+            await driver.pause(1000);
+        }
+        if (!formReady) throw new Error("Main form (editText_address) not found");
+
+        await fillIfExists(driver, addressSel, params.address);
+        await fillIfExists(driver, "id:com.cell47.College_Proxy:id/editText_port", params.port);
+        await fillIfExists(driver, "id:com.cell47.College_Proxy:id/editText_username", params.username);
+        await fillIfExists(driver, "id:com.cell47.College_Proxy:id/editText_password", params.password);
+
+        const [startBtn] = await driver.$$("id:com.cell47.College_Proxy:id/proxy_start_button");
+        if (startBtn && (await startBtn.isDisplayed().catch(() => false))) {
+            await startBtn.click();
+            console.log("clicked: proxy_start_button");
+        }
+
+        // confirm VPN / START SERVICE
+        await clickButtonByText(driver, "START SERVICE", { timeoutMs: 15000, intervalMs: 1000 });
+    } catch (error) {
+        console.error(error);
+        throw error;
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
 };
 
-// delete all files in camera
-const deleteAllFilesInCamera = async (android: Android) => {
-    const serial = await connectAndroid(android);
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell rm -rf /sdcard/DCIM/Camera/*`);
-};

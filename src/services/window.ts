@@ -105,6 +105,11 @@ type WindownInstance = typeof window & {
       failed: number
       results: { index: string; name: string; ok: boolean; error?: string }[]
     }>,
+    exportAccountsFromOutput: () => Promise<{
+      count: number
+      exportPath: string
+      items: string[]
+    }>,
   }
 }
 
