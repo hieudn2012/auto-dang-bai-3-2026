@@ -633,14 +633,6 @@ export const autoRegisterAccountOnAndroid = async (
 
     const serial = await connectAndroid(androidInstance);
 
-    // open threads app (proxy đã setup qua College Proxy trước đó)
-    await openApp(androidInstance, THREADS_PACKAGE);
-    await sleep(5000);
-
-    // tap 379 918 login with instagram
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 379 918`);
-    await sleep(3000);
-
     // tap 395 711 username
     await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 395 711`);
     await sleep(1000);
@@ -660,34 +652,51 @@ export const autoRegisterAccountOnAndroid = async (
         `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(acc.password)}`
     );
     await sleep(1000);
+};
 
-    // tap 424 983 submit
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 424 983`);
+export const openThreadsAppOnAndroid = async (
+    android: Android,
+) => {
+    const androidInstance = await getAndroid(Number(android.index));
+    const serial = await connectAndroid(androidInstance);
+
+    // open threads app (proxy đã setup qua College Proxy trước đó)
+    await openApp(androidInstance, THREADS_PACKAGE);
     await sleep(5000);
 
-    // tap 460 1550 next pubic profile
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 460 1550`);
+    // tap 379 918 login with instagram
+    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 379 918`);
     await sleep(3000);
+};
 
-    // tap 437 1420 confirm and join threads
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 437 1420`);
-    await sleep(20000);
+/** Open Threads + tap Login with Instagram, mỗi android cách nhau 3 giây khi start */
+export const openThreadsAppOnAndroids = async (androids: Android[]) => {
+    if (!androids.length) throw new Error('Chưa chọn Android nào');
 
-    // tap 455 1000 allow notifications
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 455 850`);
-    await sleep(1000);
+    const tasks = androids.map(async (selected, i) => {
+        if (i > 0) await sleep(i * 3000);
+        try {
+            const android = await getAndroid(Number(selected.index));
+            await openThreadsAppOnAndroid(android);
+            return { index: android.index, name: android.name, ok: true as const };
+        } catch (error) {
+            return {
+                index: selected.index,
+                name: selected.name,
+                ok: false as const,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    });
 
-    // tap 449 1550 follow all
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 449 1550`);
-    await sleep(10000);
+    const results = await Promise.all(tasks);
 
-    // lướt feed trong ~1 phút
-    // const scrollUntil = Date.now() + 60_000;
-    // while (Date.now() < scrollUntil) {
-    //     // swipe up: giữa màn hình
-    //     await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input swipe 450 1300 450 400 500`);
-    //     await sleep(1500 + Math.floor(Math.random() * 1500));
-    // }
+    return {
+        total: androids.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
 };
 
 /** Auto register đồng thời, mỗi android cách nhau 8 giây khi start */

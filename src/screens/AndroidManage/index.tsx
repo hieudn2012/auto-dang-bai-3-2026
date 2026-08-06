@@ -159,6 +159,23 @@ const AndroidManage = () => {
     }
   };
 
+  const handleOpenThreads = async (android: Android) => {
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.openThreadsAppOnAndroids([android]);
+      if (result.failed > 0) {
+        toast.error(result.results[0]?.error || "Open Threads thất bại");
+      } else {
+        toast.success(`Đã mở Threads: ${android.name}`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Open Threads thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
   const runBulk = async (
     action: (android: Android) => Promise<void>,
     filter?: (android: Android) => boolean
@@ -353,6 +370,36 @@ const AndroidManage = () => {
             className="px-3 py-1.5 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50"
           >
             <i className="fa-solid fa-bolt mr-1"></i>
+          </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some((item) => !item.is_android_started)
+            }
+            tooltip="Open Threads selected"
+            onClick={async () => {
+              try {
+                setActionIndex('open-threads');
+                const ordered = selectedIndexes
+                  .map((index) => androidList.find((item) => item.index === index))
+                  .filter(Boolean) as Android[];
+                const result = await windowInstance.api.openThreadsAppOnAndroids(ordered);
+                if (result.failed > 0) {
+                  toast.error(`Open Threads: ${result.success} ok, ${result.failed} lỗi`);
+                } else {
+                  toast.success(`Đã mở Threads ${result.success} android`);
+                }
+              } catch (error) {
+                console.error(error);
+                toast.error(error instanceof Error ? error.message : 'Open Threads thất bại');
+              } finally {
+                setActionIndex(null);
+              }
+            }}
+            className="px-3 py-1.5 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50"
+          >
+            <i className="fa-regular fa-folder-open mr-1"></i>
           </Button>
           <Button
             disabled={
@@ -596,6 +643,14 @@ const AndroidManage = () => {
                           className="px-2 py-1 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-bolt"></i>
+                        </Button>
+                        <Button
+                          disabled={busy || !item.is_android_started}
+                          onClick={() => handleOpenThreads(item)}
+                          tooltip="Open Threads"
+                          className="px-2 py-1 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50"
+                        >
+                          <i className="fa-regular fa-folder-open"></i>
                         </Button>
                         <Button
                           disabled={

@@ -122,6 +122,12 @@ type WindownInstance = typeof window & {
         error?: string
       }[]
     }>,
+    openThreadsAppOnAndroids: (androids: Android[]) => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: { index: string; name: string; ok: boolean; error?: string }[]
+    }>,
   }
 }
 
