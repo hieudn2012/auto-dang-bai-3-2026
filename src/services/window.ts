@@ -110,6 +110,18 @@ type WindownInstance = typeof window & {
       exportPath: string
       items: string[]
     }>,
+    connectAllRunningAndroids: () => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: {
+        index: string
+        name: string
+        ok: boolean
+        serial?: string
+        error?: string
+      }[]
+    }>,
   }
 }
 

@@ -195,6 +195,31 @@ const AndroidManage = () => {
               Settings
             </Button>
             <Button
+              disabled={!!actionIndex}
+              onClick={async () => {
+                try {
+                  setActionIndex('connect-adb');
+                  const result = await windowInstance.api.connectAllRunningAndroids();
+                  if (result.total === 0) {
+                    toast.error('Không có Android đang chạy');
+                  } else if (result.failed > 0) {
+                    toast.error(`ADB connect: ${result.success} ok, ${result.failed} lỗi`);
+                  } else {
+                    toast.success(`Đã ADB connect ${result.success} android`);
+                  }
+                } catch (error) {
+                  console.error(error);
+                  toast.error(error instanceof Error ? error.message : 'ADB connect thất bại');
+                } finally {
+                  setActionIndex(null);
+                }
+              }}
+              className="px-3 py-1.5 bg-sky-500 text-white rounded-md hover:bg-sky-600 disabled:opacity-50"
+            >
+              <i className="fa-solid fa-plug mr-1"></i>
+              Connect ADB
+            </Button>
+            <Button
               onClick={fetchAndroidList}
               className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
             >

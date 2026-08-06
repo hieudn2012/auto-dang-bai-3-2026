@@ -46,9 +46,9 @@ export interface Android {
     account?: AndroidAccount | null;
 }
 
-const MUMU_MANAGER_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe';
-const MUMU_ADB_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe';
-const MUMU_VMS_PATH = 'C:\\Program Files\\Netease\\MuMuPlayer\\vms';
+const MUMU_MANAGER_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe';
+const MUMU_ADB_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe';
+const MUMU_VMS_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\vms';
 const MUMU_MANAGER_INFO_COMMAND = 'info --vmindex all';
 
 const run = async (cmd: string, { silent = false } = {}) => {
@@ -442,6 +442,40 @@ const connectAndroid = async (android: Android) => {
     const serial = getAdbSerial(android);
     await run(`"${MUMU_ADB_PATH}" connect ${serial}`);
     return serial;
+};
+
+/** ADB connect tất cả Android đang running (is_android_started). */
+export const connectAllRunningAndroids = async () => {
+    const list = await getAndroidList();
+    const running = list.filter((item) => item.is_android_started);
+
+    const results = await Promise.all(
+        running.map(async (android) => {
+            try {
+                const serial = await connectAndroid(android);
+                return {
+                    index: android.index,
+                    name: android.name,
+                    serial,
+                    ok: true as const,
+                };
+            } catch (error) {
+                return {
+                    index: android.index,
+                    name: android.name,
+                    ok: false as const,
+                    error: error instanceof Error ? error.message : String(error),
+                };
+            }
+        })
+    );
+
+    return {
+        total: running.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
 };
 
 // install apk app (hỗ trợ .apk và .xapk)

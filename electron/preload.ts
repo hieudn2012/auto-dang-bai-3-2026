@@ -111,6 +111,7 @@ contextBridge.exposeInMainWorld('api', {
   autoRegisterAccountsOnAndroids: (androids: Android[]) =>
     invoke(InvokeChannel.AUTO_REGISTER_ACCOUNTS_ON_ANDROIDS, androids),
   exportAccountsFromOutput: () => invoke(InvokeChannel.EXPORT_ACCOUNTS_FROM_OUTPUT),
+  connectAllRunningAndroids: () => invoke(InvokeChannel.CONNECT_ALL_RUNNING_ANDROIDS),
 });
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
