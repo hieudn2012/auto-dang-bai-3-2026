@@ -33,6 +33,13 @@ const getRouters = (flags: Flags) => {
     });
   }
 
+  result.push({
+    path: routerPath.android_manage,
+    name: 'Android',
+    icon: <i className="fab fa-android"></i>,
+    description: 'Quản lý Android'
+  });
+
   if (hasTools) {
     result.push({
       path: routerPath.import_sheet,
@@ -69,20 +76,13 @@ const getRouters = (flags: Flags) => {
     });
   }
 
-  result.push({
-    path: routerPath.android_manage,
-    name: 'Android',
-    icon: <i className="fab fa-android"></i>,
-    description: 'Quản lý Android'
-  });
-
   return result;
 };
 
 const SiderBar = () => {
   const currentPath = window.location.pathname;
   const { flags } = useLDFlags();
-  
+
   const routers = getRouters(flags as Flags);
 
   return (

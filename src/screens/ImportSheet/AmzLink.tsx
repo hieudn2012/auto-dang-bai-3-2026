@@ -23,17 +23,17 @@ const AmzLink = () => {
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <label>WS</label>
-        <Input value={ws} onChange={(e) => setWs(e.target.value)} />
+        <label className="dark:text-gray-300 mb-2">WS</label>
+        <Input value={ws} onChange={(e) => setWs(e.target.value)} className="mt-2" />
       </div>
       <div>
-        <label>Links</label>
-        <TextArea value={links} onChange={(e) => setLinks(e.target.value)} className="min-h-[200px]" />
+        <label className="dark:text-gray-300 mb-2">Links</label>
+        <TextArea value={links} onChange={(e) => setLinks(e.target.value)} className="min-h-[200px] mt-2" />
       </div>
       <Button onClick={handleGetLinks}>Get Links</Button>
       <div>
-        <label>Result Links</label>
-        <TextArea value={result} onChange={(e) => setResult(e.target.value)} className="min-h-[200px]" />
+        <label className="dark:text-gray-300 mb-2">Result Links</label>
+        <TextArea value={result} onChange={(e) => setResult(e.target.value)} className="min-h-[200px] mt-2" />
       </div>
     </div>
   )

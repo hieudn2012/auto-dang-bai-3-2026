@@ -65,48 +65,37 @@ const ManageFolder = () => {
     handleLoadMainConfig();
   }, []);
 
+  const tabClass = (tab: string) =>
+    `py-3 px-6 border-b-2 font-medium text-sm ${
+      activeTab === tab
+        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
+    }`;
+
   return (
     <Layout>
-      <div className="p-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="p-6 text-gray-900 dark:text-gray-100">
+        <div className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <i className="fas fa-cog text-blue-500 mr-2"></i>
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+              <i className="fas fa-cog text-blue-500 dark:text-blue-400 mr-2"></i>
               Cấu Hình
             </h2>
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-gray-200">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex -mb-px">
-              <button
-                onClick={() => setActiveTab('global')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'global'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
+              <button onClick={() => setActiveTab('global')} className={tabClass('global')}>
                 <i className="fas fa-globe mr-2"></i>
                 Global config
               </button>
-              <button
-                onClick={() => setActiveTab('proxy')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'proxy'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
+              <button onClick={() => setActiveTab('proxy')} className={tabClass('proxy')}>
                 <i className="fas fa-network-wired mr-2"></i>
                 Proxy config
               </button>
-              <button
-                onClick={() => setActiveTab('gemini')}
-                className={`py-3 px-6 border-b-2 font-medium text-sm ${activeTab === 'gemini'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
+              <button onClick={() => setActiveTab('gemini')} className={tabClass('gemini')}>
                 <i className="fas fa-robot mr-2"></i>
                 Gemini AI
               </button>
@@ -150,13 +139,13 @@ const ManageFolder = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+            <div className="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
               <Button
                 onClick={() => {
                   handleLoadMainConfig();
                   toast.info('Đã tải cấu hình');
                 }}
-                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white"
+                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white dark:bg-gray-600 dark:hover:bg-gray-500"
               >
                 <i className="fas fa-download mr-2"></i>
                 Load Config
@@ -168,20 +157,6 @@ const ManageFolder = () => {
                 <i className="fas fa-save mr-2"></i>
                 Lưu Config
               </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Info Card */}
-        <div className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <div className="flex items-start">
-            <i className="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
-            <div className="text-sm text-blue-800">
-              <h3 className="font-medium mb-1">Thông tin cấu hình</h3>
-              <p className="text-blue-700">
-                Cấu hình này sẽ được sử dụng làm mặc định cho các chức năng khác trong ứng dụng.
-                Thư mục làm việc là nơi chứa các folder sản phẩm của bạn.
-              </p>
             </div>
           </div>
         </div>

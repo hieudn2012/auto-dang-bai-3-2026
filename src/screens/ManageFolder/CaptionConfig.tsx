@@ -13,7 +13,7 @@ const CaptionConfig = ({
     <div className="space-y-6">
       {/* Caption Section */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           <i className="fas fa-closed-captioning text-purple-400 mr-1"></i>
           Caption Mặc Định
         </label>

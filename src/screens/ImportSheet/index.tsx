@@ -24,10 +24,10 @@ const ImportSheet = () => {
 
   return (
     <Layout>
-      <div className="p-6">
+      <div className="p-6 text-sm">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
             <i className="fas fa-tools text-blue-500 mr-3"></i>
             Import & Management Tools
           </h1>
@@ -37,13 +37,13 @@ const ImportSheet = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="flex flex-wrap border-b border-gray-200">
             {tabs.map((tabItem) => (
               <button
                 key={tabItem.id}
                 onClick={() => setTab(tabItem.id)}
-                className={`flex items-center px-6 py-3 font-medium text-sm transition-all duration-200 border-b-2 ${
+                className={`text-xs flex items-center px-6 py-3 font-medium text-sm transition-all duration-200 border-b-2 ${
                   tab === tabItem.id
                     ? 'border-blue-500 text-blue-600 bg-blue-50'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'

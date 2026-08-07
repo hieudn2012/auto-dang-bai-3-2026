@@ -237,19 +237,21 @@ const AndroidManage = () => {
 
   return (
     <Layout>
-      <div className="p-6 max-w-full min-w-0 overflow-x-hidden">
+      <div className="p-6 max-w-full min-w-0 overflow-x-hidden text-gray-900 dark:text-gray-100">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Android Manage</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Android Manage</h2>
           <div className="flex items-center gap-3">
-            {loading && <span className="text-sm text-gray-500">Loading...</span>}
+            {loading && <span className="text-sm text-gray-500 dark:text-gray-400">Loading...</span>}
             <Button
               onClick={() => setShowMoreActions(true)}
-              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              tooltip="Settings"
             >
-              Settings
+              <i className="fa-solid fa-gear mr-1"></i>
             </Button>
             <Button
               disabled={!!actionIndex}
+              tooltip="Connect ADB"
               onClick={async () => {
                 try {
                   setActionIndex('connect-adb');
@@ -271,22 +273,22 @@ const AndroidManage = () => {
               className="px-3 py-1.5 bg-sky-500 text-white rounded-md hover:bg-sky-600 disabled:opacity-50"
             >
               <i className="fa-solid fa-plug mr-1"></i>
-              Connect ADB
             </Button>
             <Button
               onClick={fetchAndroidList}
-              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              tooltip="Refresh"
             >
               <i className="fa-solid fa-rotate-right mr-1"></i>
-              Refresh
             </Button>
           </div>
         </div>
 
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-gray-600">
-            Selected: <b>{selectedIndexes.length}</b>
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            Selected: <b className="text-gray-900 dark:text-white">{selectedIndexes.length}</b>
           </span>
+          <div className="flex-1"></div>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
             tooltip="Open selected"
@@ -511,17 +513,17 @@ const AndroidManage = () => {
         <Dialog open={showMoreActions} onClose={() => setShowMoreActions(false)} className="!max-w-xl">
           <div className="p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-gray-800">More actions</h3>
+              <h3 className="text-base font-semibold text-gray-800 dark:text-white">More actions</h3>
               <Button
                 onClick={() => setShowMoreActions(false)}
-                className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200"
+                className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
                 <i className="fa-solid fa-xmark"></i>
               </Button>
             </div>
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   <i className="fas fa-folder text-blue-400 mr-1"></i>
                   Input Account
                 </label>
@@ -542,7 +544,7 @@ const AndroidManage = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   <i className="fas fa-folder text-blue-400 mr-1"></i>
                   Output Account
                 </label>
@@ -582,7 +584,7 @@ const AndroidManage = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   <i className="fas fa-folder text-blue-400 mr-1"></i>
                   Proxy Folder
                 </label>
@@ -606,29 +608,29 @@ const AndroidManage = () => {
           </div>
         </Dialog>
 
-        <div className="max-w-full overflow-hidden rounded-lg border border-gray-200">
+        <div className="max-w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-900/50">
               <tr>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   <input
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleSelectAll}
-                    className="h-4 w-4 cursor-pointer"
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                   />
                 </th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Index</th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Message</th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Account</th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Proxy</th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ADB</th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Index</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Message</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Account</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Proxy</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">ADB</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {androidList.map((item) => {
                 const busy = actionIndex === item.index;
                 const checked = selectedIndexes.includes(item.index);
@@ -646,25 +648,25 @@ const AndroidManage = () => {
                 return (
                   <tr
                     key={item.index}
-                    className={`text-xs hover:bg-gray-50 transition-colors ${checked ? "bg-blue-50/50" : ""}`}
+                    className={`text-xs hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${checked ? "bg-blue-50/50 dark:bg-blue-900/20" : ""}`}
                   >
                     <td className="px-2 py-3 overflow-hidden">
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleSelect(item.index)}
-                        className="h-4 w-4 cursor-pointer"
+                        className="h-4 w-4 cursor-pointer rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                       />
                     </td>
-                    <td className="px-2 py-3 truncate overflow-hidden">{item.index}</td>
-                    <td className="px-2 py-3 font-medium overflow-hidden" title={`${item.name}\n${meta}`}>
+                    <td className="px-2 py-3 truncate overflow-hidden text-gray-900 dark:text-gray-100">{item.index}</td>
+                    <td className="px-2 py-3 font-medium overflow-hidden text-gray-900 dark:text-white" title={`${item.name}\n${meta}`}>
                       <div className="truncate">{item.name}</div>
-                      <div className="truncate text-xs font-normal text-gray-400">{meta}</div>
+                      <div className="truncate text-xs font-normal text-gray-400 dark:text-gray-500">{meta}</div>
                     </td>
-                    <td className="px-2 py-3 text-gray-600 overflow-hidden">
+                    <td className="px-2 py-3 text-gray-600 dark:text-gray-300 overflow-hidden">
                       <div id={`message-${item.name}`} className="truncate min-h-[20px]"></div>
                     </td>
-                    <td className="px-2 py-3 text-gray-600 overflow-hidden truncate" title={item.account?.username || undefined}>
+                    <td className="px-2 py-3 text-gray-600 dark:text-gray-300 overflow-hidden truncate" title={item.account?.username || undefined}>
                       {item.account?.username || "-"}
                     </td>
                     <td className="px-2 py-3 overflow-hidden">
@@ -684,14 +686,14 @@ const AndroidManage = () => {
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                           item.is_android_started
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-600"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                            : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {item.is_android_started ? "On" : "Off"}
                       </span>
                     </td>
-                    <td className="px-2 py-3 text-gray-600 overflow-hidden truncate" title={adb}>
+                    <td className="px-2 py-3 text-gray-600 dark:text-gray-300 overflow-hidden truncate" title={adb}>
                       {adb}
                     </td>
                     <td className="px-2 py-3 text-right overflow-hidden">
@@ -768,7 +770,7 @@ const AndroidManage = () => {
               })}
               {!loading && androidList.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     No Android devices found
                   </td>
                 </tr>

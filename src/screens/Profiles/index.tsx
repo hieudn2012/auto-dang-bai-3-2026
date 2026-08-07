@@ -433,17 +433,17 @@ const Profiles = () => {
 
   return (
     <Layout>
-      <div className="p-6">
+      <div className="p-6 text-gray-900 dark:text-gray-100">
         {/* Header */}
-        <div className="fixed bg-white z-10 top-0 left-[116px] right-[56px]">
+        <div className="fixed z-10 top-0 left-[116px] right-[56px] bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800/95 backdrop-blur-sm">
           <div>
             <div className="flex justify-between items-center px-2 py-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                  <i className="fas fa-users text-blue-500 mr-3"></i>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
+                  <i className="fas fa-users text-blue-500 dark:text-blue-400 mr-3"></i>
                   Profile Management
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-400">
                   Quản lý và điều khiển các profile tài khoản mạng xã hội
                 </p>
               </div>
@@ -451,7 +451,7 @@ const Profiles = () => {
           </div>
 
           {/* Control Panel */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 p-6">
             <div className="flex flex-col lg:flex-row justify-between gap-6">
               {/* Left Controls */}
               <div className="space-y-4">
@@ -486,21 +486,21 @@ const Profiles = () => {
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
                       <span>Auto</span>
                     </label>
                     <Switch enabled={isAuto} onChange={(enabled) => setIsAuto(enabled)} />
                   </div>
 
                   <div>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
                       <span>Quote</span>
                     </label>
                     <Switch enabled={isIncludeQuote} onChange={(enabled) => updateIsIncludeQuote(enabled)} />
                   </div>
 
                   <div>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
                       <span>Tag</span>
                     </label>
                     <Switch enabled={isTag} onChange={setIsTag} />
@@ -596,14 +596,14 @@ const Profiles = () => {
         </div>
 
         {/* Profile Cards */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mt-[200px]">
+        <div className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden mt-[200px]">
           {/* Table Header */}
-          <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+          <div className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 text-blue-600 rounded"
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700"
                   checked={selectedIds.length === (data?.data?.data?.data?.length || 0)}
                   onChange={(e) => {
                     if (e.target.checked) {
@@ -613,19 +613,19 @@ const Profiles = () => {
                     }
                   }}
                 />
-                <span className="font-medium text-gray-700">
+                <span className="font-medium text-gray-700 dark:text-gray-300">
                   Select All ({selectedIds.length} selected)
                 </span>
                 <Button
                   onClick={() => setShowRangeModal(true)}
-                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
                 >
                   <i className="fa-solid fa-list-ol mr-1"></i>
                   Select Range
                 </Button>
                 <Button
                   onClick={() => handleLoadProfilesInfo()}
-                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
                 >
                   <i className="fa-solid fa-download mr-1" />
                   Load Profiles Info
@@ -641,7 +641,7 @@ const Profiles = () => {
                   />
                 </div>
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 Total: {data?.data?.data?.data?.length || 0} profiles
               </div>
             </div>
@@ -654,9 +654,9 @@ const Profiles = () => {
 
               return (
                 <>
-                  <div className="divide-y divide-gray-200">
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
                     {map(allProfiles, (profile, index) => (
-                      <div key={profile.profile_id} className="p-6 hover:bg-gray-50 transition-colors">
+                      <div key={profile.profile_id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                           {/* Selection & ID */}
                           <div className="lg:col-span-2 flex items-center gap-3">
@@ -670,22 +670,22 @@ const Profiles = () => {
                                   setSelectedIds(prev => prev.filter(id => id !== profile.profile_id));
                                 }
                               }}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-blue-500"
                             />
                             <div>
-                              <div className="font-semibold text-gray-900">#{index + 1}</div>
-                              <div className="text-xs text-gray-500">ID: {profile.profile_id}</div>
+                              <div className="font-semibold text-gray-900 dark:text-white">#{index + 1}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">ID: {profile.profile_id}</div>
                             </div>
                           </div>
 
                           {/* Profile Info */}
                           <div className="lg:col-span-3">
-                            <div className="font-medium text-gray-900">{profile.name}</div>
-                            <div className="text-sm text-gray-500">
+                            <div className="font-medium text-gray-900 dark:text-white">{profile.name}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
                               <i className="fas fa-network-wired mr-1"></i>
                               {profile.proxy_ip}:{profile.proxy_port}
                             </div>
-                            <div className="text-xs text-green-500">
+                            <div className="text-xs text-green-600 dark:text-green-400">
                               {profileResult?.[profile.profile_id]?.username}
                               {` - `}
                               {profileResult?.[profile.profile_id]?.sex}
@@ -696,28 +696,28 @@ const Profiles = () => {
                           <div className="lg:col-span-2">
                             <div className="flex items-center gap-2">
                               {openedList?.[profile.profile_id]?.open_time ? (
-                                <div className="flex items-center text-green-600">
+                                <div className="flex items-center text-green-600 dark:text-green-400">
                                   <i className="fa-solid fa-check-circle mr-1"></i>
                                   <span className="text-sm">Active</span>
                                 </div>
                               ) : (
-                                <div className="flex items-center text-red-600">
+                                <div className="flex items-center text-red-600 dark:text-red-400">
                                   <i className="fa-solid fa-times-circle mr-1"></i>
                                   <span className="text-sm">Inactive</span>
                                 </div>
                               )}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                               {shortName(userMap?.[profile.profile_id]?.quoteName || 'N/A')}
                             </div>
                           </div>
 
                           {/* Message */}
                           <div className="lg:col-span-2">
-                            <div id={`message-${profile.profile_id}`} className="text-sm text-gray-600 min-h-[20px]"></div>
+                            <div id={`message-${profile.profile_id}`} className="text-sm text-gray-600 dark:text-gray-300 min-h-[20px]"></div>
                           </div>
 
                           {/* Manual Actions */}
@@ -728,21 +728,21 @@ const Profiles = () => {
                                 id={`random-folder-${profile.profile_id}`}
                                 onClick={() => handleRandomFolder(profile.profile_id)}
                                 tooltip="Random folder"
-                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
                               >
                                 <i className="fa-solid fa-arrow-rotate-right"></i>
                               </Button>
                               <Button
                                 onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}
                                 tooltip="Show info"
-                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
                               >
                                 <i className="fa-regular fa-eye"></i>
                               </Button>
                               <Button
                                 onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}
                                 tooltip="Copy ws"
-                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
                               >
                                 <i className="fa-solid fa-copy"></i>
                               </Button>
@@ -750,7 +750,7 @@ const Profiles = () => {
                                 id={`post-button-${profile.profile_id}`}
                                 tooltip="Post"
                                 onClick={() => clickPostButton(profile.profile_id, 'post', openedList, userMap)}
-                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
+                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 text-xs"
                                 disabled={!reportName || !openedList?.[profile.profile_id]?.ws}
                               >
                                 <i className="fa-solid fa-circle-play"></i>
@@ -759,7 +759,7 @@ const Profiles = () => {
                                 id={`quote-button-${profile.profile_id}`}
                                 onClick={() => clickPostButton(profile.profile_id, 'quote', openedList, userMap)}
                                 tooltip="Quote"
-                                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
+                                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:text-purple-300 text-xs"
                                 disabled={!reportName || !openedList?.[profile.profile_id]?.ws}
                               >
                                 <i className="fa-solid fa-retweet"></i>
@@ -768,7 +768,7 @@ const Profiles = () => {
                                 onClick={() => setupNewAccount({ id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
                                 tooltip="Setup new account"
                                 id={`setup-new-account-${profile.profile_id}`}
-                                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"
+                                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-300 text-xs"
                               >
                                 <i className="fa-solid fa-user-plus"></i>
                               </Button>
@@ -776,7 +776,7 @@ const Profiles = () => {
                                 id={`edit-folder-${profile.profile_id}`}
                                 tooltip="Edit folder for post"
                                 onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap, 'post')}
-                                className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"
+                                className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 dark:bg-yellow-900/40 dark:hover:bg-yellow-900/60 dark:text-yellow-300 text-xs"
                               >
                                 <i className="fa-solid fa-pen-to-square"></i>
                               </Button>
@@ -784,34 +784,34 @@ const Profiles = () => {
                                 id={`edit-folder-${profile.profile_id}`}
                                 tooltip="Edit folder for quote"
                                 onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap, 'quote')}
-                                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs"
+                                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:text-purple-300 text-xs"
                               >
                                 <i className="fa-solid fa-pen-to-square"></i>
                               </Button>
                               <Button
                                 tooltip="Open profile folder"
-                                className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs"
+                                className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 dark:bg-yellow-900/40 dark:hover:bg-yellow-900/60 dark:text-yellow-300 text-xs"
                                 onClick={() => windowInstance.api.openProfileFolder(profile.profile_id)}
                               >
                                 <i className="fa-solid fa-folder-open"></i>
                               </Button>
                               <Button
                                 tooltip="Generate profile"
-                                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs"
+                                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-300 text-xs"
                                 onClick={() => handleGenerateProfile(sex, profile.profile_id)}
                               >
                                 <i className="fa-brands fa-hubspot"></i>
                               </Button>
                               <Button
                                 tooltip="Change profile info"
-                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs"
+                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 text-xs"
                                 onClick={() => handleChangeProfileInfo(profile.profile_id)}
                               >
                                 <i className="fa-regular fa-address-book"></i>
                               </Button>
                               <Button
                                 tooltip="Delete latest post"
-                                className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs"
+                                className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/40 dark:hover:bg-red-900/60 dark:text-red-300 text-xs"
                                 onClick={() => handleDeletePost({ user_id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
                               >
                                 <i className="fa-solid fa-trash"></i>
@@ -848,11 +848,11 @@ const Profiles = () => {
       {/* Range Selection Modal */}
       <Dialog open={showRangeModal} onClose={() => setShowRangeModal(false)} className="!max-w-md">
         <div className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Profiles by Range</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Select Profiles by Range</h3>
           <div className="space-y-4">
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   From (profile number)
                 </label>
                 <Input
@@ -866,7 +866,7 @@ const Profiles = () => {
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   To (profile number)
                 </label>
                 <Input
@@ -880,7 +880,7 @@ const Profiles = () => {
                 />
               </div>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               Total profiles available: {data?.data?.data?.data?.length || 0}
             </div>
             <div className="flex gap-3 pt-4">
@@ -896,7 +896,7 @@ const Profiles = () => {
                   setRangeStart('');
                   setRangeEnd('');
                 }}
-                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700"
+                className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
               >
                 Cancel
               </Button>
@@ -924,7 +924,7 @@ const OpenProfle = ({ id, total, onOpen }: { id: number, total: number, onOpen?:
   return <Button
     onClick={() => { openProfile({ id, index: total }); onOpen?.() }}
     loading={isOpenProfilePending}
-    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs"
+    className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
     tooltip="Open profile"
   >
     <i className="fa-brands fa-chrome"></i>

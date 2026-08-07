@@ -29,7 +29,7 @@ const GlobalConfig = ({
       {/* Working Folder Section */}
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             <i className="fas fa-folder text-blue-400 mr-1"></i>
             Thư Mục Làm Việc
           </label>
@@ -50,7 +50,7 @@ const GlobalConfig = ({
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             <i className="fas fa-folder text-blue-400 mr-1"></i>
             Thư Mục Quote
           </label>
@@ -71,7 +71,7 @@ const GlobalConfig = ({
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             <i className="fas fa-folder text-blue-400 mr-1"></i>
             Thư Mục Profile
           </label>

@@ -11,7 +11,7 @@ const TextArea = (props: TextAreaProps) => {
 
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-dark-textSecondary mb-2">
           {icon && <i className={`mr-2 ${icon}`}></i>}
           {label}
         </label>

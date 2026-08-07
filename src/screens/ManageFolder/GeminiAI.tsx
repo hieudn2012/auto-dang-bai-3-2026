@@ -56,13 +56,13 @@ const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, lang
   }
 
   return (
-    <div>
+    <div className="text-gray-900">
       <div className="grid grid-cols-3 gap-4">
         <div>
           <Input
             value={geminiApiKey}
             onChange={(e) => setGeminiApiKey(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full"
             placeholder="Enter your Gemini API key"
             label="Gemini API Key"
             icon="fa-solid fa-robot"
@@ -72,7 +72,7 @@ const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, lang
           <Select
             value={lang}
             onChange={(e) => setLang(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full"
             options={[
               { label: 'English', value: 'en' },
               { label: 'Vietnamese', value: 'vi' },
@@ -86,7 +86,7 @@ const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, lang
             type="text"
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full"
             placeholder="Enter your model"
             label="Model"
             icon="fa-solid fa-microchip"
@@ -94,41 +94,41 @@ const GeminiAI: React.FC<GeminiAIProps> = ({ geminiApiKey, setGeminiApiKey, lang
         </div>
       </div>
       <div>
-
-        <table className="min-w-full divide-y divide-gray-200 mt-4">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Label</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prompt</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-            {propmts.map((prompt, index) => (
-              <tr key={index} className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors duration-200`}>
-                <td className="px-6 py-4 whitespace-nowrap">{prompt.label}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{shortenString(prompt.value, 40)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      onClick={() => handleEditPrompt(prompt)}
-                      className="px-2 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 mr-2"
-                    >
-                      <i className="fa-solid fa-pen-to-square"></i>
-                    </Button>
-                    <Button
-                      onClick={() => handleDeletePrompt(prompt.label)}
-                      className="px-2 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                      <i className="fa-solid fa-trash"></i>
-                    </Button>
-                  </div>
-                </td>
+        <div className="mt-4 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Label</th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Prompt</th>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              {propmts.map((prompt, index) => (
+                <tr key={index} className="transition-colors duration-200">
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-gray-100">{prompt.label}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{shortenString(prompt.value, 40)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        onClick={() => handleEditPrompt(prompt)}
+                        className="px-2 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 mr-2"
+                      >
+                        <i className="fa-solid fa-pen-to-square"></i>
+                      </Button>
+                      <Button
+                        onClick={() => handleDeletePrompt(prompt.label)}
+                        className="px-2 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      >
+                        <i className="fa-solid fa-trash"></i>
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       <div className="flex gap-2 justify-end mt-4">
         <Button
@@ -193,11 +193,11 @@ const PromptModal: React.FC<PromptModalProps> = ({
       className='!max-w-2xl'
     >
       <div className='p-6'>
-        <h2 className="text-xl font-semibold mb-4">{mode === 'add' ? 'Add New Prompt' : 'Edit Prompt'}</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">{mode === 'add' ? 'Add New Prompt' : 'Edit Prompt'}</h2>
         <Input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+          className="w-full mb-4"
           placeholder="Enter prompt label"
           label="Prompt Label"
           icon='fa-solid fa-tag'
@@ -206,7 +206,7 @@ const PromptModal: React.FC<PromptModalProps> = ({
         <TextArea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+          className="w-full mb-4"
           placeholder="Enter your prompt here"
           label="Prompt"
           rows={10}
@@ -215,7 +215,7 @@ const PromptModal: React.FC<PromptModalProps> = ({
         <div className="flex justify-end gap-2">
           <Button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             Cancel
           </Button>

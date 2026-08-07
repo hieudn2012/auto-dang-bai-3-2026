@@ -175,7 +175,7 @@ const GeminiAI = () => {
           />
         </div>
         <div>
-          <label className="flex items-center gap-2 mb-4">
+          <label className="flex items-center gap-2 mb-4 dark:text-gray-300">
             <i className="fas fa-info-circle"></i>
             Include sub prompt
           </label>
@@ -185,7 +185,7 @@ const GeminiAI = () => {
           />
         </div>
         <div>
-          <label className="flex items-center gap-2 mb-4">
+          <label className="flex items-center gap-2 mb-4 dark:text-gray-300">
             <i className="fas fa-image"></i>
             View images
           </label>
@@ -195,7 +195,7 @@ const GeminiAI = () => {
           />
         </div>
         <div>
-          <label className="flex items-center gap-2 mb-4">
+          <label className="flex items-center gap-2 mb-4 dark:text-gray-300">
             <i className="fas fa-image"></i>
             Global
           </label>
@@ -417,9 +417,9 @@ const Row = forwardRef(({
   const linkColor = totalLink < 5 || (totalLink - 1) !== totalCap ? 'text-red-500' : 'text-green-500';
 
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:opacity-80">
       <td className="border border-gray-200 px-4 py-2 cursor-pointer" onClick={() => onSelect(numberIndex)}>
-        <div className="flex items-center select-none">
+        <div className="flex items-center select-none dark:text-gray-300">
           <input
             type="checkbox"
             className="mr-2"
@@ -432,7 +432,7 @@ const Row = forwardRef(({
       {!isViewImg && (
         <>
           <td className="border border-gray-200 px-4 py-2">
-            <div className="flex gap-2">
+            <div className="flex gap-2 dark:text-gray-300">
               <span>
                 {shortName(path)}
               </span>

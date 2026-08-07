@@ -25,10 +25,10 @@ const SexyContent = () => {
   }, []);
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Sexy Content</h1>
+    <div className="p-4 text-gray-900 dark:text-gray-100">
+      <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Sexy Content</h1>
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Caption</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Caption</label>
         <TextArea
           value={caption}
           onChange={e => setCaption(e.target.value)}
@@ -38,7 +38,7 @@ const SexyContent = () => {
         />
       </div>
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Link</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Link</label>
         <TextArea
           value={link}
           onChange={e => setLink(e.target.value)}

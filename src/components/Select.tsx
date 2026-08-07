@@ -38,7 +38,7 @@ const Select = ({
         <select
           {...props}
           className={twMerge(
-            `w-full p-3 pr-10 rounded-xl border bg-white/80 dark:bg-dark-bgSecondary/80 backdrop-blur-sm text-gray-900 dark:text-dark-text border-gray-300/50 dark:border-dark-border/50 
+            `w-full px-4 py-2 pr-10 rounded-xl border bg-white/80 dark:bg-dark-bgSecondary/80 backdrop-blur-sm text-gray-900 dark:text-dark-text border-gray-300/50 dark:border-dark-border/50 
             focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-dark-accent/50 focus:border-transparent 
             transition-all duration-300 appearance-none cursor-pointer shadow-sm dark:shadow-lg
             ${isFocused ? 'ring-2 ring-blue-500/50 dark:ring-dark-accent/50 border-transparent scale-[1.02]' : ''}
