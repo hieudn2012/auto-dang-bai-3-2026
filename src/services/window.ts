@@ -128,6 +128,12 @@ type WindownInstance = typeof window & {
       failed: number
       results: { index: string; name: string; ok: boolean; error?: string }[]
     }>,
+    fullSetupOnAndroids: (androids: Android[]) => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: { index: string; name: string; ok: boolean; error?: string }[]
+    }>,
   }
 }
 

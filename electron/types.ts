@@ -68,6 +68,7 @@ export enum InvokeChannel {
   EXPORT_ACCOUNTS_FROM_OUTPUT = 'export-accounts-from-output',
   CONNECT_ALL_RUNNING_ANDROIDS = 'connect-all-running-androids',
   OPEN_THREADS_APP_ON_ANDROIDS = 'open-threads-app-on-androids',
+  FULL_SETUP_ON_ANDROIDS = 'full-setup-on-androids',
 }
 
 export type MainConfig = {

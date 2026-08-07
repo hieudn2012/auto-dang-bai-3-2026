@@ -819,8 +819,9 @@ export const autoRegisterAccountsOnAndroids = async (
     };
 };
 
-export const openThreadsAppOnAndroid = async (android: Android) => {
+export const openThreadsAppOnAndroid = async (android: Android, event: IpcMainEvent) => {
     const androidInstance = await getAndroid(Number(android.index));
+    const key = androidInstance.name;
     const serial = await connectAndroid(androidInstance);
 
     const driver = await remote({
@@ -838,20 +839,24 @@ export const openThreadsAppOnAndroid = async (android: Android) => {
     });
 
     try {
+        sendMessage(event, { username: key, message: 'Đang mở Threads...' });
         await driver.execute('mobile: activateApp', { appId: THREADS_PACKAGE });
         console.log('opened Threads');
 
-        // Chờ UI load (mạng yếu có thể lâu) rồi mới click
+        sendMessage(event, { username: key, message: 'Đang chờ nút Log in with Instagram...' });
         const clicked = await clickByXpath(
             driver,
             '//android.widget.TextView[@resource-id="ig_text"]',
             { timeoutMs: 60000, intervalMs: 1500 }
         );
         if (!clicked) {
-            throw new Error('Timeout chờ nút Log in with Instagram (120s)');
+            throw new Error('Timeout chờ nút Log in with Instagram (60s)');
         }
         await driver.pause(3000);
+        sendMessage(event, { username: key, message: 'Open Threads success ✅' });
     } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendMessage(event, { username: key, message: `Open Threads thất bại ❌ ${message}` });
         console.error(error);
         throw error;
     } finally {
@@ -860,14 +865,76 @@ export const openThreadsAppOnAndroid = async (android: Android) => {
 };
 
 /** Open Threads + tap Login with Instagram, mỗi android cách nhau 3 giây khi start */
-export const openThreadsAppOnAndroids = async (androids: Android[]) => {
+export const openThreadsAppOnAndroids = async (androids: Android[], event: IpcMainEvent) => {
     if (!androids.length) throw new Error('Chưa chọn Android nào');
 
     const tasks = androids.map(async (selected, i) => {
         if (i > 0) await sleep(i * 2000);
         try {
             const android = await getAndroid(Number(selected.index));
-            await openThreadsAppOnAndroid(android);
+            await openThreadsAppOnAndroid(android, event);
+            return { index: android.index, name: android.name, ok: true as const };
+        } catch (error) {
+            return {
+                index: selected.index,
+                name: selected.name,
+                ok: false as const,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    });
+
+    const results = await Promise.all(tasks);
+
+    return {
+        total: androids.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
+};
+
+/** Full setup 1 máy: proxy → open Threads → register */
+export const fullSetupOnAndroid = async (android: Android, event: IpcMainEvent) => {
+    const androidInstance = await getAndroid(Number(android.index));
+    const key = androidInstance.name;
+    const acc = androidInstance.account;
+
+    if (!hasAssignedProxy(acc?.proxy)) {
+        throw new Error('Chưa gán proxy');
+    }
+    if (!acc?.username || !acc?.password) {
+        throw new Error('Chưa gán account');
+    }
+
+    try {
+        sendMessage(event, { username: key, message: 'Full setup: setup proxy...' });
+        const [address, port, username, password] = acc.proxy.split(':');
+        await setupProxyOnAndroid(androidInstance, { address, port, username, password });
+
+        sendMessage(event, { username: key, message: 'Full setup: open Threads...' });
+        await openThreadsAppOnAndroid(androidInstance, event);
+
+        sendMessage(event, { username: key, message: 'Full setup: register...' });
+        await autoRegisterAccountOnAndroid(androidInstance, acc, event);
+
+        sendMessage(event, { username: key, message: 'Full setup success ✅' });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendMessage(event, { username: key, message: `Full setup thất bại ❌ ${message}` });
+        throw error;
+    }
+};
+
+/** Full setup đồng thời: proxy → Threads → register, mỗi android cách nhau 3s */
+export const fullSetupOnAndroids = async (androids: Android[], event: IpcMainEvent) => {
+    if (!androids.length) throw new Error('Chưa chọn Android nào');
+
+    const tasks = androids.map(async (selected, i) => {
+        if (i > 0) await sleep(i * 3000);
+        try {
+            const android = await getAndroid(Number(selected.index));
+            await fullSetupOnAndroid(android, event);
             return { index: android.index, name: android.name, ok: true as const };
         } catch (error) {
             return {

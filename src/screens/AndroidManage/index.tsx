@@ -195,6 +195,24 @@ const AndroidManage = () => {
     }
   };
 
+  const handleFullSetup = async (android: Android) => {
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.fullSetupOnAndroids([android]);
+      if (result.failed > 0) {
+        toast.error(result.results[0]?.error || "Full setup thất bại");
+      } else {
+        toast.success(`Full setup xong: ${android.name}`);
+      }
+      await fetchAndroidList();
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Full setup thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
   const runBulk = async (
     action: (android: Android) => Promise<void>,
     filter?: (android: Android) => boolean
@@ -219,7 +237,7 @@ const AndroidManage = () => {
 
   return (
     <Layout>
-      <div className="p-6">
+      <div className="p-6 max-w-full min-w-0 overflow-x-hidden">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Android Manage</h2>
           <div className="flex items-center gap-3">
@@ -451,6 +469,43 @@ const AndroidManage = () => {
           >
             <i className="fa-solid fa-user-plus mr-1"></i>
           </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some(
+                (item) =>
+                  !item.is_android_started ||
+                  !item.account?.proxy ||
+                  !item.account?.username ||
+                  !item.account?.password
+              )
+            }
+            tooltip="Full setup selected (proxy → Threads → register)"
+            onClick={async () => {
+              try {
+                setActionIndex('full-setup');
+                const ordered = selectedIndexes
+                  .map((index) => androidList.find((item) => item.index === index))
+                  .filter(Boolean) as Android[];
+                const result = await windowInstance.api.fullSetupOnAndroids(ordered);
+                if (result.failed > 0) {
+                  toast.error(`Full setup: ${result.success} ok, ${result.failed} lỗi`);
+                } else {
+                  toast.success(`Full setup xong ${result.success} android`);
+                }
+                await fetchAndroidList();
+              } catch (error) {
+                console.error(error);
+                toast.error(error instanceof Error ? error.message : 'Full setup thất bại');
+              } finally {
+                setActionIndex(null);
+              }
+            }}
+            className="px-3 py-1.5 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-rocket mr-1"></i>
+          </Button>
         </div>
 
         <Dialog open={showMoreActions} onClose={() => setShowMoreActions(false)} className="!max-w-xl">
@@ -551,11 +606,11 @@ const AndroidManage = () => {
           </div>
         </Dialog>
 
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="max-w-full overflow-hidden rounded-lg border border-gray-200">
+          <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -563,29 +618,37 @@ const AndroidManage = () => {
                     className="h-4 w-4 cursor-pointer"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Index</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Message</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Account</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Proxy</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Version</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ADB</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">PID</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Disk</th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Index</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Message</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Account</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Proxy</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">ADB</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {androidList.map((item) => {
                 const busy = actionIndex === item.index;
                 const checked = selectedIndexes.includes(item.index);
+                const adb =
+                  item.adb_host_ip && item.adb_port
+                    ? `${item.adb_host_ip}:${item.adb_port}`
+                    : "-";
+                const meta = [
+                  `Ver ${item.android_version}`,
+                  item.pid ? `PID ${item.pid}` : null,
+                  formatBytes(item.disk_size_bytes),
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
                 return (
                   <tr
                     key={item.index}
-                    className={`hover:bg-gray-50 transition-colors ${checked ? "bg-blue-50/50" : ""}`}
+                    className={`text-xs hover:bg-gray-50 transition-colors ${checked ? "bg-blue-50/50" : ""}`}
                   >
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                    <td className="px-2 py-3 overflow-hidden">
                       <input
                         type="checkbox"
                         checked={checked}
@@ -593,15 +656,18 @@ const AndroidManage = () => {
                         className="h-4 w-4 cursor-pointer"
                       />
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{item.index}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 min-w-[180px]">
-                      <div id={`message-${item.name}`} className="text-sm text-gray-600 min-h-[20px]"></div>
+                    <td className="px-2 py-3 truncate overflow-hidden">{item.index}</td>
+                    <td className="px-2 py-3 font-medium overflow-hidden" title={`${item.name}\n${meta}`}>
+                      <div className="truncate">{item.name}</div>
+                      <div className="truncate text-xs font-normal text-gray-400">{meta}</div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-2 py-3 text-gray-600 overflow-hidden">
+                      <div id={`message-${item.name}`} className="truncate min-h-[20px]"></div>
+                    </td>
+                    <td className="px-2 py-3 text-gray-600 overflow-hidden truncate" title={item.account?.username || undefined}>
                       {item.account?.username || "-"}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                    <td className="px-2 py-3 overflow-hidden">
                       <div className="relative group inline-flex">
                         {item.account?.proxy ? (
                           <i className="fa-solid fa-circle-check text-green-500"></i>
@@ -614,8 +680,7 @@ const AndroidManage = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">{item.android_version}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                    <td className="px-2 py-3 overflow-hidden">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                           item.is_android_started
@@ -623,31 +688,25 @@ const AndroidManage = () => {
                             : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {item.is_android_started ? "Running" : "Stopped"}
+                        {item.is_android_started ? "On" : "Off"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      {item.adb_host_ip && item.adb_port
-                        ? `${item.adb_host_ip}:${item.adb_port}`
-                        : "-"}
+                    <td className="px-2 py-3 text-gray-600 overflow-hidden truncate" title={adb}>
+                      {adb}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{item.pid ?? "-"}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      {formatBytes(item.disk_size_bytes)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-2 py-3 text-right overflow-hidden">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           disabled={busy || item.is_android_started}
                           onClick={() => handleOpen(item)}
-                          className="px-2 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50"
+                          className="!px-1.5 !py-1 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-play"></i>
                         </Button>
                         <Button
                           disabled={busy || !item.is_android_started}
                           onClick={() => handleClose(item)}
-                          className="px-2 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
+                          className="!px-1.5 !py-1 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-stop"></i>
                         </Button>
@@ -655,7 +714,7 @@ const AndroidManage = () => {
                           disabled={busy}
                           onClick={() => handleRandomName(item)}
                           tooltip="Random name"
-                          className="px-2 py-1 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50"
+                          className="!px-1.5 !py-1 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-shuffle"></i>
                         </Button>
@@ -663,7 +722,7 @@ const AndroidManage = () => {
                           disabled={busy || !item.is_android_started || !item.account?.proxy}
                           onClick={() => handleSetupProxy(item)}
                           tooltip="Setup proxy"
-                          className="px-2 py-1 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50"
+                          className="!px-1.5 !py-1 bg-cyan-600 text-white rounded-md hover:bg-cyan-700 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-bolt"></i>
                         </Button>
@@ -671,7 +730,7 @@ const AndroidManage = () => {
                           disabled={busy || !item.is_android_started}
                           onClick={() => handleOpenThreads(item)}
                           tooltip="Open Threads"
-                          className="px-2 py-1 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50"
+                          className="!px-1.5 !py-1 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50"
                         >
                           <i className="fa-regular fa-folder-open"></i>
                         </Button>
@@ -684,9 +743,23 @@ const AndroidManage = () => {
                           }
                           onClick={() => handleAutoRegister(item)}
                           tooltip="Auto register"
-                          className="px-2 py-1 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50"
+                          className="!px-1.5 !py-1 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-user-plus"></i>
+                        </Button>
+                        <Button
+                          disabled={
+                            busy ||
+                            !item.is_android_started ||
+                            !item.account?.proxy ||
+                            !item.account?.username ||
+                            !item.account?.password
+                          }
+                          onClick={() => handleFullSetup(item)}
+                          tooltip="Full setup (proxy → Threads → register)"
+                          className="!px-1.5 !py-1 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-rocket"></i>
                         </Button>
                       </div>
                     </td>
@@ -695,7 +768,7 @@ const AndroidManage = () => {
               })}
               {!loading && androidList.length === 0 && (
                 <tr>
-                  <td colSpan={12} className="px-4 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     No Android devices found
                   </td>
                 </tr>

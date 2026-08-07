@@ -114,6 +114,8 @@ contextBridge.exposeInMainWorld('api', {
   connectAllRunningAndroids: () => invoke(InvokeChannel.CONNECT_ALL_RUNNING_ANDROIDS),
   openThreadsAppOnAndroids: (androids: Android[]) =>
     invoke(InvokeChannel.OPEN_THREADS_APP_ON_ANDROIDS, androids),
+  fullSetupOnAndroids: (androids: Android[]) =>
+    invoke(InvokeChannel.FULL_SETUP_ON_ANDROIDS, androids),
 });
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {
