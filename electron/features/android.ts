@@ -46,9 +46,11 @@ export interface Android {
     account?: AndroidAccount | null;
 }
 
-const MUMU_MANAGER_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe';
-const MUMU_ADB_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe';
-const MUMU_VMS_PATH = 'D:\\Program Files\\Netease\\MuMuPlayer\\vms';
+const ROOT = process.env.ROOT || 'D:';
+
+const MUMU_MANAGER_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe`;
+const MUMU_ADB_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe`;
+const MUMU_VMS_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\vms`;
 const MUMU_MANAGER_INFO_COMMAND = 'info --vmindex all';
 
 const run = async (cmd: string, { silent = false } = {}) => {
@@ -533,38 +535,6 @@ export const removeApk = async (android: Android, packageName: string) => {
     }
 };
 
-// open app — resolve launcher component rồi am start -n (một số app không mở được bằng -p)
-const openApp = async (android: Android, packageName: string) => {
-    const androidInstance = await getAndroid(Number(android.index));
-    const serial = await connectAndroid(androidInstance);
-    const resolveOut = await run(
-        `"${MUMU_ADB_PATH}" -s ${serial} shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER ${packageName}`,
-        { silent: true }
-    );
-    const component = (resolveOut || '')
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .pop();
-
-    if (component && component.includes('/')) {
-        await run(`"${MUMU_ADB_PATH}" -s ${serial} shell am start -n ${component}`);
-        return;
-    }
-
-    // fallback
-    await run(
-        `"${MUMU_ADB_PATH}" -s ${serial} shell monkey -p ${packageName} -c android.intent.category.LAUNCHER 1`
-    );
-};
-
-// copy file to android
-const copyFileToAndroid = async (android: Android, filePath: string) => {
-    const androidInstance = await getAndroid(Number(android.index));
-    const serial = await connectAndroid(androidInstance);
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} push "${filePath}" /sdcard/Download/`);
-};
-
 const THREADS_PACKAGE = 'com.instagram.barcelona';
 
 /** Setup proxy đồng thời, mỗi android cách nhau 8 giây khi start */
@@ -621,6 +591,15 @@ const escapeAdbText = (text: string) =>
         .replace(/\(/g, '\\(')
         .replace(/\)/g, '\\)');
 
+/** Gõ text qua adb (tránh Appium UnicodeIME lỗi ký tự đặc biệt). */
+const typeTextViaAdb = async (serial: string, value: string) => {
+    await run(
+        `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(value)}`,
+        { silent: true }
+    );
+    console.log(`typed: ${value}`);
+};
+
 export const autoRegisterAccountOnAndroid = async (
     android: Android,
     account?: AndroidAccount | null
@@ -633,40 +612,83 @@ export const autoRegisterAccountOnAndroid = async (
 
     const serial = await connectAndroid(androidInstance);
 
-    // tap 395 711 username
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 395 711`);
-    await sleep(1000);
+    const driver = await remote({
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: 4723,
+        path: '/',
+        logLevel: 'warn',
+        capabilities: {
+            platformName: 'Android',
+            'appium:automationName': 'UiAutomator2',
+            'appium:udid': serial,
+            'appium:noReset': true,
+        },
+    });
 
-    // input username
-    await run(
-        `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(acc.username)}`
-    );
-    await sleep(1000);
+    try {
+        //android.view.View[@content-desc="Username, email or mobile number"]
+        await clickByXpath(
+            driver,
+            '//android.view.View[@content-desc="Username, email or mobile number"]'
+        );
+        await driver.pause(400);
+        await typeTextViaAdb(serial, acc.username);
 
-    // tap 415 845 password
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 415 845`);
-    await sleep(1000);
+        //android.view.View[@content-desc="Password"]
+        await clickByXpath(driver, '//android.view.View[@content-desc="Password"]');
+        await driver.pause(400);
+        await typeTextViaAdb(serial, acc.password);
 
-    // input password
-    await run(
-        `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(acc.password)}`
-    );
-    await sleep(1000);
+        //android.view.View[@content-desc="Log in"]
+        await clickByXpath(driver, '//android.view.View[@content-desc="Log in"]');
+        await driver.pause(1000);
+    } catch (error) {
+        console.error(error);
+        throw error;
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
 };
 
-export const openThreadsAppOnAndroid = async (
-    android: Android,
-) => {
+export const openThreadsAppOnAndroid = async (android: Android) => {
     const androidInstance = await getAndroid(Number(android.index));
     const serial = await connectAndroid(androidInstance);
 
-    // open threads app (proxy đã setup qua College Proxy trước đó)
-    await openApp(androidInstance, THREADS_PACKAGE);
-    await sleep(5000);
+    const driver = await remote({
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: 4723,
+        path: '/',
+        logLevel: 'warn',
+        capabilities: {
+            platformName: 'Android',
+            'appium:automationName': 'UiAutomator2',
+            'appium:udid': serial,
+            'appium:noReset': true,
+        },
+    });
 
-    // tap 379 918 login with instagram
-    await run(`"${MUMU_ADB_PATH}" -s ${serial} shell input tap 379 918`);
-    await sleep(3000);
+    try {
+        await driver.execute('mobile: activateApp', { appId: THREADS_PACKAGE });
+        console.log('opened Threads');
+
+        // Chờ UI load (mạng yếu có thể lâu) rồi mới click
+        const clicked = await clickByXpath(
+            driver,
+            '//android.widget.TextView[@resource-id="ig_text"]',
+            { timeoutMs: 60000, intervalMs: 1500 }
+        );
+        if (!clicked) {
+            throw new Error('Timeout chờ nút Log in with Instagram (120s)');
+        }
+        await driver.pause(3000);
+    } catch (error) {
+        console.error(error);
+        throw error;
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
 };
 
 /** Open Threads + tap Login with Instagram, mỗi android cách nhau 3 giây khi start */
@@ -674,7 +696,7 @@ export const openThreadsAppOnAndroids = async (androids: Android[]) => {
     if (!androids.length) throw new Error('Chưa chọn Android nào');
 
     const tasks = androids.map(async (selected, i) => {
-        if (i > 0) await sleep(i * 3000);
+        if (i > 0) await sleep(i * 2000);
         try {
             const android = await getAndroid(Number(selected.index));
             await openThreadsAppOnAndroid(android);
@@ -704,7 +726,7 @@ export const autoRegisterAccountsOnAndroids = async (androids: Android[]) => {
     if (!androids.length) throw new Error('Chưa chọn Android nào');
 
     const tasks = androids.map(async (selected, i) => {
-        if (i > 0) await sleep(i * 8000);
+        if (i > 0) await sleep(i * 2000);
         try {
             const android = await getAndroid(Number(selected.index));
             if (!android.account?.username || !android.account?.password) {
@@ -731,6 +753,34 @@ export const autoRegisterAccountsOnAndroids = async (androids: Android[]) => {
         results,
     };
 };
+
+/** Poll xpath đến khi hiện rồi click. */
+async function clickByXpath(
+    driver: AppiumDriver,
+    xpath: string,
+    { timeoutMs = 30000, intervalMs = 1000 } = {}
+) {
+    await driver.setTimeout({ implicit: 0 });
+    const deadline = Date.now() + timeoutMs;
+    const selector = `xpath:${xpath}`;
+
+    while (Date.now() < deadline) {
+        const [el] = await driver.$$(selector);
+        if (el) {
+            const visible = await el.isDisplayed().catch(() => false);
+            if (visible) {
+                await el.click();
+                console.log(`clicked: ${xpath}`);
+                return true;
+            }
+        }
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) break;
+        await driver.pause(Math.min(intervalMs, remaining));
+    }
+    console.log(`timeout waiting for ${xpath}`);
+    return false;
+}
 
 async function fillIfExists(driver: AppiumDriver, selector: string, value: string) {
     const [el] = await driver.$$(selector);

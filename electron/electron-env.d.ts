@@ -20,6 +20,8 @@ declare namespace NodeJS {
     APP_ROOT: string
     /** /dist/ or /public/ */
     VITE_PUBLIC: string
+    /** Drive root for MuMu Player install (e.g. D:) */
+    ROOT?: string
   }
 }
 
