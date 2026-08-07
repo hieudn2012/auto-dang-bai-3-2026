@@ -324,8 +324,8 @@ handle(InvokeChannel.SETUP_PROXIES_ON_ANDROIDS, async (_event, androids) => {
   return setupProxiesOnAndroids(androids);
 });
 
-handle(InvokeChannel.AUTO_REGISTER_ACCOUNTS_ON_ANDROIDS, async (_event, androids) => {
-  return autoRegisterAccountsOnAndroids(androids);
+handle(InvokeChannel.AUTO_REGISTER_ACCOUNTS_ON_ANDROIDS, async (event, androids) => {
+  return autoRegisterAccountsOnAndroids(androids, event);
 });
 
 handle(InvokeChannel.EXPORT_ACCOUNTS_FROM_OUTPUT, async () => {

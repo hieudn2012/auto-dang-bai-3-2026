@@ -48,6 +48,25 @@ const AndroidManage = () => {
     loadAndroidFolders();
   }, [fetchAndroidList, loadAndroidFolders]);
 
+  useEffect(() => {
+    const handleToast = (_event: unknown, arg: { username?: string; message?: string }) => {
+      const { username, message } = arg || {};
+      if (!username || message == null) return;
+      const el = document.getElementById(`message-${username}`);
+      if (el) el.textContent = message;
+    };
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    window.ipcRenderer.on('show-toast', handleToast);
+
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      //@ts-ignore
+      window.ipcRenderer.off('show-toast', handleToast);
+    };
+  }, []);
+
   const allSelected = useMemo(
     () => androidList.length > 0 && selectedIndexes.length === androidList.length,
     [androidList.length, selectedIndexes.length]
@@ -546,6 +565,7 @@ const AndroidManage = () => {
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Index</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Message</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Account</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Proxy</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Version</th>
@@ -575,6 +595,9 @@ const AndroidManage = () => {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm">{item.index}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">{item.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 min-w-[180px]">
+                      <div id={`message-${item.name}`} className="text-sm text-gray-600 min-h-[20px]"></div>
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                       {item.account?.username || "-"}
                     </td>
@@ -672,7 +695,7 @@ const AndroidManage = () => {
               })}
               {!loading && androidList.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={12} className="px-4 py-8 text-center text-sm text-gray-500">
                     No Android devices found
                   </td>
                 </tr>

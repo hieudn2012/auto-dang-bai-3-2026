@@ -1,18 +1,14 @@
 import { exec } from 'child_process';
+import { IpcMainEvent } from 'electron';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { promisify } from 'util';
 import { remote } from 'webdriverio';
 import { loadMainConfig } from './common';
+import { sendMessage } from './event';
 
 type AppiumDriver = WebdriverIO.Browser;
-
-const execAsync = promisify(exec);
-
-const ACCOUNT_FILE = 'account.txt';
-const EXPORT_FILE = 'export.txt';
-const PROXY_PLACEHOLDER = '##proxy##';
 
 export interface AndroidAccount {
     username: string;
@@ -46,8 +42,21 @@ export interface Android {
     account?: AndroidAccount | null;
 }
 
-const ROOT = process.env.ROOT || 'D:';
+interface SetupProxyParams {
+    address: string;
+    port: string;
+    username: string;
+    password: string;
+}
 
+const execAsync = promisify(exec);
+
+const ACCOUNT_FILE = 'account.txt';
+const EXPORT_FILE = 'export.txt';
+const PROXY_PLACEHOLDER = '##proxy##';
+const THREADS_PACKAGE = 'com.instagram.barcelona';
+
+const ROOT = process.env.ROOT || 'D:';
 const MUMU_MANAGER_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe`;
 const MUMU_ADB_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb.exe`;
 const MUMU_VMS_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\vms`;
@@ -83,6 +92,12 @@ const getPlayerNameFromConfig = async (index: string, androidVersion = '15.0') =
     }
 };
 
+const normalizeProxy = (proxy: string) => {
+    const value = (proxy || '').trim();
+    if (!value || value === PROXY_PLACEHOLDER) return '';
+    return value;
+};
+
 /** Parse accountRaw: user|password|2fa|cookies[|proxy] — proxy ##proxy## coi như chưa gán */
 const parseAccountRaw = (accountRaw: string): Omit<AndroidAccount, 'raw'> => {
     const parts = accountRaw.split('|');
@@ -106,18 +121,6 @@ const parseAccountRaw = (accountRaw: string): Omit<AndroidAccount, 'raw'> => {
         cookies: parts.slice(3).join('|'),
         proxy: '',
     };
-};
-
-const normalizeProxy = (proxy: string) => {
-    const value = (proxy || '').trim();
-    if (!value || value === PROXY_PLACEHOLDER) return '';
-    return value;
-};
-
-/** true nếu đã gán proxy thật (không phải placeholder) */
-export const hasAssignedProxy = (proxy?: string | null) => {
-    const value = normalizeProxy(proxy || '');
-    return value.split(':').length >= 4;
 };
 
 const buildAccountRaw = (account: Omit<AndroidAccount, 'raw'>) => {
@@ -177,6 +180,115 @@ const loadAssignedAccountsByName = async (): Promise<Map<string, AndroidAccount>
     return map;
 };
 
+const getAdbSerial = (android: Android) => {
+    if (!android.adb_host_ip || !android.adb_port) {
+        throw new Error(`Android index ${android.index} chưa có ADB address`);
+    }
+    return `${android.adb_host_ip}:${android.adb_port}`;
+};
+
+const connectAndroid = async (android: Android) => {
+    const serial = getAdbSerial(android);
+    await run(`"${MUMU_ADB_PATH}" connect ${serial}`);
+    return serial;
+};
+
+const escapeAdbText = (text: string) =>
+    text
+        .replace(/\\/g, '\\\\')
+        .replace(/ /g, '%s')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/&/g, '\\&')
+        .replace(/</g, '\\<')
+        .replace(/>/g, '\\>')
+        .replace(/\|/g, '\\|')
+        .replace(/;/g, '\\;')
+        .replace(/\(/g, '\\(')
+        .replace(/\)/g, '\\)');
+
+/** Gõ text qua adb (tránh Appium UnicodeIME lỗi ký tự đặc biệt). */
+const typeTextViaAdb = async (serial: string, value: string) => {
+    await run(
+        `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(value)}`,
+        { silent: true }
+    );
+    console.log(`typed: ${value}`);
+};
+
+/** Poll xpath đến khi hiện rồi click. */
+async function clickByXpath(
+    driver: AppiumDriver,
+    xpath: string,
+    { timeoutMs = 30000, intervalMs = 1000 } = {}
+) {
+    await driver.setTimeout({ implicit: 0 });
+    const deadline = Date.now() + timeoutMs;
+    const selector = `xpath:${xpath}`;
+
+    while (Date.now() < deadline) {
+        const [el] = await driver.$$(selector);
+        if (el) {
+            const visible = await el.isDisplayed().catch(() => false);
+            if (visible) {
+                await el.click();
+                console.log(`clicked: ${xpath}`);
+                return true;
+            }
+        }
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) break;
+        await driver.pause(Math.min(intervalMs, remaining));
+    }
+    console.log(`timeout waiting for ${xpath}`);
+    return false;
+}
+
+async function fillIfExists(driver: AppiumDriver, selector: string, value: string) {
+    const [el] = await driver.$$(selector);
+    if (!el) return false;
+    const visible = await el.isDisplayed().catch(() => false);
+    if (!visible) return false;
+    await el.click();
+    await el.clearValue().catch(() => {});
+    await el.setValue(value);
+    console.log(`filled ${selector} = ${value}`);
+    return true;
+}
+
+/** Poll button android:id/button1 theo text đến khi hiện rồi click. */
+async function clickButtonByText(
+    driver: AppiumDriver,
+    text: string,
+    { timeoutMs = 30000, intervalMs = 1000 } = {}
+) {
+    await driver.setTimeout({ implicit: 0 });
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        const buttons = await driver.$$('id:android:id/button1');
+        for (const btn of buttons) {
+            const visible = await btn.isDisplayed().catch(() => false);
+            if (!visible) continue;
+            const t = (await btn.getText().catch(() => '')).trim();
+            if (t !== text) continue;
+            await btn.click();
+            console.log(`clicked: android:id/button1 text="${text}"`);
+            return true;
+        }
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) break;
+        await driver.pause(Math.min(intervalMs, remaining));
+    }
+    console.log(`timeout waiting for button text="${text}"`);
+    return false;
+}
+
+/** true nếu đã gán proxy thật (không phải placeholder) */
+export const hasAssignedProxy = (proxy?: string | null) => {
+    const value = normalizeProxy(proxy || '');
+    return value.split(':').length >= 4;
+};
+
 export const getAndroidList = async () => {
     const stdout = await run(`"${MUMU_MANAGER_PATH}" ${MUMU_MANAGER_INFO_COMMAND}`, {
         silent: true,
@@ -199,7 +311,6 @@ export const getAndroidList = async () => {
         })
     );
 };
-
 
 export const getAndroid = async (index: number) => {
     const list = await getAndroidList();
@@ -433,19 +544,6 @@ export const exportAccountsFromOutput = async () => {
     };
 };
 
-const getAdbSerial = (android: Android) => {
-    if (!android.adb_host_ip || !android.adb_port) {
-        throw new Error(`Android index ${android.index} chưa có ADB address`);
-    }
-    return `${android.adb_host_ip}:${android.adb_port}`;
-};
-
-const connectAndroid = async (android: Android) => {
-    const serial = getAdbSerial(android);
-    await run(`"${MUMU_ADB_PATH}" connect ${serial}`);
-    return serial;
-};
-
 /** ADB connect tất cả Android đang running (is_android_started). */
 export const connectAllRunningAndroids = async () => {
     const list = await getAndroidList();
@@ -535,7 +633,59 @@ export const removeApk = async (android: Android, packageName: string) => {
     }
 };
 
-const THREADS_PACKAGE = 'com.instagram.barcelona';
+export const setupProxyOnAndroid = async (android: Android, params: SetupProxyParams) => {
+    const driver = await remote({
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: 4723,
+        path: '/',
+        logLevel: 'warn',
+        capabilities: {
+            platformName: 'Android',
+            'appium:automationName': 'UiAutomator2',
+            'appium:udid': getAdbSerial(android),
+            'appium:appPackage': 'com.cell47.College_Proxy',
+            'appium:appActivity': '.user_interface.MainActivity',
+            'appium:noReset': true,
+            'appium:forceAppLaunch': true,
+        },
+    });
+    try {
+        await driver.setTimeout({ implicit: 0 });
+
+        const addressSel = 'id:com.cell47.College_Proxy:id/editText_address';
+        const formDeadline = Date.now() + 20000;
+        let formReady = false;
+        while (Date.now() < formDeadline) {
+            const [address] = await driver.$$(addressSel);
+            if (address && (await address.isDisplayed().catch(() => false))) {
+                formReady = true;
+                break;
+            }
+            await driver.pause(1000);
+        }
+        if (!formReady) throw new Error('Main form (editText_address) not found');
+
+        await fillIfExists(driver, addressSel, params.address);
+        await fillIfExists(driver, 'id:com.cell47.College_Proxy:id/editText_port', params.port);
+        await fillIfExists(driver, 'id:com.cell47.College_Proxy:id/editText_username', params.username);
+        await fillIfExists(driver, 'id:com.cell47.College_Proxy:id/editText_password', params.password);
+
+        const [startBtn] = await driver.$$('id:com.cell47.College_Proxy:id/proxy_start_button');
+        if (startBtn && (await startBtn.isDisplayed().catch(() => false))) {
+            await startBtn.click();
+            console.log('clicked: proxy_start_button');
+        }
+
+        // confirm VPN / START SERVICE
+        await clickButtonByText(driver, 'START SERVICE', { timeoutMs: 15000, intervalMs: 1000 });
+    } catch (error) {
+        console.error(error);
+        throw error;
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
+};
 
 /** Setup proxy đồng thời, mỗi android cách nhau 8 giây khi start */
 export const setupProxiesOnAndroids = async (androids: Android[]) => {
@@ -576,36 +726,14 @@ export const setupProxiesOnAndroids = async (androids: Android[]) => {
     };
 };
 
-// auto register account on android
-const escapeAdbText = (text: string) =>
-    text
-        .replace(/\\/g, '\\\\')
-        .replace(/ /g, '%s')
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/&/g, '\\&')
-        .replace(/</g, '\\<')
-        .replace(/>/g, '\\>')
-        .replace(/\|/g, '\\|')
-        .replace(/;/g, '\\;')
-        .replace(/\(/g, '\\(')
-        .replace(/\)/g, '\\)');
-
-/** Gõ text qua adb (tránh Appium UnicodeIME lỗi ký tự đặc biệt). */
-const typeTextViaAdb = async (serial: string, value: string) => {
-    await run(
-        `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(value)}`,
-        { silent: true }
-    );
-    console.log(`typed: ${value}`);
-};
-
 export const autoRegisterAccountOnAndroid = async (
     android: Android,
-    account?: AndroidAccount | null
+    account: AndroidAccount | null | undefined,
+    event: IpcMainEvent
 ) => {
     const androidInstance = await getAndroid(Number(android.index));
     const acc = account || androidInstance.account;
+    const key = androidInstance.name;
     if (!acc?.username || !acc?.password) {
         throw new Error(`Android index ${android.index} chưa có username/password`);
     }
@@ -627,7 +755,7 @@ export const autoRegisterAccountOnAndroid = async (
     });
 
     try {
-        //android.view.View[@content-desc="Username, email or mobile number"]
+        sendMessage(event, { username: key, message: 'Đang nhập username...' });
         await clickByXpath(
             driver,
             '//android.view.View[@content-desc="Username, email or mobile number"]'
@@ -635,20 +763,60 @@ export const autoRegisterAccountOnAndroid = async (
         await driver.pause(400);
         await typeTextViaAdb(serial, acc.username);
 
-        //android.view.View[@content-desc="Password"]
+        sendMessage(event, { username: key, message: 'Đang nhập password...' });
         await clickByXpath(driver, '//android.view.View[@content-desc="Password"]');
         await driver.pause(400);
         await typeTextViaAdb(serial, acc.password);
 
-        //android.view.View[@content-desc="Log in"]
+        sendMessage(event, { username: key, message: 'Đang click Log in...' });
         await clickByXpath(driver, '//android.view.View[@content-desc="Log in"]');
         await driver.pause(1000);
+
+        sendMessage(event, { username: key, message: 'Register success ✅' });
     } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        sendMessage(event, { username: key, message: `Register thất bại ❌ ${message}` });
         console.error(error);
         throw error;
     } finally {
         await driver.deleteSession().catch(() => undefined);
     }
+};
+
+/** Auto register đồng thời, mỗi android cách nhau 8 giây khi start */
+export const autoRegisterAccountsOnAndroids = async (
+    androids: Android[],
+    event: IpcMainEvent
+) => {
+    if (!androids.length) throw new Error('Chưa chọn Android nào');
+
+    const tasks = androids.map(async (selected, i) => {
+        if (i > 0) await sleep(i * 2000);
+        try {
+            const android = await getAndroid(Number(selected.index));
+            if (!android.account?.username || !android.account?.password) {
+                throw new Error('Chưa gán account');
+            }
+            await autoRegisterAccountOnAndroid(android, android.account, event);
+            return { index: android.index, name: android.name, ok: true as const };
+        } catch (error) {
+            return {
+                index: selected.index,
+                name: selected.name,
+                ok: false as const,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    });
+
+    const results = await Promise.all(tasks);
+
+    return {
+        total: androids.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
 };
 
 export const openThreadsAppOnAndroid = async (android: Android) => {
@@ -720,161 +888,3 @@ export const openThreadsAppOnAndroids = async (androids: Android[]) => {
         results,
     };
 };
-
-/** Auto register đồng thời, mỗi android cách nhau 8 giây khi start */
-export const autoRegisterAccountsOnAndroids = async (androids: Android[]) => {
-    if (!androids.length) throw new Error('Chưa chọn Android nào');
-
-    const tasks = androids.map(async (selected, i) => {
-        if (i > 0) await sleep(i * 2000);
-        try {
-            const android = await getAndroid(Number(selected.index));
-            if (!android.account?.username || !android.account?.password) {
-                throw new Error('Chưa gán account');
-            }
-            await autoRegisterAccountOnAndroid(android, android.account);
-            return { index: android.index, name: android.name, ok: true as const };
-        } catch (error) {
-            return {
-                index: selected.index,
-                name: selected.name,
-                ok: false as const,
-                error: error instanceof Error ? error.message : String(error),
-            };
-        }
-    });
-
-    const results = await Promise.all(tasks);
-
-    return {
-        total: androids.length,
-        success: results.filter((r) => r.ok).length,
-        failed: results.filter((r) => !r.ok).length,
-        results,
-    };
-};
-
-/** Poll xpath đến khi hiện rồi click. */
-async function clickByXpath(
-    driver: AppiumDriver,
-    xpath: string,
-    { timeoutMs = 30000, intervalMs = 1000 } = {}
-) {
-    await driver.setTimeout({ implicit: 0 });
-    const deadline = Date.now() + timeoutMs;
-    const selector = `xpath:${xpath}`;
-
-    while (Date.now() < deadline) {
-        const [el] = await driver.$$(selector);
-        if (el) {
-            const visible = await el.isDisplayed().catch(() => false);
-            if (visible) {
-                await el.click();
-                console.log(`clicked: ${xpath}`);
-                return true;
-            }
-        }
-        const remaining = deadline - Date.now();
-        if (remaining <= 0) break;
-        await driver.pause(Math.min(intervalMs, remaining));
-    }
-    console.log(`timeout waiting for ${xpath}`);
-    return false;
-}
-
-async function fillIfExists(driver: AppiumDriver, selector: string, value: string) {
-    const [el] = await driver.$$(selector);
-    if (!el) return false;
-    const visible = await el.isDisplayed().catch(() => false);
-    if (!visible) return false;
-    await el.click();
-    await el.clearValue().catch(() => {});
-    await el.setValue(value);
-    console.log(`filled ${selector} = ${value}`);
-    return true;
-}
-
-/** Poll button android:id/button1 theo text đến khi hiện rồi click. */
-async function clickButtonByText(driver: AppiumDriver, text: string, { timeoutMs = 30000, intervalMs = 1000 } = {}) {
-    await driver.setTimeout({ implicit: 0 });
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-        const buttons = await driver.$$("id:android:id/button1");
-        for (const btn of buttons) {
-            const visible = await btn.isDisplayed().catch(() => false);
-            if (!visible) continue;
-            const t = (await btn.getText().catch(() => "")).trim();
-            if (t !== text) continue;
-            await btn.click();
-            console.log(`clicked: android:id/button1 text="${text}"`);
-            return true;
-        }
-        const remaining = deadline - Date.now();
-        if (remaining <= 0) break;
-        await driver.pause(Math.min(intervalMs, remaining));
-    }
-    console.log(`timeout waiting for button text="${text}"`);
-    return false;
-}
-
-interface SetupProxyParams {
-    address: string;
-    port: string;
-    username: string;
-    password: string;
-}
-
-export const setupProxyOnAndroid = async (android: Android, params: SetupProxyParams) => {
-    const driver = await remote({
-        protocol: "http",
-        hostname: "127.0.0.1",
-        port: 4723,
-        path: "/",
-        logLevel: "warn",
-        capabilities: {
-            platformName: "Android",
-            "appium:automationName": "UiAutomator2",
-            "appium:udid": getAdbSerial(android),
-            "appium:appPackage": "com.cell47.College_Proxy",
-            "appium:appActivity": ".user_interface.MainActivity",
-            "appium:noReset": true,
-            "appium:forceAppLaunch": true,
-        },
-    });
-    try {
-        await driver.setTimeout({ implicit: 0 });
-
-        const addressSel = "id:com.cell47.College_Proxy:id/editText_address";
-        const formDeadline = Date.now() + 20000;
-        let formReady = false;
-        while (Date.now() < formDeadline) {
-            const [address] = await driver.$$(addressSel);
-            if (address && (await address.isDisplayed().catch(() => false))) {
-                formReady = true;
-                break;
-            }
-            await driver.pause(1000);
-        }
-        if (!formReady) throw new Error("Main form (editText_address) not found");
-
-        await fillIfExists(driver, addressSel, params.address);
-        await fillIfExists(driver, "id:com.cell47.College_Proxy:id/editText_port", params.port);
-        await fillIfExists(driver, "id:com.cell47.College_Proxy:id/editText_username", params.username);
-        await fillIfExists(driver, "id:com.cell47.College_Proxy:id/editText_password", params.password);
-
-        const [startBtn] = await driver.$$("id:com.cell47.College_Proxy:id/proxy_start_button");
-        if (startBtn && (await startBtn.isDisplayed().catch(() => false))) {
-            await startBtn.click();
-            console.log("clicked: proxy_start_button");
-        }
-
-        // confirm VPN / START SERVICE
-        await clickButtonByText(driver, "START SERVICE", { timeoutMs: 15000, intervalMs: 1000 });
-    } catch (error) {
-        console.error(error);
-        throw error;
-    } finally {
-        await driver.deleteSession().catch(() => undefined);
-    }
-};
-
