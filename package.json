@@ -14,7 +14,8 @@
     "server": "tsx server/index.ts",
     "server:build": "tsc server/index.ts --outDir dist-server",
     "start": "concurrently \"npm run server\" \"npm run dev\"",
-    "dev2": "git pull origin master && vite"
+    "dev2": "git pull origin master && vite",
+    "new": "git pull origin master"
   },
   "dependencies": {
     "@google/genai": "^1.39.0",
