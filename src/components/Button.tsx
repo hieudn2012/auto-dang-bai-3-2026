@@ -42,7 +42,7 @@ const Button = ({ loading, tooltip, ...props }: Props) => {
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >
-        {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : props.children}
+        {loading ? <i className="fa-solid fa-spinner animate-spin inline-block"></i> : props.children}
       </button>
       {tooltip && showTooltip && createPortal(
         <div

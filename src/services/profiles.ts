@@ -12,7 +12,7 @@ const defaultPagination: Pagination = {
   limit: 1000
 }
 
-const getProfiles = (group_id: number, pagination: Pagination) => {
+export const getProfiles = (group_id: number, pagination: Pagination = defaultPagination) => {
   return axios.post(`/api/v2/profile-list`, { group_id, ...defaultPagination, ...pagination })
 }
 

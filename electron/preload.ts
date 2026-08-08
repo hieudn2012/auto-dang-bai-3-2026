@@ -116,6 +116,10 @@ contextBridge.exposeInMainWorld('api', {
     invoke(InvokeChannel.OPEN_THREADS_APP_ON_ANDROIDS, androids),
   fullSetupOnAndroids: (androids: Android[]) =>
     invoke(InvokeChannel.FULL_SETUP_ON_ANDROIDS, androids),
+  checkAccountViews: (params: { ws: string; groupId: number; profiles: string[]; reportName: string }) =>
+    invoke(InvokeChannel.CHECK_ACCOUNT_VIEWS, params),
+  listCheckViewsReports: () => invoke(InvokeChannel.LIST_CHECK_VIEWS_REPORTS),
+  getCheckViewsReport: (fileName: string) => invoke(InvokeChannel.GET_CHECK_VIEWS_REPORT, fileName),
 });
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

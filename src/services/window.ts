@@ -134,6 +134,21 @@ type WindownInstance = typeof window & {
       failed: number
       results: { index: string; name: string; ok: boolean; error?: string }[]
     }>,
+    checkAccountViews: (params: {
+      ws: string
+      groupId: number
+      profiles: string[]
+      reportName: string
+    }) => Promise<{ reportPath: string; reportFileName: string }>,
+    listCheckViewsReports: () => Promise<string[]>,
+    getCheckViewsReport: (fileName: string) => Promise<{
+      fileName: string
+      items: { profile: string; postUrl: string; views: number }[]
+      totalRows: number
+      totalProfiles: number
+      totalViews: number
+      avgViews: number
+    }>,
   }
 }
 

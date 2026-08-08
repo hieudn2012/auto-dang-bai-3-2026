@@ -37,6 +37,7 @@ import { getAffShopeeLink } from './features/shopee'
 import { deletePost } from './features/threads-delete'
 import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
 import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, connectAllRunningAndroids, exportAccountsFromOutput, fullSetupOnAndroids, getAndroidList, openAndroid, openThreadsAppOnAndroids, randomMuMuName, setupProxiesOnAndroids } from './features/android'
+import { checkAccountViews, getCheckViewsReport, listCheckViewsReports } from './features/check-account-views'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -342,6 +343,18 @@ handle(InvokeChannel.OPEN_THREADS_APP_ON_ANDROIDS, async (event, androids) => {
 
 handle(InvokeChannel.FULL_SETUP_ON_ANDROIDS, async (event, androids) => {
   return fullSetupOnAndroids(androids, event);
+});
+
+handle(InvokeChannel.CHECK_ACCOUNT_VIEWS, async (event, params) => {
+  return checkAccountViews(params, event);
+});
+
+handle(InvokeChannel.LIST_CHECK_VIEWS_REPORTS, async () => {
+  return listCheckViewsReports();
+});
+
+handle(InvokeChannel.GET_CHECK_VIEWS_REPORT, async (_event, fileName) => {
+  return getCheckViewsReport(fileName);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

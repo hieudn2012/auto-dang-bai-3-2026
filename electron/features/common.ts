@@ -89,6 +89,11 @@ export const initConfigFile = async () => {
   if (!fs.existsSync(path.join(appConfig, 'reports'))) {
     fs.mkdirSync(path.join(appConfig, 'reports'));
   }
+
+  // create folder check-views if not exists
+  if (!fs.existsSync(path.join(appConfig, 'check-views'))) {
+    fs.mkdirSync(path.join(appConfig, 'check-views'));
+  }
 }
 
 // save history txt, add 1 line new line

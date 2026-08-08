@@ -7,8 +7,10 @@ import CheckValidFolder from "./CheckValidFolder";
 // import Product from "./Product";
 import AmzLink from "./AmzLink";
 import GeminiAI from "./GeminiAI";
+import CheckViews from "./CheckViews";
+import ViewsAnalysis from "./ViewsAnalysis";
 
-type Tab = 'cookie' | 'setup' | 'check-live' | 'check-valid-folder' | 'product' | 'amz-link' | 'gemini-ai' | 'fanpage';
+type Tab = 'cookie' | 'setup' | 'check-live' | 'check-valid-folder' | 'product' | 'amz-link' | 'gemini-ai' | 'fanpage' | 'check-views' | 'views-analysis';
 
 const ImportSheet = () => {
   const [tab, setTab] = useState<Tab>('setup');
@@ -20,6 +22,9 @@ const ImportSheet = () => {
     // { id: 'product', label: 'Product', icon: 'fas fa-box' },
     { id: 'amz-link', label: 'Amazon Link', icon: 'fas fa-link' },
     { id: 'gemini-ai', label: 'Gemini AI', icon: 'fas fa-robot' },
+    // check views
+    { id: 'check-views', label: 'Check Views', icon: 'fas fa-eye' },
+    { id: 'views-analysis', label: 'Views Analysis', icon: 'fas fa-chart-bar' },
   ] as const;
 
   return (
@@ -65,6 +70,8 @@ const ImportSheet = () => {
               {/* {tab === 'product' && <Product />} */}
               {tab === 'amz-link' && <AmzLink />}
               {tab === 'gemini-ai' && <GeminiAI />}
+              {tab === 'check-views' && <CheckViews />}
+              {tab === 'views-analysis' && <ViewsAnalysis />}
             </div>
           </div>
         </div>
