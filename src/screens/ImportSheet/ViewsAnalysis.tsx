@@ -39,6 +39,21 @@ type BarRow = {
 
 const formatNumber = (n: number) => n.toLocaleString("en-US");
 
+const shortenMiddle = (value: string, head = 10, tail = 8) => {
+  if (!value) return "";
+  if (value.length <= head + tail + 3) return value;
+  return `${value.slice(0, head)}...${value.slice(-tail)}`;
+};
+
+const copyText = async (value: string) => {
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success("Đã copy");
+  } catch {
+    toast.error("Copy thất bại");
+  }
+};
+
 const compactNumber = (n: number) => {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
@@ -566,7 +581,7 @@ const ViewsAnalysis = () => {
             </div>
             <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0">
+                <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       Profile
@@ -633,7 +648,7 @@ const ViewsAnalysis = () => {
             </div>
             <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0">
+                <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 w-12">
                       #
@@ -670,10 +685,26 @@ const ViewsAnalysis = () => {
                       <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
                         {item.profile}
                       </td>
-                      <td className="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 max-w-[420px] truncate">
-                        <a href={item.postUrl} target="_blank" rel="noreferrer" title={item.postUrl}>
-                          {item.postUrl}
-                        </a>
+                      <td className="px-4 py-2 text-sm text-blue-600 dark:text-blue-400">
+                        <div className="inline-flex items-center gap-2 max-w-[280px]">
+                          <a
+                            href={item.postUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={item.postUrl}
+                            className="truncate font-mono text-xs"
+                          >
+                            {shortenMiddle(item.postUrl)}
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => copyText(item.postUrl)}
+                            className="shrink-0 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                            title="Copy URL"
+                          >
+                            <i className="fas fa-copy text-xs"></i>
+                          </button>
+                        </div>
                       </td>
                       <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
                         {formatNumber(item.views)}

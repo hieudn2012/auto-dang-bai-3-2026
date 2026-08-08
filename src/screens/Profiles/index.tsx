@@ -654,9 +654,9 @@ const Profiles = () => {
 
               return (
                 <>
-                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700 text-xs">
                     {map(allProfiles, (profile, index) => (
-                      <div key={profile.profile_id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                      <div key={profile.profile_id} className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                           {/* Selection & ID */}
                           <div className="lg:col-span-2 flex items-center gap-3">
@@ -674,18 +674,17 @@ const Profiles = () => {
                             />
                             <div>
                               <div className="font-semibold text-gray-900 dark:text-white">#{index + 1}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">ID: {profile.profile_id}</div>
+                              <div className="text-gray-500 dark:text-gray-400">ID: {profile.profile_id}</div>
                             </div>
                           </div>
 
                           {/* Profile Info */}
                           <div className="lg:col-span-3">
                             <div className="font-medium text-gray-900 dark:text-white">{profile.name}</div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              <i className="fas fa-network-wired mr-1"></i>
+                            <div className="text-gray-500 dark:text-gray-400">
                               {profile.proxy_ip}:{profile.proxy_port}
                             </div>
-                            <div className="text-xs text-green-600 dark:text-green-400">
+                            <div className="text-green-600 dark:text-green-400">
                               {profileResult?.[profile.profile_id]?.username}
                               {` - `}
                               {profileResult?.[profile.profile_id]?.sex}
@@ -703,14 +702,14 @@ const Profiles = () => {
                               ) : (
                                 <div className="flex items-center text-red-600 dark:text-red-400">
                                   <i className="fa-solid fa-times-circle mr-1"></i>
-                                  <span className="text-sm">Inactive</span>
+                                  <span>Inactive</span>
                                 </div>
                               )}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <div className="text-gray-500 dark:text-gray-400 mt-1">
                               {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <div className="text-gray-500 dark:text-gray-400 mt-1">
                               {shortName(userMap?.[profile.profile_id]?.quoteName || 'N/A')}
                             </div>
                           </div>
