@@ -42,16 +42,16 @@ const ImportSheet = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div className="flex flex-wrap border-b border-gray-200">
+        <div className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+          <div className="flex flex-wrap border-b border-gray-200 dark:border-gray-700">
             {tabs.map((tabItem) => (
               <button
                 key={tabItem.id}
                 onClick={() => setTab(tabItem.id)}
-                className={`text-xs flex items-center px-6 py-3 font-medium text-sm transition-all duration-200 border-b-2 ${
+                className={`text-xs flex items-center px-6 py-3 font-medium transition-all duration-200 border-b-2 ${
                   tab === tabItem.id
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    ? 'border-blue-500 dark:border-blue-500 text-blue-600 dark:text-blue-500'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >
                 <i className={`${tabItem.icon} mr-2`}></i>

@@ -38,7 +38,7 @@ const VIEWS_SPAN_SELECTOR =
 const BACK_SVG_SELECTOR =
   "svg.x1lliihq.x2lah0s.x1n2onr6.x16ye13r.x5lhr3w.x86x9uj.xbh8q5q.x73je2i.x1owpc8m.x1f6yumg.xvlca1e";
 
-/** "1.2K views" -> "1200", "8 views" -> "8" */
+/** "1.2K views" -> "1200", "8 views" -> "8", "3" -> "3" */
 export const parseViewsCount = (text: string): string => {
   const cleaned = text.replace(/views/gi, "").replace(/,/g, "").trim();
   const match = cleaned.match(/^([\d.]+)\s*([kmb])?$/i);
@@ -58,10 +58,22 @@ export const parseViewsCount = (text: string): string => {
   return String(Math.round(num));
 };
 
+export interface PostEngagementMetrics {
+  views: string;
+  like: string;
+  comment: string;
+  share: string;
+  send: string;
+}
+
 export interface CheckViewsReportItem {
   profile: string;
   postUrl: string;
   views: number;
+  like: number;
+  comment: number;
+  share: number;
+  send: number;
 }
 
 export interface CheckViewsReportResult {
@@ -71,6 +83,10 @@ export interface CheckViewsReportResult {
   totalProfiles: number;
   totalViews: number;
   avgViews: number;
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalSends: number;
 }
 
 const getCheckViewsDir = () => path.join(app.getPath("userData"), "check-views");
@@ -106,8 +122,14 @@ export const getCheckViewsReport = async (fileName: string): Promise<CheckViewsR
       totalProfiles: 0,
       totalViews: 0,
       avgViews: 0,
+      totalLikes: 0,
+      totalComments: 0,
+      totalShares: 0,
+      totalSends: 0,
     };
   }
+
+  const parseMetric = (raw = "0") => Number(raw.replace(/[^\d]/g, "")) || 0;
 
   const content = fs.readFileSync(filePath, "utf8");
   const items = content
@@ -115,12 +137,32 @@ export const getCheckViewsReport = async (fileName: string): Promise<CheckViewsR
     .map((line) => line.trim())
     .filter((line) => line.includes(" || "))
     .map((line) => {
-      const [profile = "", postUrl = "", viewsRaw = "0"] = line.split(" || ").map((p) => p.trim());
-      const views = Number(viewsRaw.replace(/[^\d]/g, "")) || 0;
-      return { profile, postUrl, views };
-    });
+      const [
+        profile = "",
+        postUrl = "",
+        viewsRaw = "0",
+        likeRaw = "0",
+        commentRaw = "0",
+        shareRaw = "0",
+        sendRaw = "0",
+      ] = line.split(" || ").map((p) => p.trim());
+      return {
+        profile,
+        postUrl,
+        views: parseMetric(viewsRaw),
+        like: parseMetric(likeRaw),
+        comment: parseMetric(commentRaw),
+        share: parseMetric(shareRaw),
+        send: parseMetric(sendRaw),
+      };
+    })
+    .sort((a, b) => b.views - a.views);
 
   const totalViews = items.reduce((sum, item) => sum + item.views, 0);
+  const totalLikes = items.reduce((sum, item) => sum + item.like, 0);
+  const totalComments = items.reduce((sum, item) => sum + item.comment, 0);
+  const totalShares = items.reduce((sum, item) => sum + item.share, 0);
+  const totalSends = items.reduce((sum, item) => sum + item.send, 0);
   const totalProfiles = new Set(items.map((item) => item.profile)).size;
 
   return {
@@ -130,6 +172,10 @@ export const getCheckViewsReport = async (fileName: string): Promise<CheckViewsR
     totalProfiles,
     totalViews,
     avgViews: items.length ? Math.round(totalViews / items.length) : 0,
+    totalLikes,
+    totalComments,
+    totalShares,
+    totalSends,
   };
 };
 
@@ -157,8 +203,13 @@ const createReportFile = (reportName: string): string => {
   return filePath;
 };
 
-const appendReportLine = (reportPath: string, profile: string, postUrl: string, views: string) => {
-  const line = `${profile} || ${postUrl} || ${views}\n`;
+const appendReportLine = (
+  reportPath: string,
+  profile: string,
+  postUrl: string,
+  metrics: PostEngagementMetrics,
+) => {
+  const line = `${profile} || ${postUrl} || ${metrics.views} || ${metrics.like} || ${metrics.comment} || ${metrics.share} || ${metrics.send}\n`;
   fs.appendFileSync(reportPath, line, "utf8");
 };
 
@@ -232,12 +283,85 @@ const openPostDetail = async (page: Page, postIndex: number) => {
   }
 };
 
+/** like=Like, comment=Reply, share=Repost, send=Share */
+const extractPostMetrics = async (page: Page): Promise<PostEngagementMetrics> => {
+  const raw = await page.evaluate(
+    (containerSel, spanSel) => {
+      const root =
+        document.querySelector('[data-pagelet="threads_post_page_0"]') || document.body;
+
+      const readCountByAriaLabel = (label: string) => {
+        const svg = root.querySelector(`svg[aria-label="${label}"]`);
+        if (!svg) return "0";
+
+        const button = svg.closest('[role="button"]');
+        if (!button) return "0";
+
+        const countSpans = Array.from(button.querySelectorAll("span"));
+        for (const span of countSpans) {
+          const text = (span.textContent || "").trim();
+          if (!text) continue;
+          if (/^[\d.,]+\s*[kmb]?$/i.test(text)) return text;
+        }
+        return "0";
+      };
+
+      let viewsText = "";
+      const containers = Array.from(document.querySelectorAll(containerSel));
+      for (const container of containers) {
+        const spans = Array.from(container.querySelectorAll(spanSel));
+        for (const span of spans) {
+          const text = span.textContent?.trim() || "";
+          if (/views/i.test(text)) {
+            viewsText = text;
+            break;
+          }
+        }
+        if (viewsText) break;
+      }
+
+      if (!viewsText) {
+        const all = Array.from(document.querySelectorAll(spanSel));
+        for (const span of all) {
+          const text = span.textContent?.trim() || "";
+          if (/views/i.test(text)) {
+            viewsText = text;
+            break;
+          }
+        }
+      }
+
+      return {
+        viewsText,
+        like: readCountByAriaLabel("Like"),
+        comment: readCountByAriaLabel("Reply"),
+        share: readCountByAriaLabel("Repost"),
+        send: readCountByAriaLabel("Share"),
+      };
+    },
+    VIEWS_CONTAINER_SELECTOR,
+    VIEWS_SPAN_SELECTOR,
+  );
+
+  if (!raw.viewsText) {
+    throw new Error("Views text empty");
+  }
+
+  return {
+    views: parseViewsCount(raw.viewsText),
+    like: parseViewsCount(raw.like),
+    comment: parseViewsCount(raw.comment),
+    share: parseViewsCount(raw.share),
+    send: parseViewsCount(raw.send),
+  };
+};
+
 const checkFirstTwoPostViews = async (
   page: Page,
   profile: string,
   reportPath: string,
-): Promise<string[]> => {
-  const views: string[] = [];
+): Promise<PostEngagementMetrics[]> => {
+  const results: PostEngagementMetrics[] = [];
 
   await page.evaluate(() => window.scrollBy(0, 400));
   await waitRandom(1500, 2500);
@@ -254,38 +378,22 @@ const checkFirstTwoPostViews = async (
       throw new Error(`Views container not found for post #${postIndex + 1}`);
     }
 
-    const viewText = await page.evaluate(
-      (containerSel, spanSel) => {
-        const containers = Array.from(document.querySelectorAll(containerSel));
-        for (const container of containers) {
-          const spans = Array.from(container.querySelectorAll(spanSel));
-          for (const span of spans) {
-            const text = span.textContent?.trim() || "";
-            if (/views/i.test(text)) return text;
-          }
-        }
+    // wait for engagement row (Like) to be present on post detail
+    await page.waitForSelector('svg[aria-label="Like"]', { timeout: 10_000 }).catch(() => undefined);
 
-        const all = Array.from(document.querySelectorAll(spanSel));
-        for (const span of all) {
-          const text = span.textContent?.trim() || "";
-          if (/views/i.test(text)) return text;
-        }
-        return "";
-      },
-      VIEWS_CONTAINER_SELECTOR,
-      VIEWS_SPAN_SELECTOR,
-    );
-
-    if (!viewText) {
-      throw new Error(`Views text empty for post #${postIndex + 1}`);
-    }
-
-    const viewsCount = parseViewsCount(viewText);
+    const metrics = await extractPostMetrics(page);
     const postUrl = page.url();
 
-    console.log(`[@${profile}] post #${postIndex + 1} views:`, viewText, "=>", viewsCount);
-    appendReportLine(reportPath, profile, postUrl, viewsCount);
-    views.push(viewsCount);
+    console.log(
+      `[@${profile}] post #${postIndex + 1}:`,
+      `views=${metrics.views}`,
+      `like=${metrics.like}`,
+      `comment=${metrics.comment}`,
+      `share=${metrics.share}`,
+      `send=${metrics.send}`,
+    );
+    appendReportLine(reportPath, profile, postUrl, metrics);
+    results.push(metrics);
 
     const backSvg = await page.waitForSelector(BACK_SVG_SELECTOR, { timeout: 10_000 });
     if (!backSvg) {
@@ -295,13 +403,14 @@ const checkFirstTwoPostViews = async (
     await waitRandom(1500, 2500);
   }
 
-  return views;
+  return results;
 };
 
 export const checkAccountViews = async (
-  { ws, groupId, profiles, reportName }: CheckAccountViewsProps,
+  { ws, groupId, reportName }: CheckAccountViewsProps,
   event: IpcMainEvent,
 ) => {
+  const profiles = ['lion.7170638', 'peter_grabbitt', 'lucky5456383', 'homebywu']
   const key = String(groupId);
 
   if (!reportName?.trim()) {
@@ -358,11 +467,17 @@ export const checkAccountViews = async (
             });
 
             await waitRandom(3000, 5000);
-            const views = await checkFirstTwoPostViews(page, profile, reportPath);
+            const posts = await checkFirstTwoPostViews(page, profile, reportPath);
+            const summary = posts
+              .map(
+                (m, i) =>
+                  `#${i + 1} v=${m.views} l=${m.like} c=${m.comment} s=${m.share} send=${m.send}`,
+              )
+              .join(" | ");
 
             sendMessage(event, {
               username: key,
-              message: `[@${profile}] Views: ${views.join(" | ")} ✅`,
+              message: `[@${profile}] ${summary} ✅`,
             });
           } finally {
             await page.close().catch(() => undefined);

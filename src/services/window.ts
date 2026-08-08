@@ -143,11 +143,23 @@ type WindownInstance = typeof window & {
     listCheckViewsReports: () => Promise<string[]>,
     getCheckViewsReport: (fileName: string) => Promise<{
       fileName: string
-      items: { profile: string; postUrl: string; views: number }[]
+      items: {
+        profile: string
+        postUrl: string
+        views: number
+        like: number
+        comment: number
+        share: number
+        send: number
+      }[]
       totalRows: number
       totalProfiles: number
       totalViews: number
       avgViews: number
+      totalLikes: number
+      totalComments: number
+      totalShares: number
+      totalSends: number
     }>,
   }
 }
