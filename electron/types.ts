@@ -81,6 +81,7 @@ export type MainConfig = {
   linkPost?: string
   caption?: string
   proxy?: string
+  quoteLinkFile?: string;
   captions?: {
     label: string
     value: string

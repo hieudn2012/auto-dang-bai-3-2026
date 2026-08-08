@@ -18,6 +18,7 @@ import Mode from "@/components/Mode";
 import LoadingWraper from "@/components/LoadingWraper";
 import { Group } from "@/components/Group";
 import ProxyModal from "./ProxyModal";
+import ProfileSettings from "./ProfileSettings";
 import { ReportType } from "electron/features/report";
 import { DeletePostOptions } from "electron/features/threads-delete";
 import Switch from "@/components/Switch";
@@ -78,6 +79,7 @@ const Profiles = () => {
   const [mode, setMode] = useState<'default' | 'affiliate'>('affiliate');
   const [lang, setLang] = useState<Lang>('en');
   const [showProxyModal, setShowProxyModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showRangeModal, setShowRangeModal] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
@@ -433,9 +435,9 @@ const Profiles = () => {
 
   return (
     <Layout>
-      <div className="p-6 text-gray-900 dark:text-gray-100">
-        {/* Header */}
-        <div className="fixed z-10 top-0 left-[116px] right-[56px] bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800/95 backdrop-blur-sm">
+      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden p-6 text-gray-900 dark:text-gray-100">
+        {/* Header — giữ vị trí */}
+        <div className="shrink-0 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800/95 backdrop-blur-sm pb-4">
           <div>
             <div className="flex justify-between items-center px-2 py-4">
               <div>
@@ -447,6 +449,13 @@ const Profiles = () => {
                   Quản lý và điều khiển các profile tài khoản mạng xã hội
                 </p>
               </div>
+              <Button
+                onClick={() => setShowSettings(true)}
+                tooltip="Settings"
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200"
+              >
+                <i className="fas fa-cog"></i>
+              </Button>
             </div>
           </div>
 
@@ -595,10 +604,10 @@ const Profiles = () => {
           </div>
         </div>
 
-        {/* Profile Cards */}
-        <div className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden mt-[200px]">
+        {/* Profile Cards — vùng scroll */}
+        <div className="flex-1 min-h-0 flex flex-col rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
           {/* Table Header */}
-          <div className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="shrink-0 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <input
@@ -648,6 +657,7 @@ const Profiles = () => {
           </div>
 
           {/* Profile Grid */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
           <LoadingWraper loading={isPending}>
             {(() => {
               const allProfiles = data?.data?.data?.data || [];
@@ -828,6 +838,7 @@ const Profiles = () => {
               );
             })()}
           </LoadingWraper>
+          </div>
         </div>
       </div>
       <Dialog open={open} onClose={() => setOpen(false)}>
@@ -905,6 +916,11 @@ const Profiles = () => {
       </Dialog>
 
       {/* Proxy Modal */}
+      <ProfileSettings
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
+
       <ProxyModal
         isOpen={showProxyModal}
         onClose={() => setShowProxyModal(false)}

@@ -103,6 +103,7 @@ export interface PostParams {
   captionData: string;
   reportName: string;
   isAuto: boolean;
+  enableQuoteLink?: boolean;
 }
 
 const POST_BUTTON_SELECTOR = 'div.xc26acl';
@@ -126,6 +127,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     mode = 'default',
     reportName,
     isAuto,
+    enableQuoteLink,
   } = params;
   let browser: Awaited<ReturnType<typeof puppeteer.connect>> | null = null;
 
@@ -148,7 +150,8 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       }
     }
 
-    await page.goto(`https://threads.com/@${username}`);
+    const link = type === 'quote' && enableQuoteLink ? `https://threads.com/@${username}` : `https://threads.com/@${username}`;
+    await page.goto(link);
     await waitRandom(5000, 10000);
 
     // move mouse
@@ -183,16 +186,18 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       await page.evaluate(() => window.scrollTo(0, 0));
       await waitRandom(2000, 4000);
 
-      // Đợi DOM load
-      await page.waitForSelector(LATEST_POST_SELECTOR, { timeout: 10000 });
+      if (enableQuoteLink) {
+        // Đợi DOM load
+        await page.waitForSelector(LATEST_POST_SELECTOR, { timeout: 10000 });
 
-      // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
-      const firstDiv = await page.$(LATEST_POST_SELECTOR);
-      if (!firstDiv) {
-        throw new Error('Không tìm thấy bài viết mới nhất');
+        // find first div with class x1a6qonq x6ikm8r x10wlt62 xj0a0fe x126k92a x6prxxf x7r5mf7 and click
+        const firstDiv = await page.$(LATEST_POST_SELECTOR);
+        if (!firstDiv) {
+          throw new Error('Không tìm thấy bài viết mới nhất');
+        }
+        await firstDiv.click();
+        await waitRandom(2000, 4000);
       }
-      await firstDiv.click();
-      await waitRandom(2000, 4000);
 
       const repostSvg = await page.$(REPOST_BUTTON_SELECTOR);
       if (!repostSvg) {
