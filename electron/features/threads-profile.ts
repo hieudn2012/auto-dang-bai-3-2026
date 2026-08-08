@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import puppeteer, { Page } from 'puppeteer';
 import { execSync } from 'child_process'
-import { waitRandom } from "./common";
+import { loadMainConfig, waitRandom } from "./common";
+import fsSync from "node:fs";
 import os from 'os'
 import path from "node:path";
 import { IpcMainEvent } from "electron";
@@ -117,6 +118,28 @@ const MORE_BUTTON_SELECTOR = 'div.xkqq1k2.x91jh78.x1xkn691.x4oqio7.x1qx5ct2.xw4j
 
 const WAIT_FOR_UI_MS = 60_000;
 
+/** Lấy 1 link bất kỳ từ file và xoá dòng đó */
+const takeAndRemoveQuoteLink = (filePath: string): string => {
+  if (!fsSync.existsSync(filePath)) {
+    throw new Error(`File quote link không tồn tại: ${filePath}`);
+  }
+
+  const lines = fsSync
+    .readFileSync(filePath, "utf-8")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    throw new Error("File quote link đã hết link");
+  }
+
+  const index = Math.floor(Math.random() * lines.length);
+  const [picked] = lines.splice(index, 1);
+  fsSync.writeFileSync(filePath, lines.join("\n") + (lines.length ? "\n" : ""), "utf-8");
+  return picked;
+};
+
 export const clickPostButton = async (params: PostParams, event: IpcMainEvent, attempt = 1): Promise<boolean> => {
   const {
     id,
@@ -150,7 +173,17 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       }
     }
 
-    const link = type === 'quote' && enableQuoteLink ? `https://threads.com/@${username}` : `https://threads.com/@${username}`;
+    let link = `https://threads.com/@${username}`;
+    if (type === 'quote' && enableQuoteLink) {
+      const config = await loadMainConfig();
+      const quoteLinkFile = config?.quoteLinkFile?.trim();
+      if (!quoteLinkFile) {
+        throw new Error('Chưa cấu hình quoteLinkFile trong Settings');
+      }
+      link = takeAndRemoveQuoteLink(quoteLinkFile);
+      sendMessage(event, { id, username, message: `Quote link: ${link}` });
+    }
+
     await page.goto(link);
     await waitRandom(5000, 10000);
 
@@ -186,7 +219,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       await page.evaluate(() => window.scrollTo(0, 0));
       await waitRandom(2000, 4000);
 
-      if (enableQuoteLink) {
+      if (!enableQuoteLink) {
         // Đợi DOM load
         await page.waitForSelector(LATEST_POST_SELECTOR, { timeout: 10000 });
 

@@ -98,8 +98,8 @@ handle(InvokeChannel.GET_CURRENT_TIME, async () => {
   console.log('get-current-time')
 })
 
-handle(InvokeChannel.OPEN_DIALOG_FOLDER, async () => {
-  return openDialogFolder();
+handle(InvokeChannel.OPEN_DIALOG_FOLDER, async (_event, mode?: 'directory' | 'file') => {
+  return openDialogFolder(mode);
 })
 
 handle(InvokeChannel.CREATE_PRODUCT_FOLDER, async (_event, parentFolder, productName) => {

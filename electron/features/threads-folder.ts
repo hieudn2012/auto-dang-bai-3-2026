@@ -6,11 +6,18 @@ import { FolderInfo } from 'electron/types';
 import nodePath from 'node:path';
 import { getRandomFolder } from './foder';
 
-export const openDialogFolder = async () => {
-  const folderPath = dialog.showOpenDialogSync({
-    properties: ['openDirectory'],
+export const openDialogFolder = async (mode: 'directory' | 'file' = 'directory') => {
+  const selected = dialog.showOpenDialogSync({
+    properties: [mode === 'file' ? 'openFile' : 'openDirectory'],
+    filters:
+      mode === 'file'
+        ? [
+            { name: 'Text files', extensions: ['txt'] },
+            { name: 'All files', extensions: ['*'] },
+          ]
+        : undefined,
   });
-  return folderPath ? folderPath[0] : '';
+  return selected ? selected[0] : '';
 };
 
 // create product folder

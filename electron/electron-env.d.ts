@@ -32,7 +32,7 @@ interface Window {
     getCurrentTime: () => Promise<any>
     openProfile: (id: number) => Promise<any>
     checkLive: ({ accounts }: { accounts: string[] }) => Promise<any>
-    openDialogFolder: () => Promise<string>,
+    openDialogFolder: (mode?: 'directory' | 'file') => Promise<string>,
     createProductFolder: (parentFolder: string, productName: string) => Promise<string>,
     loadProductInfo: (productFolderPath: string) => Promise<{ cap: string, link: string }>,
     openFolder: (path) => Promise<any>,

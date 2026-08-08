@@ -40,7 +40,7 @@ contextBridge.exposeInMainWorld('api', {
   getCurrentTime: () => invoke(InvokeChannel.GET_CURRENT_TIME),
   openProfile: (id: number, index: number) => invoke(InvokeChannel.OPEN_PROFILE, id, index),
   checkLive: (accounts: string[]) => invoke(InvokeChannel.CHECK_LIVE, accounts),
-  openDialogFolder: () => invoke(InvokeChannel.OPEN_DIALOG_FOLDER),
+  openDialogFolder: (mode?: 'directory' | 'file') => invoke(InvokeChannel.OPEN_DIALOG_FOLDER, mode),
   createProductFolder: (parentFolder: string, productName: string) => invoke(InvokeChannel.CREATE_PRODUCT_FOLDER, parentFolder, productName),
   loadProductInfo: (productFolderPath: string) => invoke(InvokeChannel.LOAD_PRODUCT_INFO, productFolderPath),
   openFolder: (path: string) => invoke(InvokeChannel.OPEN_FOLDER, path),

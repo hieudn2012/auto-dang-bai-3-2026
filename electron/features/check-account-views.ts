@@ -407,10 +407,10 @@ const checkFirstTwoPostViews = async (
 };
 
 export const checkAccountViews = async (
-  { ws, groupId, reportName }: CheckAccountViewsProps,
+  { ws, groupId, reportName, profiles }: CheckAccountViewsProps,
   event: IpcMainEvent,
 ) => {
-  const profiles = ['lion.7170638', 'peter_grabbitt', 'lucky5456383', 'homebywu']
+  // const profiles = ['lion.7170638', 'peter_grabbitt', 'lucky5456383', 'homebywu']
   const key = String(groupId);
 
   if (!reportName?.trim()) {

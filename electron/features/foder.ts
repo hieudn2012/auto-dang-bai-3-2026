@@ -8,50 +8,70 @@ export interface MoveData {
   type?: 'cap' | 'link';
 }
 
+const countNonEmptyLines = (data: string) =>
+  data
+    .trim()
+    .replace(/(\r?\n)\s*(\r?\n)+/g, '\n')
+    .split('\n')
+    .filter((line) => line.trim() !== '').length;
+
+const isUsableProductFolder = (folderPath: string): boolean => {
+  try {
+    const capPath = path.join(folderPath, 'cap.txt');
+    const linkPath = path.join(folderPath, 'link.txt');
+    if (!fs.existsSync(capPath) || !fs.existsSync(linkPath)) {
+      return false;
+    }
+
+    const capLength = countNonEmptyLines(fs.readFileSync(capPath, 'utf-8'));
+    const linkLength = countNonEmptyLines(fs.readFileSync(linkPath, 'utf-8'));
+    return capLength >= 2 && linkLength >= 2;
+  } catch {
+    return false;
+  }
+};
+
 export const getRandomFolder = (
   rootPath: string,
   excludeFolders: string[] = [],
-  retry = 0,
-  maxRetry = 5
 ): string => {
   if (!rootPath) {
     console.error('Root path is undefined or empty');
     return '';
   }
 
-  try {
-    const folders = fs.readdirSync(rootPath);
+  if (!fs.existsSync(rootPath)) {
+    console.error('Root path does not exist:', rootPath);
+    return '';
+  }
 
-    const validFolders = folders.filter(
-      folder => folder !== '.DS_Store' && folder !== 'desktop.ini'
+  try {
+    const excludeSet = new Set(
+      excludeFolders.filter(Boolean).map((p) => path.normalize(p)),
     );
 
-    if (validFolders.length === 0) {
-      console.error('No valid folders found in:', rootPath);
+    const candidates = fs
+      .readdirSync(rootPath, { withFileTypes: true })
+      .filter((entry) => {
+        if (!entry.isDirectory()) return false;
+        if (entry.name === '.DS_Store' || entry.name === 'desktop.ini') return false;
+        if (entry.name.startsWith('.')) return false;
+        return true;
+      })
+      .map((entry) => path.join(rootPath, entry.name))
+      .filter((folderPath) => !excludeSet.has(path.normalize(folderPath)))
+      .filter((folderPath) => isUsableProductFolder(folderPath));
+
+    if (candidates.length === 0) {
+      console.error(
+        'No usable folders found (need cap.txt + link.txt with >= 2 lines each):',
+        rootPath,
+        `| excluded=${excludeFolders.length}`,
+      );
       return '';
     }
 
-    const randomFolder =
-      validFolders[Math.floor(Math.random() * validFolders.length)];
-
-    const finalPath = path.join(rootPath, randomFolder);
-    const capPath = path.join(finalPath, 'cap.txt');
-    const capData = fs.readFileSync(capPath, 'utf-8').trim();
-    const capLength = capData.replace(/(\r?\n)\s*(\r?\n)+/g, '\n').split('\n').length;
-    const linkPath = path.join(finalPath, 'link.txt');
-    const linkData = fs.readFileSync(linkPath, 'utf-8').trim();
-    const linkLength = linkData.replace(/(\r?\n)\s*(\r?\n)+/g, '\n').split('\n').length;
-
-    if (capLength < 2 || linkLength < 2) {
-      if (retry >= maxRetry) {
-        console.error('Max retry random folder reached:', maxRetry);
-        return '';
-      }
-
-      return getRandomFolder(rootPath, excludeFolders, retry + 1, maxRetry);
-    }
-
-    return finalPath;
+    return candidates[Math.floor(Math.random() * candidates.length)];
   } catch (error) {
     console.error('Error reading folder:', rootPath, error);
     return '';

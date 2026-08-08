@@ -37,7 +37,7 @@ const Button = ({ loading, tooltip, ...props }: Props) => {
       <button
         {...props}
         ref={btnRef}
-        className={twMerge("px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/80 dark:bg-gradient-to-r dark:from-dark-accent dark:to-dark-accentHover dark:hover:from-dark-accentHover dark:hover:to-dark-accent hover:scale-95 active:scale-90 shadow-lg dark:shadow-xl border border-primary/20 dark:border-dark-accent/30 transition-all duration-150", isDisabled ? 'opacity-50 cursor-not-allowed' : '', props.className)}
+        className={twMerge("px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/80 hover:scale-95 active:scale-90 shadow-lg border border-primary/20 transition-all duration-150", isDisabled ? 'opacity-50 cursor-not-allowed' : '', props.className)}
         disabled={isDisabled}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}

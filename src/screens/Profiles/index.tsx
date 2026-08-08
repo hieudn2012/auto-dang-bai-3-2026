@@ -88,6 +88,7 @@ const Profiles = () => {
   const [sex, setSex] = useState<'male' | 'female'>('male');
   const [isIncludeQuote, setIsIncludeQuote] = useState(false);
   const [isTag, setIsTag] = useState(true);
+  const [enableQuoteLink, setEnableQuoteLink] = useState(false);
   const profiles = data?.data?.data?.data || [];
 
   const handleRandomFolder = async (profile_id: number) => {
@@ -152,6 +153,7 @@ const Profiles = () => {
         isAuto,
         reportName,
         captionData: '',
+        enableQuoteLink,
       }
       await windowInstance.api.clickPostButton(data);
       return true;
@@ -513,6 +515,13 @@ const Profiles = () => {
                       <span>Tag</span>
                     </label>
                     <Switch enabled={isTag} onChange={setIsTag} />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-gray-300">
+                      <span>Quote Link</span>
+                    </label>
+                    <Switch enabled={enableQuoteLink} onChange={setEnableQuoteLink} />
                   </div>
                 </div>
 

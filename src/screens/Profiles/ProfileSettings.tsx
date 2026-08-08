@@ -24,7 +24,7 @@ const ProfileSettings = ({ isOpen, onClose }: ProfileSettingsProps) => {
   }, [isOpen]);
 
   const handlePickFile = async () => {
-    const filePath = await windowInstance.api.openDialogFolder();
+    const filePath = await windowInstance.api.openDialogFolder('file');
     if (filePath) {
       setQuoteLinkFile(filePath);
     }
