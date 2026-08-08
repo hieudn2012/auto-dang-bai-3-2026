@@ -20,8 +20,13 @@ const getGroupList = () => {
   return axios.post(`/api/v2/group-list`, { page: 1, limit: 1000 })
 }
 
-const deleteProfile = (profile_id: number) => {
-  return axios.post(`api/v2/profile-delete`, { profile_id });
+const clearProfileCache = (profile_id: number) => {
+  return axios.post(`/api/v2/profile-clear-cache`, { profile_id: [profile_id] });
+}
+
+const deleteProfile = async (profile_id: number) => {
+  await clearProfileCache(profile_id);
+  return axios.post(`/api/v2/profile-delete`, { profile_id });
 }
 
 const closeProfile = (profile_id: number) => {

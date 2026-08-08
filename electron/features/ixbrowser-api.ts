@@ -91,8 +91,17 @@ export const closeProfile = async (profileId: number) => {
   return response.data;
 };
 
+// /api/v2/profile-clear-cache
+export const clearProfileCache = async (profileId: number | number[]) => {
+  const response = await axios.post(`${BASE_URL}/api/v2/profile-clear-cache`, {
+    profile_id: Array.isArray(profileId) ? profileId : [profileId]
+  });
+  return response.data;
+};
+
 // /api/v2/profile-delete
 export const deleteProfile = async (profileId: number) => {
+  await clearProfileCache(profileId);
   const response = await axios.post(`${BASE_URL}/api/v2/profile-delete`, {
     profile_id: profileId
   });
