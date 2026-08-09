@@ -8,6 +8,7 @@ import { remote } from 'webdriverio';
 import { loadMainConfig } from './common';
 import { sendMessage } from './event';
 import { getMediaInFolder } from './foder';
+import { getRandomCaption, getRandomLink } from './caption';
 
 type AppiumDriver = WebdriverIO.Browser;
 
@@ -18,7 +19,7 @@ export interface AndroidAccount {
     cookies: string;
     raw: string;
     // 51.79.132.48:8022:qqk61:o0xji -> address:port:username:password
-    // chưa gán thì ##proxy##
+    // unset → ##proxy##
     proxy: string;
 }
 
@@ -82,10 +83,6 @@ const runMuMu = (args: string) => run(`"${MUMU_MANAGER_PATH}" ${args}`);
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** Full component — tránh relative ".handleractivity" bị resolve sai trên một số MuMu/adb */
-const THREADS_SHARE_COMPONENT =
-    'com.instagram.barcelona/com.instagram.barcelona.handleractivity.BarcelonaShareHandlerActivity';
-
 type UploadedMedia = {
     localPath: string;
     remotePath: string;
@@ -128,8 +125,8 @@ const mediaCollectionUri = (mime: string) =>
         : 'content://media/external/images/media';
 
 /**
- * Tên file ASCII trên Android — alpha để Gallery sắp video trước, ảnh sau:
- * a00.mp4, a01.mp4, … rồi b00.jpg, b01.jpg, …
+ * ASCII filename on Android — alpha so Gallery can sort video before image:
+ * a00.mp4, a01.mp4, ... then b00.jpg, b01.jpg, ...
  */
 const safeRemoteFileName = (filePath: string, index: number) => {
     const ext = extname(filePath).toLowerCase() || '.bin';
@@ -137,7 +134,7 @@ const safeRemoteFileName = (filePath: string, index: number) => {
     return `${prefix}${String(index).padStart(2, '0')}${ext}`;
 };
 
-/** adb với argv — tránh lỗi quote/Unicode path trên Windows */
+/** adb via argv — avoid quote/Unicode path issues on Windows */
 const adbFile = async (
     serial: string,
     args: string[],
@@ -168,7 +165,7 @@ const adbFileSoft = async (serial: string, args: string[], timeout = ADB_TIMEOUT
 };
 
 const queryMediaIdByName = async (serial: string, collection: string, remoteName: string) => {
-    // Một câu lệnh shell duy nhất để giữ nguyên quotes
+    // Single shell command to preserve quotes
     const cmd =
         `content query --uri ${collection} --projection _id ` +
         `--where "_display_name='${remoteName}'"`;
@@ -189,34 +186,34 @@ const grantThreadsMediaPermission = async (serial: string) => {
 };
 
 /**
- * Xoá toàn bộ media trên Android trước khi upload (file + MediaStore),
- * để Gallery chỉ còn file vừa push.
+ * Delete all media on Android before upload (files + MediaStore),
+ * so Gallery only shows the files just pushed.
  */
 const clearAllAndroidMedia = async (serial: string, log: (msg: string) => void) => {
     log('Clearing all media on Android...');
 
-    // Folder media thường gặp + thư mục upload của app
+    // Common media folders + app upload dir
     await adbFileSoft(serial, [
         'shell',
         'rm -rf /sdcard/ThreadsPost' +
-            ' /sdcard/DCIM/* /sdcard/Pictures/* /sdcard/Movies/* /sdcard/Download/* /sdcard/Camera/*' +
-            ' /storage/emulated/0/DCIM/* /storage/emulated/0/Pictures/*' +
-            ' /storage/emulated/0/Movies/* /storage/emulated/0/Download/*' +
-            ' 2>/dev/null; true',
+        ' /sdcard/DCIM/* /sdcard/Pictures/* /sdcard/Movies/* /sdcard/Download/* /sdcard/Camera/*' +
+        ' /storage/emulated/0/DCIM/* /storage/emulated/0/Pictures/*' +
+        ' /storage/emulated/0/Movies/* /storage/emulated/0/Download/*' +
+        ' 2>/dev/null; true',
     ]).catch(() => '');
 
-    // Quét xoá file ảnh/video còn sót
+    // Sweep leftover image/video files
     await adbFileSoft(serial, [
         'shell',
         "find /sdcard /storage/emulated/0 -type f" +
-            " \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp'" +
-            " -o -iname '*.gif' -o -iname '*.heic' -o -iname '*.bmp'" +
-            " -o -iname '*.mp4' -o -iname '*.mov' -o -iname '*.webm' -o -iname '*.mkv'" +
-            " -o -iname '*.3gp' -o -iname '*.avi' -o -iname '*.m4v' \\)" +
-            ' -delete 2>/dev/null; true',
+        " \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp'" +
+        " -o -iname '*.gif' -o -iname '*.heic' -o -iname '*.bmp'" +
+        " -o -iname '*.mp4' -o -iname '*.mov' -o -iname '*.webm' -o -iname '*.mkv'" +
+        " -o -iname '*.3gp' -o -iname '*.avi' -o -iname '*.m4v' \\)" +
+        ' -delete 2>/dev/null; true',
     ]).catch(() => '');
 
-    // Xoá entry MediaStore để Gallery không còn cache cũ
+    // Clear MediaStore entries so Gallery has no stale cache
     for (const uri of [
         'content://media/external/images/media',
         'content://media/external/video/media',
@@ -230,8 +227,8 @@ const clearAllAndroidMedia = async (serial: string, log: (msg: string) => void) 
 };
 
 /**
- * Gallery Threads sort theo ngày (mới → cũ), không theo tên.
- * Video cần date cao hơn ảnh để hiện trước.
+ * Threads Gallery sorts by date (newest → oldest), not by name.
+ * Video needs a higher date than image to appear first.
  */
 const mediaSortDateSec = (mime: string, index: number) => {
     const now = Math.floor(Date.now() / 1000);
@@ -263,7 +260,7 @@ const pushFileToAndroidMedia = async (
         await adbFile(serial, ['shell', 'mkdir', '-p', remoteDir]);
         await adbFile(serial, ['push', tmpLocal, remotePath], { silent: false });
 
-        // mtime file → MediaScanner / Gallery ưu tiên video (date cao hơn)
+        // file mtime → MediaScanner / Gallery prefer video (higher date)
         await adbFileSoft(serial, [
             'shell',
             `touch -d @${dateSec} "${remotePath}" 2>/dev/null || touch "${remotePath}"`,
@@ -284,12 +281,12 @@ const pushFileToAndroidMedia = async (
         await adbFileSoft(serial, [
             'shell',
             `content insert --uri ${collection}` +
-                ` --bind _data:s:${remotePath}` +
-                ` --bind mime_type:s:${mime}` +
-                ` --bind _display_name:s:${remoteName}` +
-                ` --bind date_added:i:${dateSec}` +
-                ` --bind date_modified:i:${dateSec}` +
-                ` --bind datetaken:i:${dateTakenMs}`,
+            ` --bind _data:s:${remotePath}` +
+            ` --bind mime_type:s:${mime}` +
+            ` --bind _display_name:s:${remoteName}` +
+            ` --bind date_added:i:${dateSec}` +
+            ` --bind date_modified:i:${dateSec}` +
+            ` --bind datetaken:i:${dateTakenMs}`,
         ]).catch(() => '');
 
         let mediaId: string | null = null;
@@ -312,13 +309,13 @@ const pushFileToAndroidMedia = async (
             throw new Error(`MediaStore id not found for ${remoteName}`);
         }
 
-        // Ép lại date sau scan (scanner hay ghi đè theo mtime/now)
+        // Re-apply date after scan (scanner often overwrites with mtime/now)
         await adbFileSoft(serial, [
             'shell',
             `content update --uri ${contentUri}` +
-                ` --bind date_added:i:${dateSec}` +
-                ` --bind date_modified:i:${dateSec}` +
-                ` --bind datetaken:i:${dateTakenMs}`,
+            ` --bind date_added:i:${dateSec}` +
+            ` --bind date_modified:i:${dateSec}` +
+            ` --bind datetaken:i:${dateTakenMs}`,
         ]).catch(() => '');
 
         return { localPath, remotePath, remoteName, mime, mediaId, contentUri };
@@ -326,10 +323,6 @@ const pushFileToAndroidMedia = async (
         await fs.unlink(tmpLocal).catch(() => undefined);
     }
 };
-
-/** am start argv (không wildcard mime). */
-const amStart = (serial: string, amArgs: string[], timeoutMs: number) =>
-    adbFile(serial, ['shell', 'am', ...amArgs], { silent: false, timeout: timeoutMs });
 
 const createAppiumDriver = async (serial: string) =>
     remote({
@@ -369,172 +362,105 @@ async function waitForXpath(
 }
 
 /**
- * Appium: Gallery → chọn media theo thứ tự video → ảnh → Done.
- * Dùng khi MuMu am không hỗ trợ SEND_MULTIPLE/--clip.
+ * In an open composer: Gallery → select video first, then image → Done.
+ * Reuses the current Appium session (does not create a new one).
  */
-const attachMediaViaAppiumGallery = async (
-    serial: string,
+const selectMediaInGallery = async (
+    driver: AppiumDriver,
     totalMedia: number,
     log: (msg: string) => void
 ) => {
-    const driver = await createAppiumDriver(serial);
-    try {
-        log('Appium: waiting for New thread composer...');
-        const composerReady = await waitForXpath(
-            driver,
-            '//*[@resource-id="new_thread_screen_gallery_button" or @resource-id="new_thread_screen_composer"]',
-            { timeoutMs: 20000 }
-        );
-        if (!composerReady) throw new Error('Composer / Gallery button not found');
+    log('Appium: waiting for New thread composer...');
+    const composerReady = await waitForXpath(
+        driver,
+        '//*[@resource-id="new_thread_screen_gallery_button" or @resource-id="new_thread_screen_composer"]',
+        { timeoutMs: 20000 }
+    );
+    if (!composerReady) throw new Error('Composer / Gallery button not found');
 
-        log('Appium: open Gallery...');
-        const galleryOpened =
-            (await clickByXpath(driver, '//*[@resource-id="new_thread_screen_gallery_button"]', {
-                timeoutMs: 8000,
-                intervalMs: 500,
-            })) ||
-            (await clickByXpath(driver, '//*[@content-desc="Gallery"]', {
-                timeoutMs: 5000,
-                intervalMs: 500,
-            }));
-        if (!galleryOpened) throw new Error('Cannot tap Gallery button');
+    log('Appium: open Gallery...');
+    const galleryOpened =
+        (await clickByXpath(driver, '//*[@resource-id="new_thread_screen_gallery_button"]', {
+            timeoutMs: 8000,
+            intervalMs: 500,
+        })) ||
+        (await clickByXpath(driver, '//*[@content-desc="Gallery"]', {
+            timeoutMs: 5000,
+            intervalMs: 500,
+        }));
+    if (!galleryOpened) throw new Error('Cannot tap Gallery button');
 
-        await driver.pause(1200);
-        const gridReady = await waitForXpath(
-            driver,
-            '//*[@resource-id="com.instagram.barcelona:id/gallery_picker_grid_item_container"]',
-            { timeoutMs: 15000 }
-        );
-        if (!gridReady) throw new Error('Gallery picker grid not found');
+    await driver.pause(1200);
+    const gridReady = await waitForXpath(
+        driver,
+        '//*[@resource-id="com.instagram.barcelona:id/gallery_picker_grid_item_container"]',
+        { timeoutMs: 15000 }
+    );
+    if (!gridReady) throw new Error('Gallery picker grid not found');
 
-        const cells = await driver.$$(
-            'xpath://*[@resource-id="com.instagram.barcelona:id/gallery_picker_grid_item_container" and string-length(@content-desc) > 0]'
-        );
-
-        type CellInfo = {
-            el: WebdriverIO.Element;
-            desc: string;
-            recent: boolean;
-            selected: boolean;
-            kind: number; // 0 video, 1 photo, 2 other
-        };
-        const kindOf = (desc: string) =>
-            /video\s+thumbnail/i.test(desc) ? 0 : /photo\s+thumbnail/i.test(desc) ? 1 : 2;
-
-        const infos: CellInfo[] = [];
-        for (const el of cells) {
-            const desc = (await el.getAttribute('content-desc')) || '';
-            if (!/thumbnail/i.test(desc)) continue;
-            infos.push({
-                el,
-                desc,
-                recent: /seconds ago|minute ago|minutes ago/i.test(desc),
-                selected: /\d+\s+of\s+\d+\s+selected/i.test(desc),
-                kind: kindOf(desc),
-            });
-        }
-
-        const recent = infos.filter((i) => i.recent);
-        const pool = (recent.length >= totalMedia ? recent : infos)
-            .slice()
-            // Video trước, ảnh sau — thứ tự chọn = thứ tự gắn vào thread
-            .sort((a, b) => a.kind - b.kind || a.desc.localeCompare(b.desc));
-        const targets = pool.slice(0, totalMedia);
-
-        if (!targets.length) throw new Error('No gallery thumbnails to select');
-
-        // Bỏ chọn sẵn (từ SEND) rồi chọn lại đúng thứ tự video → ảnh
-        for (const item of targets) {
-            if (!item.selected) continue;
-            await item.el.click();
-            await driver.pause(350);
-            item.selected = false;
-            log(`Deselected: ${item.desc}`);
-        }
-
-        log(`Appium: selecting ${targets.length}/${totalMedia} (video → photo)...`);
-        for (const item of targets) {
-            await item.el.click();
-            await driver.pause(450);
-            log(`Selected: ${item.desc}`);
-        }
-
-        const done =
-            (await clickByXpath(driver, '//*[@text="Done"]', { timeoutMs: 8000, intervalMs: 400 })) ||
-            (await clickByXpath(driver, '//*[@content-desc="Done"]', {
-                timeoutMs: 4000,
-                intervalMs: 400,
-            }));
-        if (!done) throw new Error('Done button not found in gallery');
-
-        await driver.pause(1000);
-        log('Appium: Gallery Done — media attached to thread');
-        return true;
-    } finally {
-        await driver.deleteSession().catch(() => undefined);
-    }
-};
-
-/**
- * Mở Threads New thread với media:
- * 1) am SEND file đầu (mở composer) — MuMu không hỗ trợ multi-URI
- * 2) nếu >1 file: Appium Gallery chọn đủ N media vừa push → Done
- */
-const openThreadsComposerWithMedia = async (
-    serial: string,
-    items: UploadedMedia[],
-    log: (msg: string) => void
-) => {
-    if (!items.length) throw new Error('No media to share');
-
-    await grantThreadsMediaPermission(serial);
-
-    const primary = items[0];
-    log(`SEND ${primary.contentUri} (${basename(primary.localPath)})`);
-
-    const out = await amStart(
-        serial,
-        [
-            'start',
-            '-W',
-            '-a',
-            'android.intent.action.SEND',
-            '-t',
-            isVideoMime(primary.mime) ? 'video/mp4' : primary.mime,
-            '-n',
-            THREADS_SHARE_COMPONENT,
-            '--eu',
-            'android.intent.extra.STREAM',
-            primary.contentUri,
-            '--grant-read-uri-permission',
-            '-f',
-            '0x10000001',
-        ],
-        25_000
+    const cells = await driver.$$(
+        'xpath://*[@resource-id="com.instagram.barcelona:id/gallery_picker_grid_item_container" and string-length(@content-desc) > 0]'
     );
 
-    if (/Error type|does not exist|Exception/i.test(out)) {
-        throw new Error(out.trim());
+    type CellInfo = {
+        el: WebdriverIO.Element;
+        desc: string;
+        recent: boolean;
+        selected: boolean;
+        kind: number; // 0 video, 1 photo, 2 other
+    };
+    const kindOf = (desc: string) =>
+        /video\s+thumbnail/i.test(desc) ? 0 : /photo\s+thumbnail/i.test(desc) ? 1 : 2;
+
+    const infos: CellInfo[] = [];
+    for (const el of cells) {
+        const desc = (await el.getAttribute('content-desc')) || '';
+        if (!/thumbnail/i.test(desc)) continue;
+        infos.push({
+            el,
+            desc,
+            recent: /seconds ago|minute ago|minutes ago/i.test(desc),
+            selected: /\d+\s+of\s+\d+\s+selected/i.test(desc),
+            kind: kindOf(desc),
+        });
     }
 
-    log(out.trim().split(/\r?\n/).filter(Boolean).slice(-2).join(' | ') || 'SEND ok');
-    await sleep(1200);
+    const recent = infos.filter((i) => i.recent);
+    const pool = (recent.length >= totalMedia ? recent : infos)
+        .slice()
+        .sort((a, b) => a.kind - b.kind || a.desc.localeCompare(b.desc));
+    const targets = pool.slice(0, totalMedia);
 
-    if (items.length === 1) {
-        return { mode: 'send' as const };
+    if (!targets.length) throw new Error('No gallery thumbnails to select');
+
+    for (const item of targets) {
+        if (!item.selected) continue;
+        await item.el.click();
+        await driver.pause(350);
+        item.selected = false;
+        log(`Deselected: ${item.desc}`);
     }
 
-    try {
-        await attachMediaViaAppiumGallery(serial, items.length, log);
-        return { mode: 'send_plus_appium_gallery' as const };
-    } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        log(`Appium gallery failed: ${msg}`);
-        throw new Error(`Multi-media attach failed: ${msg}`);
+    log(`Appium: selecting ${targets.length}/${totalMedia} (video → photo)...`);
+    for (const item of targets) {
+        await item.el.click();
+        await driver.pause(450);
+        log(`Selected: ${item.desc}`);
     }
+
+    const done =
+        (await clickByXpath(driver, '//*[@text="Done"]', { timeoutMs: 8000, intervalMs: 400 })) ||
+        (await clickByXpath(driver, '//*[@content-desc="Done"]', {
+            timeoutMs: 4000,
+            intervalMs: 400,
+        }));
+    if (!done) throw new Error('Done button not found in gallery');
+
+    await driver.pause(1000);
+    log('Appium: Gallery Done — media attached to thread');
 };
 
-// info RPC hay cache name cũ khi instance đang chạy — đọc playerName từ config mới đúng
+// info RPC may cache stale name while instance is running — read playerName from config
 const getPlayerNameFromConfig = async (index: string, androidVersion = '15.0') => {
     try {
         const configPath = join(
@@ -557,7 +483,7 @@ const normalizeProxy = (proxy: string) => {
     return value;
 };
 
-/** Parse accountRaw: user|password|2fa|cookies[|proxy] — proxy ##proxy## coi như chưa gán */
+/** Parse accountRaw: user|password|2fa|cookies[|proxy] — ##proxy## means unassigned */
 const parseAccountRaw = (accountRaw: string): Omit<AndroidAccount, 'raw'> => {
     const parts = accountRaw.split('|');
     const username = parts[0] || '';
@@ -587,7 +513,7 @@ const buildAccountRaw = (account: Omit<AndroidAccount, 'raw'>) => {
     return `${account.username}|${account.password}|${account.twoFa}|${account.cookies}|${proxy}`;
 };
 
-/** Giữ 1 dòng / name (name--...). Line sau ghi đè line trước — hết duplicate. */
+/** Keep 1 line per name (name--...). Later lines overwrite earlier — no duplicates. */
 const mergeAccountOutputLines = (existing: string[], upserts: string[] = []): string[] => {
     const result: string[] = [];
     const indexByName = new Map<string, number>();
@@ -613,7 +539,7 @@ const mergeAccountOutputLines = (existing: string[], upserts: string[] = []): st
     return result;
 };
 
-/** Đọc outputAccount/account.txt -> Map<name, AndroidAccount> */
+/** Read outputAccount/account.txt -> Map<name, AndroidAccount> */
 const loadAssignedAccountsByName = async (): Promise<Map<string, AndroidAccount>> => {
     const map = new Map<string, AndroidAccount>();
     try {
@@ -634,14 +560,14 @@ const loadAssignedAccountsByName = async (): Promise<Map<string, AndroidAccount>
             });
         }
     } catch {
-        // chưa có file / chưa set folder -> bỏ qua
+        // missing file / folder not set -> skip
     }
     return map;
 };
 
 const getAdbSerial = (android: Android) => {
     if (!android.adb_host_ip || !android.adb_port) {
-        throw new Error(`Android index ${android.index} chưa có ADB address`);
+        throw new Error(`Android index ${android.index} has no ADB address`);
     }
     return `${android.adb_host_ip}:${android.adb_port}`;
 };
@@ -666,7 +592,7 @@ const escapeAdbText = (text: string) =>
         .replace(/\(/g, '\\(')
         .replace(/\)/g, '\\)');
 
-/** Gõ text qua adb (tránh Appium UnicodeIME lỗi ký tự đặc biệt). */
+/** Type text via adb (avoids Appium UnicodeIME issues with special chars). */
 const typeTextViaAdb = async (serial: string, value: string) => {
     await run(
         `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(value)}`,
@@ -675,7 +601,91 @@ const typeTextViaAdb = async (serial: string, value: string) => {
     console.log(`typed: ${value}`);
 };
 
-/** Poll xpath đến khi hiện rồi click. */
+const pressEnterViaAdb = async (serial: string) => {
+    await adbFile(serial, ['shell', 'input', 'keyevent', '66']);
+};
+
+/** Paste text (more reliable than input text for URLs with : / ? &). */
+const pasteTextViaClipboard = async (driver: AppiumDriver, serial: string, value: string) => {
+    const base64 = Buffer.from(value, 'utf8').toString('base64');
+    await driver.setClipboard(base64, 'plaintext');
+    await adbFile(serial, ['shell', 'input', 'keyevent', '279']); // KEYCODE_PASTE
+    console.log(`pasted: ${value}`);
+};
+
+/** Force-stop and reopen Threads (cold start). */
+const reloadThreadsFresh = async (driver: AppiumDriver, log: (msg: string) => void) => {
+    log('Reload Threads (terminate → activate)...');
+    await driver.execute('mobile: terminateApp', { appId: THREADS_PACKAGE }).catch(() => undefined);
+    await sleep(800);
+    await driver.execute('mobile: activateApp', { appId: THREADS_PACKAGE });
+    await driver.pause(3500);
+};
+
+/** Swipe up so profile feed content moves up (reveals buttons covered by tab bar). */
+const swipeProfileUp = async (driver: AppiumDriver, serial: string) => {
+    try {
+        const { width, height } = await driver.getWindowSize();
+        await driver.execute('mobile: swipeGesture', {
+            left: Math.floor(width * 0.2),
+            top: Math.floor(height * 0.35),
+            width: Math.floor(width * 0.6),
+            height: Math.floor(height * 0.4),
+            direction: 'up',
+            percent: 0.45,
+        });
+    } catch {
+        // Fallback via adb (coords work on typical MuMu window)
+        await adbFile(serial, ['shell', 'input', 'swipe', '540', '1400', '540', '900', '350']).catch(
+            () => undefined
+        );
+    }
+};
+
+/**
+ * Click xpath; if covered / not clickable, swipe up and retry.
+ * Use for profile feed actions (Repost, etc.) hidden under bottom tabs.
+ */
+async function clickByXpathWithScroll(
+    driver: AppiumDriver,
+    serial: string,
+    xpath: string,
+    log: (msg: string) => void,
+    { timeoutMs = 25000, maxSwipes = 5 } = {}
+) {
+    await driver.setTimeout({ implicit: 0 });
+    const deadline = Date.now() + timeoutMs;
+    const selector = `xpath:${xpath}`;
+    let swipes = 0;
+
+    while (Date.now() < deadline) {
+        const [el] = await driver.$$(selector);
+        if (el) {
+            const visible = await el.isDisplayed().catch(() => false);
+            if (visible) {
+                try {
+                    // Prefer center click; fails / no-op when covered by tab bar
+                    await el.click();
+                    console.log(`clicked: ${xpath}`);
+                    return true;
+                } catch (error) {
+                    log(`Click blocked, will scroll: ${error instanceof Error ? error.message : error}`);
+                }
+            }
+        }
+
+        if (swipes >= maxSwipes) break;
+        swipes += 1;
+        log(`Scroll to reveal ${xpath} (${swipes}/${maxSwipes})...`);
+        await swipeProfileUp(driver, serial);
+        await driver.pause(700);
+    }
+
+    console.log(`timeout waiting/scrolling for ${xpath}`);
+    return false;
+}
+
+/** Poll xpath until visible, then click. */
 async function clickByXpath(
     driver: AppiumDriver,
     xpath: string,
@@ -709,13 +719,13 @@ async function fillIfExists(driver: AppiumDriver, selector: string, value: strin
     const visible = await el.isDisplayed().catch(() => false);
     if (!visible) return false;
     await el.click();
-    await el.clearValue().catch(() => {});
+    await el.clearValue().catch(() => { });
     await el.setValue(value);
     console.log(`filled ${selector} = ${value}`);
     return true;
 }
 
-/** Poll button android:id/button1 theo text đến khi hiện rồi click. */
+/** Poll android:id/button1 by text until visible, then click. */
 async function clickButtonByText(
     driver: AppiumDriver,
     text: string,
@@ -742,7 +752,7 @@ async function clickButtonByText(
     return false;
 }
 
-/** true nếu đã gán proxy thật (không phải placeholder) */
+/** true if a real proxy is assigned (not the placeholder) */
 export const hasAssignedProxy = (proxy?: string | null) => {
     const value = normalizeProxy(proxy || '');
     return value.split(':').length >= 4;
@@ -755,7 +765,7 @@ export const getAndroidList = async () => {
     const data = JSON.parse(stdout) as Record<string, Android>;
     const accountByName = await loadAssignedAccountsByName();
 
-    // MuMu trả object {"0": {...}, "1": {...}} -> array + merge account theo name
+    // MuMu returns object {"0": {...}, "1": {...}} -> array + merge account by name
     return Promise.all(
         Object.entries(data).map(async ([key, value]) => {
             const index = value.index ?? key;
@@ -794,20 +804,20 @@ export const randomMuMuName = async (androidOrIndex: Android | string | number) 
 };
 
 /**
- * Gán account từ inputAccount/account.txt cho list android đã chọn (theo thứ tự).
+ * Assign accounts from inputAccount/account.txt to selected androids (in order).
  * Input:  user|password|2fa|cookies[|proxy]
- * Output: name--user|password|2fa|cookies|proxy  (append/ghi đè theo name, không duplicate)
- * proxy là optional, nếu không có thì để ##proxy##
- * Sau khi gán: xóa các line đã dùng khỏi input. Name đã có trong output thì ghi đè.
+ * Output: name--user|password|2fa|cookies|proxy  (append/overwrite by name, no duplicates)
+ * proxy is optional; if missing use ##proxy##
+ * After assign: remove used lines from input. Existing names in output are overwritten.
  */
 export const assignAccountsToAndroids = async (androids: Android[]) => {
-    if (!androids.length) throw new Error('Chưa chọn Android nào');
+    if (!androids.length) throw new Error('No Android selected');
 
     const config = await loadMainConfig();
     const inputDir = config?.android?.inputAccount;
     const outputDir = config?.android?.outputAccount;
-    if (!inputDir) throw new Error('Chưa set thư mục Input Account');
-    if (!outputDir) throw new Error('Chưa set thư mục Output Account');
+    if (!inputDir) throw new Error('Input Account folder is not set');
+    if (!outputDir) throw new Error('Output Account folder is not set');
 
     const inputPath = join(inputDir, ACCOUNT_FILE);
     const outputPath = join(outputDir, ACCOUNT_FILE);
@@ -816,7 +826,7 @@ export const assignAccountsToAndroids = async (androids: Android[]) => {
     try {
         inputRaw = await fs.readFile(inputPath, 'utf8');
     } catch {
-        throw new Error(`Không đọc được file: ${inputPath}`);
+        throw new Error(`Cannot read file: ${inputPath}`);
     }
 
     const inputLines = inputRaw
@@ -826,18 +836,18 @@ export const assignAccountsToAndroids = async (androids: Android[]) => {
 
     if (inputLines.length < androids.length) {
         throw new Error(
-            `Không đủ account: cần ${androids.length}, còn ${inputLines.length} trong input`
+            `Not enough accounts: need ${androids.length}, only ${inputLines.length} left in input`
         );
     }
 
-    // Lấy name mới nhất (playerName) theo index
+    // Get latest name (playerName) by index
     const latestList = await getAndroidList();
     const assignedLines: string[] = [];
     for (let i = 0; i < androids.length; i++) {
         const selected = androids[i];
         const latest = latestList.find((item) => item.index === selected.index) || selected;
         const parsed = parseAccountRaw(inputLines[i]);
-        // chưa có proxy thật -> ghi ##proxy##
+        // no real proxy yet -> write ##proxy##
         assignedLines.push(`${latest.name}--${buildAccountRaw(parsed)}`);
     }
 
@@ -852,7 +862,7 @@ export const assignAccountsToAndroids = async (androids: Android[]) => {
         .split(/\r?\n/)
         .map((line) => line.trim())
         .filter(Boolean);
-    // name đã có thì ghi đè, đồng thời xóa duplicate name--
+    // overwrite existing name and remove duplicate name--
     const nextOutput = mergeAccountOutputLines(outputExisting, assignedLines);
     await fs.writeFile(outputPath, nextOutput.join('\n') + (nextOutput.length ? '\n' : ''), 'utf8');
 
@@ -872,19 +882,19 @@ export const assignAccountsToAndroids = async (androids: Android[]) => {
 };
 
 /**
- * Gán proxy từ proxyFolder/proxy.txt cho android đã chọn (theo thứ tự).
- * Mỗi dòng: address:port:username:password  (vd: 51.79.132.48:8022:qqk61:o0xji)
+ * Assign proxies from proxyFolder/proxy.txt to selected androids (in order).
+ * Each line: address:port:username:password  (e.g. 51.79.132.48:8022:qqk61:o0xji)
  * Output line: name--user|password|2fa|cookies|proxy
- * Thay ##proxy## (hoặc proxy cũ) bằng proxy mới. Cycle nếu thiếu.
+ * Replace ##proxy## (or old proxy) with the new one. Cycle if not enough lines.
  */
 export const assignProxiesToAndroids = async (androids: Android[]) => {
-    if (!androids.length) throw new Error('Chưa chọn Android nào');
+    if (!androids.length) throw new Error('No Android selected');
 
     const config = await loadMainConfig();
     const outputDir = config?.android?.outputAccount;
     const proxyDir = config?.android?.proxyFolder;
-    if (!outputDir) throw new Error('Chưa set thư mục Output Account');
-    if (!proxyDir) throw new Error('Chưa set thư mục Proxy Folder');
+    if (!outputDir) throw new Error('Output Account folder is not set');
+    if (!proxyDir) throw new Error('Proxy Folder is not set');
 
     const proxyFilePath = join(proxyDir, 'proxy.txt');
     let proxyLines: string[] = [];
@@ -895,13 +905,13 @@ export const assignProxiesToAndroids = async (androids: Android[]) => {
             .map((line) => line.trim())
             .filter(Boolean);
     } catch {
-        throw new Error(`Không đọc được file: ${proxyFilePath}`);
+        throw new Error(`Cannot read file: ${proxyFilePath}`);
     }
-    if (!proxyLines.length) throw new Error('proxy.txt không có dòng proxy nào');
+    if (!proxyLines.length) throw new Error('proxy.txt has no proxy lines');
 
     const invalid = proxyLines.find((line) => !hasAssignedProxy(line));
     if (invalid) {
-        throw new Error(`Sai format proxy (cần address:port:user:pass): ${invalid}`);
+        throw new Error(`Invalid proxy format (need address:port:user:pass): ${invalid}`);
     }
 
     const outputPath = join(outputDir, ACCOUNT_FILE);
@@ -909,7 +919,7 @@ export const assignProxiesToAndroids = async (androids: Android[]) => {
     try {
         outputRaw = await fs.readFile(outputPath, 'utf8');
     } catch {
-        throw new Error(`Không đọc được file: ${outputPath}`);
+        throw new Error(`Cannot read file: ${outputPath}`);
     }
 
     const outputLines = mergeAccountOutputLines(
@@ -934,7 +944,7 @@ export const assignProxiesToAndroids = async (androids: Android[]) => {
         const latest = latestList.find((item) => item.index === selected.index) || selected;
         const existing = lineByName.get(latest.name);
         if (!existing) {
-            throw new Error(`Android "${latest.name}" chưa có account trong output`);
+            throw new Error(`Android "${latest.name}" has no account in output`);
         }
 
         const accountRaw = existing.slice(existing.indexOf('--') + 2);
@@ -956,13 +966,13 @@ export const assignProxiesToAndroids = async (androids: Android[]) => {
 };
 
 /**
- * Đọc outputAccount/account.txt -> ghi export.txt
- * Bỏ name-- và field proxy → còn user|password|2fa|cookies
+ * Read outputAccount/account.txt -> write export.txt
+ * Strip name-- and proxy field → leave user|password|2fa|cookies
  */
 export const exportAccountsFromOutput = async () => {
     const config = await loadMainConfig();
     const outputDir = config?.android?.outputAccount;
-    if (!outputDir) throw new Error('Chưa set thư mục Output Account');
+    if (!outputDir) throw new Error('Output Account folder is not set');
 
     const inputPath = join(outputDir, ACCOUNT_FILE);
     const exportPath = join(outputDir, EXPORT_FILE);
@@ -971,7 +981,7 @@ export const exportAccountsFromOutput = async () => {
     try {
         raw = await fs.readFile(inputPath, 'utf8');
     } catch {
-        throw new Error(`Không đọc được file: ${inputPath}`);
+        throw new Error(`Cannot read file: ${inputPath}`);
     }
 
     const lines = raw
@@ -1003,7 +1013,7 @@ export const exportAccountsFromOutput = async () => {
     };
 };
 
-/** ADB connect tất cả Android đang running (is_android_started). */
+/** ADB-connect all running Androids (is_android_started). */
 export const connectAllRunningAndroids = async () => {
     const list = await getAndroidList();
     const running = list.filter((item) => item.is_android_started);
@@ -1037,7 +1047,7 @@ export const connectAllRunningAndroids = async () => {
     };
 };
 
-// install apk app (hỗ trợ .apk và .xapk)
+// install apk (supports .apk and .xapk)
 export const installApk = async (android: Android, apkPath: string) => {
     const androidInstance = await getAndroid(Number(android.index));
     const serial = await connectAndroid(androidInstance);
@@ -1057,9 +1067,9 @@ export const installApk = async (android: Android, apkPath: string) => {
             const apkFiles = entries
                 .filter((name) => name.toLowerCase().endsWith('.apk'))
                 .map((name) => join(extractDir, name));
-            if (!apkFiles.length) throw new Error(`XAPK không chứa file .apk: ${apkPath}`);
+            if (!apkFiles.length) throw new Error(`XAPK contains no .apk file: ${apkPath}`);
 
-            // ưu tiên base apk (không phải config.*.apk)
+            // prefer base apk (not config.*.apk)
             const baseApk =
                 apkFiles.find((p) => {
                     const name = p.replace(/^.*[\\/]/, '');
@@ -1085,7 +1095,7 @@ export const removeApk = async (android: Android, packageName: string) => {
     } catch (error: any) {
         const msg = `${error?.stdout || ''}${error?.stderr || ''}${error?.message || ''}`;
         if (msg.includes('DELETE_FAILED_INTERNAL_ERROR') || msg.includes('not installed')) {
-            console.log(`Package ${packageName} chưa cài, bỏ qua`);
+            console.log(`Package ${packageName} not installed, skip`);
             return;
         }
         throw error;
@@ -1146,16 +1156,16 @@ export const setupProxyOnAndroid = async (android: Android, params: SetupProxyPa
     }
 };
 
-/** Setup proxy đồng thời, mỗi android cách nhau 8 giây khi start */
+/** Setup proxies in parallel; stagger each android start by 8s */
 export const setupProxiesOnAndroids = async (androids: Android[]) => {
-    if (!androids.length) throw new Error('Chưa chọn Android nào');
+    if (!androids.length) throw new Error('No Android selected');
 
     const tasks = androids.map(async (selected, i) => {
         if (i > 0) await sleep(i * 3000);
         try {
             const android = await getAndroid(Number(selected.index));
             if (!hasAssignedProxy(android.account?.proxy)) {
-                throw new Error('Chưa gán proxy');
+                throw new Error('Proxy not assigned');
             }
             const [address, port, username, password] = android.account!.proxy.split(':');
             await setupProxyOnAndroid(android, {
@@ -1194,7 +1204,7 @@ export const autoRegisterAccountOnAndroid = async (
     const acc = account || androidInstance.account;
     const key = androidInstance.name;
     if (!acc?.username || !acc?.password) {
-        throw new Error(`Android index ${android.index} chưa có username/password`);
+        throw new Error(`Android index ${android.index} has no username/password`);
     }
 
     const serial = await connectAndroid(androidInstance);
@@ -1214,7 +1224,7 @@ export const autoRegisterAccountOnAndroid = async (
     });
 
     try {
-        sendMessage(event, { username: key, message: 'Đang nhập username...' });
+        sendMessage(event, { username: key, message: 'Entering username...' });
         await clickByXpath(
             driver,
             '//android.view.View[@content-desc="Username, email or mobile number"]'
@@ -1222,19 +1232,19 @@ export const autoRegisterAccountOnAndroid = async (
         await driver.pause(400);
         await typeTextViaAdb(serial, acc.username);
 
-        sendMessage(event, { username: key, message: 'Đang nhập password...' });
+        sendMessage(event, { username: key, message: 'Entering password...' });
         await clickByXpath(driver, '//android.view.View[@content-desc="Password"]');
         await driver.pause(400);
         await typeTextViaAdb(serial, acc.password);
 
-        sendMessage(event, { username: key, message: 'Đang click Log in...' });
+        sendMessage(event, { username: key, message: 'Clicking Log in...' });
         await clickByXpath(driver, '//android.view.View[@content-desc="Log in"]');
         await driver.pause(1000);
 
         sendMessage(event, { username: key, message: 'Register success ✅' });
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        sendMessage(event, { username: key, message: `Register thất bại ❌ ${message}` });
+        sendMessage(event, { username: key, message: `Register failed ❌ ${message}` });
         console.error(error);
         throw error;
     } finally {
@@ -1242,19 +1252,19 @@ export const autoRegisterAccountOnAndroid = async (
     }
 };
 
-/** Auto register đồng thời, mỗi android cách nhau 8 giây khi start */
+/** Auto-register in parallel; stagger each android start by 8s */
 export const autoRegisterAccountsOnAndroids = async (
     androids: Android[],
     event: IpcMainEvent
 ) => {
-    if (!androids.length) throw new Error('Chưa chọn Android nào');
+    if (!androids.length) throw new Error('No Android selected');
 
     const tasks = androids.map(async (selected, i) => {
         if (i > 0) await sleep(i * 2000);
         try {
             const android = await getAndroid(Number(selected.index));
             if (!android.account?.username || !android.account?.password) {
-                throw new Error('Chưa gán account');
+                throw new Error('Account not assigned');
             }
             await autoRegisterAccountOnAndroid(android, android.account, event);
             return { index: android.index, name: android.name, ok: true as const };
@@ -1298,24 +1308,24 @@ export const openThreadsAppOnAndroid = async (android: Android, event: IpcMainEv
     });
 
     try {
-        sendMessage(event, { username: key, message: 'Đang mở Threads...' });
+        sendMessage(event, { username: key, message: 'Opening Threads...' });
         await driver.execute('mobile: activateApp', { appId: THREADS_PACKAGE });
         console.log('opened Threads');
 
-        sendMessage(event, { username: key, message: 'Đang chờ nút Log in with Instagram...' });
+        sendMessage(event, { username: key, message: 'Waiting for Log in with Instagram button...' });
         const clicked = await clickByXpath(
             driver,
             '//android.widget.TextView[@resource-id="ig_text"]',
             { timeoutMs: 60000, intervalMs: 1500 }
         );
         if (!clicked) {
-            throw new Error('Timeout chờ nút Log in with Instagram (60s)');
+            throw new Error('Timeout waiting for Log in with Instagram button (60s)');
         }
         await driver.pause(3000);
         sendMessage(event, { username: key, message: 'Open Threads success ✅' });
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        sendMessage(event, { username: key, message: `Open Threads thất bại ❌ ${message}` });
+        sendMessage(event, { username: key, message: `Open Threads failed ❌ ${message}` });
         console.error(error);
         throw error;
     } finally {
@@ -1323,9 +1333,9 @@ export const openThreadsAppOnAndroid = async (android: Android, event: IpcMainEv
     }
 };
 
-/** Open Threads + tap Login with Instagram, mỗi android cách nhau 3 giây khi start */
+/** Open Threads + tap Login with Instagram; stagger each android start by 3s */
 export const openThreadsAppOnAndroids = async (androids: Android[], event: IpcMainEvent) => {
-    if (!androids.length) throw new Error('Chưa chọn Android nào');
+    if (!androids.length) throw new Error('No Android selected');
 
     const tasks = androids.map(async (selected, i) => {
         if (i > 0) await sleep(i * 2000);
@@ -1353,17 +1363,17 @@ export const openThreadsAppOnAndroids = async (androids: Android[], event: IpcMa
     };
 };
 
-/** Full setup 1 máy: proxy → open Threads → register */
+/** Full setup for one device: proxy → open Threads → register */
 export const fullSetupOnAndroid = async (android: Android, event: IpcMainEvent) => {
     const androidInstance = await getAndroid(Number(android.index));
     const key = androidInstance.name;
     const acc = androidInstance.account;
 
     if (!hasAssignedProxy(acc?.proxy)) {
-        throw new Error('Chưa gán proxy');
+        throw new Error('Proxy not assigned');
     }
     if (!acc?.username || !acc?.password) {
-        throw new Error('Chưa gán account');
+        throw new Error('Account not assigned');
     }
 
     try {
@@ -1380,14 +1390,14 @@ export const fullSetupOnAndroid = async (android: Android, event: IpcMainEvent) 
         sendMessage(event, { username: key, message: 'Full setup success ✅' });
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        sendMessage(event, { username: key, message: `Full setup thất bại ❌ ${message}` });
+        sendMessage(event, { username: key, message: `Full setup failed ❌ ${message}` });
         throw error;
     }
 };
 
-/** Full setup đồng thời: proxy → Threads → register, mỗi android cách nhau 3s */
+/** Full setup in parallel: proxy → Threads → register; stagger each android by 3s */
 export const fullSetupOnAndroids = async (androids: Android[], event: IpcMainEvent) => {
-    if (!androids.length) throw new Error('Chưa chọn Android nào');
+    if (!androids.length) throw new Error('No Android selected');
 
     const tasks = androids.map(async (selected, i) => {
         if (i > 0) await sleep(i * 3000);
@@ -1416,45 +1426,42 @@ export const fullSetupOnAndroids = async (androids: Android[], event: IpcMainEve
 };
 
 /**
- * Upload media từ PC → New thread (Threads) trên 1 Android.
+ * Create a new Threads post on one Android.
  *
  * Flow:
- * 0) Xoá hết media cũ trên Android (file + MediaStore)
- * 1) Copy temp ASCII → adb push /sdcard/ThreadsPost/<port>/
- * 2) MediaStore insert/query → content:// URI
- * 3) pm grant READ_MEDIA_* cho Threads
- * 4) am start -W BarcelonaShareHandlerActivity (SEND)
- * 5) nếu >1 file: Appium Gallery chọn đủ media → Done
+ * 0) Clear old media + push files to device
+ * 1) Appium: open Threads → Create → type caption
+ * 2) Appium: Gallery → select video → image → Done → Post
  */
-export const uploadFilesToPost = async (
+export const createPost = async (
     android: Android,
     folder: string,
     event?: IpcMainEvent
 ) => {
     const files = getMediaInFolder(folder);
-    if (!files.length) throw new Error('Không tìm thấy file trong folder');
+    if (!files.length) throw new Error('No media files found in folder');
 
     const androidInstance = await getAndroid(Number(android.index));
     const key = androidInstance.name;
     const serial = await connectAndroid(androidInstance);
     const port = androidInstance.adb_port;
-    if (!port) throw new Error(`Android index ${androidInstance.index} chưa có adb_port`);
+    if (!port) throw new Error(`Android index ${androidInstance.index} has no adb_port`);
 
     const log = (message: string) => {
-        console.log(`[uploadFilesToPost][${key}] ${message}`);
+        console.log(`[createPost][${key}] ${message}`);
         if (event) sendMessage(event, { username: key, message });
     };
 
     await clearAllAndroidMedia(serial, log);
 
-    // Push ảnh trước, video sau → mtime video mới hơn → Gallery (newest first) hiện video trước
+    // Push images first, video last → newer video mtime → Gallery (newest first) shows video first
     const filesForPush = [...files].sort((a, b) => {
         const av = isVideoMime(getMimeType(a)) ? 1 : 0;
         const bv = isVideoMime(getMimeType(b)) ? 1 : 0;
         return av - bv;
     });
 
-    log(`Uploading ${filesForPush.length} file(s) to Threads...`);
+    log(`Pushing ${filesForPush.length} file(s) to device...`);
 
     const uploaded: UploadedMedia[] = [];
     for (let i = 0; i < filesForPush.length; i++) {
@@ -1466,49 +1473,387 @@ export const uploadFilesToPost = async (
         await sleep(400);
     }
 
-    // SEND / Appium: video trước, ảnh sau
-    uploaded.sort(
-        (a, b) => Number(isVideoMime(b.mime)) - Number(isVideoMime(a.mime)) || a.remoteName.localeCompare(b.remoteName)
-    );
+    await grantThreadsMediaPermission(serial);
 
-    log(`Opening Threads composer with ${uploaded.length} media...`);
-    const shareResult = await openThreadsComposerWithMedia(serial, uploaded, log);
+    const driver = await createAppiumDriver(serial);
+    try {
+        log('Open Threads → Create...');
+        await driver.execute('mobile: activateApp', { appId: THREADS_PACKAGE });
+        await driver.pause(3000);
 
-    await sleep(1200);
-    log(`Done (${shareResult.mode}) — check New thread on device`);
+        const createOpened = await clickByXpath(
+            driver,
+            '//android.view.View[@resource-id="barcelona_tab_create"]/android.view.View[2]',
+            { timeoutMs: 20000, intervalMs: 800 }
+        );
+        if (!createOpened) throw new Error('Cannot open Create / New thread');
+        await driver.pause(1000);
 
-    return {
-        index: androidInstance.index,
-        name: key,
-        serial,
-        port,
-        mode: shareResult.mode,
-        files: uploaded,
-    };
+        const caption = getRandomCaption(folder);
+        if (caption) {
+            log(`Caption typed (${caption.length} chars)`);
+            await typeTextViaAdb(serial, caption);
+            await driver.pause(800);
+        }
+
+        log(`Attach ${uploaded.length} media via Gallery (no SEND)...`);
+        await selectMediaInGallery(driver, uploaded.length, log);
+
+        await sleep(1200);
+        log('Done (appium_gallery) — check New thread on device');
+
+        //android.widget.TextView[@resource-id="ig_text" and @text="Post"]
+        const post = await clickByXpath(driver, '//android.widget.TextView[@resource-id="ig_text" and @text="Post"]');
+        if (!post) throw new Error('Cannot tap Post');
+        await driver.pause(1500);
+
+        return {
+            index: androidInstance.index,
+            name: key,
+            serial,
+            port,
+            mode: 'appium_gallery' as const,
+            files: uploaded,
+        };
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
 };
 
-export type UploadFilesToPostItem = {
+export type CreatePostItem = {
     android: Android;
     folder: string;
 };
 
-/** Upload media → New thread trên nhiều Android (stagger 2s) */
-export const uploadFilesToPostOnAndroids = async (
-    items: UploadFilesToPostItem[],
+/** Create new post on multiple Androids (stagger 2s) */
+export const createPostOnAndroids = async (
+    items: CreatePostItem[],
     event?: IpcMainEvent
 ) => {
-    if (!items.length) throw new Error('Chưa chọn Android nào');
+    if (!items.length) throw new Error('No Android selected');
 
     const tasks = items.map(async (item, i) => {
         if (i > 0) await sleep(i * 2000);
         try {
-            if (!item.folder) throw new Error('Chưa gán folder');
-            const result = await uploadFilesToPost(item.android, item.folder, event);
+            if (!item.folder) throw new Error('Folder not assigned');
+            const result = await createPost(item.android, item.folder, event);
             return {
                 index: result.index,
                 name: result.name,
                 ok: true as const,
                 fileCount: result.files.length,
+            };
+        } catch (error) {
+            return {
+                index: item.android.index,
+                name: item.android.name,
+                ok: false as const,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    });
+
+    const results = await Promise.all(tasks);
+
+    return {
+        total: items.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
+};
+
+/**
+ * Edit the latest post on profile:
+ * 1) Reload Threads (cold start)
+ * 2) Profile tab
+ * 3) More (latest post)
+ * 4) Edit
+ * 5) Enter new line + paste link
+ * 6) Post
+ */
+export const editLatestPost = async (
+    android: Android,
+    folder: string,
+    event?: IpcMainEvent
+) => {
+    const link = getRandomLink(folder);
+    if (!link) throw new Error('No link found in folder (link.txt)');
+
+    const androidInstance = await getAndroid(Number(android.index));
+    const key = androidInstance.name;
+    const serial = await connectAndroid(androidInstance);
+
+    const log = (message: string) => {
+        console.log(`[editLatestPost][${key}] ${message}`);
+        if (event) sendMessage(event, { username: key, message });
+    };
+
+    const driver = await createAppiumDriver(serial);
+    try {
+        await reloadThreadsFresh(driver, log);
+
+        log('Open Profile tab...');
+        const profileOpened = await clickByXpath(
+            driver,
+            '//android.view.View[@resource-id="barcelona_tab_profile"]/android.view.View[2]',
+            { timeoutMs: 25000, intervalMs: 800 }
+        );
+        if (!profileOpened) throw new Error('Cannot open Profile tab');
+        await driver.pause(2000);
+
+        log('Open more menu (latest post)...');
+        const moreOpened = await clickByXpath(
+            driver,
+            '//android.view.View[@resource-id="feed_post_action_menu_button"]/android.widget.Button',
+            { timeoutMs: 20000, intervalMs: 800 }
+        );
+        if (!moreOpened) throw new Error('Cannot tap more menu on latest post');
+        await driver.pause(1000);
+
+        log('Tap Edit...');
+        const editOpened =
+            (await clickByXpath(
+                driver,
+                '//android.widget.ScrollView/android.view.View[2]/android.view.View[3]/android.view.View[@resource-id="BdsListCell"]/android.widget.Button',
+                { timeoutMs: 10000, intervalMs: 500 }
+            )) ||
+            (await clickByXpath(driver, '//*[@text="Edit"]', { timeoutMs: 5000, intervalMs: 400 }));
+        if (!editOpened) throw new Error('Cannot tap Edit');
+        await driver.pause(1500);
+
+        log(`Append link on new line: ${link}`);
+        await pressEnterViaAdb(serial);
+        await sleep(300);
+        await pasteTextViaClipboard(driver, serial, link);
+        await driver.pause(800);
+
+        log('Tap Post...');
+        const posted = await clickByXpath(
+            driver,
+            '//android.widget.TextView[@resource-id="ig_text" and @text="Post"]',
+            { timeoutMs: 15000, intervalMs: 500 }
+        );
+        if (!posted) throw new Error('Cannot tap Post');
+        await driver.pause(1500);
+
+        log('Edit post success ✅');
+        return {
+            index: androidInstance.index,
+            name: key,
+            serial,
+            link,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        log(`Edit post failed ❌ ${message}`);
+        throw error;
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
+};
+
+export type EditLatestPostItem = {
+    android: Android;
+    folder: string;
+};
+
+/** Edit latest post on multiple Androids (stagger 2s) */
+export const editLatestPostOnAndroids = async (
+    items: EditLatestPostItem[],
+    event?: IpcMainEvent
+) => {
+    if (!items.length) throw new Error('No Android selected');
+
+    const tasks = items.map(async (item, i) => {
+        if (i > 0) await sleep(i * 2000);
+        try {
+            if (!item.folder) throw new Error('Folder not assigned');
+            const result = await editLatestPost(item.android, item.folder, event);
+            return {
+                index: result.index,
+                name: result.name,
+                ok: true as const,
+                link: result.link,
+            };
+        } catch (error) {
+            return {
+                index: item.android.index,
+                name: item.android.name,
+                ok: false as const,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    });
+
+    const results = await Promise.all(tasks);
+
+    return {
+        total: items.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
+};
+
+const pushFolderMedia = async (
+    serial: string,
+    port: number | string,
+    folder: string,
+    log: (msg: string) => void
+) => {
+    const files = getMediaInFolder(folder);
+    if (!files.length) throw new Error('No media files found in folder');
+
+    await clearAllAndroidMedia(serial, log);
+
+    const filesForPush = [...files].sort((a, b) => {
+        const av = isVideoMime(getMimeType(a)) ? 1 : 0;
+        const bv = isVideoMime(getMimeType(b)) ? 1 : 0;
+        return av - bv;
+    });
+
+    log(`Pushing ${filesForPush.length} file(s) to device...`);
+    const uploaded: UploadedMedia[] = [];
+    for (let i = 0; i < filesForPush.length; i++) {
+        const localPath = filesForPush[i];
+        log(`Push (${i + 1}/${filesForPush.length}): ${basename(localPath)}`);
+        const item = await pushFileToAndroidMedia(serial, port, localPath, i);
+        uploaded.push(item);
+        log(`MediaStore OK → ${item.contentUri} (${item.remoteName})`);
+        await sleep(400);
+    }
+
+    await grantThreadsMediaPermission(serial);
+    return uploaded;
+};
+
+/**
+ * Quote/repost the latest profile post:
+ * 1) Reload Threads (cold start)
+ * 2) Profile tab
+ * 3) Repost on latest post
+ * 4) Quote
+ * 5) Caption
+ * 6) Upload media via Gallery
+ * 7) Post
+ */
+export const quoteLatestPost = async (
+    android: Android,
+    folder: string,
+    event?: IpcMainEvent
+) => {
+    const androidInstance = await getAndroid(Number(android.index));
+    const key = androidInstance.name;
+    const serial = await connectAndroid(androidInstance);
+    const port = androidInstance.adb_port;
+    if (!port) throw new Error(`Android index ${androidInstance.index} has no adb_port`);
+
+    const log = (message: string) => {
+        console.log(`[quoteLatestPost][${key}] ${message}`);
+        if (event) sendMessage(event, { username: key, message });
+    };
+
+    const uploaded = await pushFolderMedia(serial, port, folder, log);
+
+    const driver = await createAppiumDriver(serial);
+    try {
+        await reloadThreadsFresh(driver, log);
+
+        log('Open Profile tab...');
+        const profileOpened = await clickByXpath(
+            driver,
+            '//android.view.View[@resource-id="barcelona_tab_profile"]/android.view.View[2]',
+            { timeoutMs: 25000, intervalMs: 800 }
+        );
+        if (!profileOpened) throw new Error('Cannot open Profile tab');
+        await driver.pause(2000);
+
+        // First post actions are often under the bottom tab bar — scroll into view first
+        log('Scroll profile to reveal Repost...');
+        await swipeProfileUp(driver, serial);
+        await driver.pause(600);
+
+        log('Tap Repost on latest post...');
+        const repostOpened = await clickByXpathWithScroll(
+            driver,
+            serial,
+            '//android.widget.Button[@content-desc="Repost"]',
+            log,
+            { timeoutMs: 25000, maxSwipes: 5 }
+        );
+        if (!repostOpened) throw new Error('Cannot tap Repost on latest post');
+        await driver.pause(1000);
+
+        log('Tap Quote...');
+        const quoteOpened = await clickByXpath(
+            driver,
+            '//android.widget.TextView[@resource-id="ig_text" and @text="Quote"]',
+            { timeoutMs: 15000, intervalMs: 500 }
+        );
+        if (!quoteOpened) throw new Error('Cannot tap Quote');
+        await driver.pause(1500);
+
+        const caption = getRandomCaption(folder);
+        if (caption) {
+            log(`Caption typed (${caption.length} chars)`);
+            await typeTextViaAdb(serial, caption);
+            await driver.pause(800);
+        }
+
+        log(`Attach ${uploaded.length} media via Gallery...`);
+        await selectMediaInGallery(driver, uploaded.length, log);
+        await driver.pause(800);
+
+        log('Tap Post...');
+        const posted = await clickByXpath(
+            driver,
+            '//android.widget.TextView[@resource-id="ig_text" and @text="Post"]',
+            { timeoutMs: 15000, intervalMs: 500 }
+        );
+        if (!posted) throw new Error('Cannot tap Post');
+        await driver.pause(1500);
+
+        log('Quote/repost success ✅');
+        return {
+            index: androidInstance.index,
+            name: key,
+            serial,
+            port,
+            fileCount: uploaded.length,
+            files: uploaded,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        log(`Quote/repost failed ❌ ${message}`);
+        throw error;
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
+};
+
+export type QuoteLatestPostItem = {
+    android: Android;
+    folder: string;
+};
+
+/** Quote/repost latest post on multiple Androids (stagger 2s) */
+export const quoteLatestPostOnAndroids = async (
+    items: QuoteLatestPostItem[],
+    event?: IpcMainEvent
+) => {
+    if (!items.length) throw new Error('No Android selected');
+
+    const tasks = items.map(async (item, i) => {
+        if (i > 0) await sleep(i * 2000);
+        try {
+            if (!item.folder) throw new Error('Folder not assigned');
+            const result = await quoteLatestPost(item.android, item.folder, event);
+            return {
+                index: result.index,
+                name: result.name,
+                ok: true as const,
+                fileCount: result.fileCount,
             };
         } catch (error) {
             return {

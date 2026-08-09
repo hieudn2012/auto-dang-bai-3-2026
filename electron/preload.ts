@@ -116,8 +116,12 @@ contextBridge.exposeInMainWorld('api', {
     invoke(InvokeChannel.OPEN_THREADS_APP_ON_ANDROIDS, androids),
   fullSetupOnAndroids: (androids: Android[]) =>
     invoke(InvokeChannel.FULL_SETUP_ON_ANDROIDS, androids),
-  uploadFilesToPostOnAndroids: (items: { android: Android; folder: string }[]) =>
-    invoke(InvokeChannel.UPLOAD_FILES_TO_POST_ON_ANDROIDS, items),
+  createPostOnAndroids: (items: { android: Android; folder: string }[]) =>
+    invoke(InvokeChannel.CREATE_POST_ON_ANDROIDS, items),
+  editLatestPostOnAndroids: (items: { android: Android; folder: string }[]) =>
+    invoke(InvokeChannel.EDIT_LATEST_POST_ON_ANDROIDS, items),
+  quoteLatestPostOnAndroids: (items: { android: Android; folder: string }[]) =>
+    invoke(InvokeChannel.QUOTE_LATEST_POST_ON_ANDROIDS, items),
   checkAccountViews: (params: { ws: string; groupId: number; profiles: string[]; reportName: string }) =>
     invoke(InvokeChannel.CHECK_ACCOUNT_VIEWS, params),
   listCheckViewsReports: () => invoke(InvokeChannel.LIST_CHECK_VIEWS_REPORTS),

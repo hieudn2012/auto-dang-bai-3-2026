@@ -134,7 +134,19 @@ type WindownInstance = typeof window & {
       failed: number
       results: { index: string; name: string; ok: boolean; error?: string }[]
     }>,
-    uploadFilesToPostOnAndroids: (items: { android: Android; folder: string }[]) => Promise<{
+    createPostOnAndroids: (items: { android: Android; folder: string }[]) => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: { index: string; name: string; ok: boolean; error?: string; fileCount?: number }[]
+    }>,
+    editLatestPostOnAndroids: (items: { android: Android; folder: string }[]) => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: { index: string; name: string; ok: boolean; error?: string; link?: string }[]
+    }>,
+    quoteLatestPostOnAndroids: (items: { android: Android; folder: string }[]) => Promise<{
       total: number
       success: number
       failed: number

@@ -195,9 +195,139 @@ const AndroidManage = () => {
     await windowInstance.api.openFolder(path);
   };
 
-  const handleUploadToPost = async (
+  const handleCreatePost = async (android: Android) => {
+    const folder = folderMap[android.index]?.path;
+
+    if (!folder) {
+      toast.error("Chưa random folder");
+      return;
+    }
+    if (!android.is_android_started) {
+      toast.error("Android chưa chạy");
+      return;
+    }
+
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.createPostOnAndroids([
+        { android, folder },
+      ]);
+      if (result.failed > 0) {
+        toast.error(result.results[0]?.error || "Post thất bại");
+      } else {
+        toast.success(`Post: ${android.name}`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Post thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const handleBulkCreatePost = async () => {
+    const ordered = selectedIndexes
+      .map((index) => androidList.find((item) => item.index === index))
+      .filter(Boolean) as Android[];
+
+    const items = ordered
+      .map((android) => ({
+        android,
+        folder: folderMap[android.index]?.path || "",
+      }))
+      .filter((item) => item.android.is_android_started && item.folder);
+
+    if (items.length === 0) {
+      toast.error("Không có máy đang chạy + đã random folder");
+      return;
+    }
+
+    setActionIndex("create-post");
+    try {
+      const result = await windowInstance.api.createPostOnAndroids(items);
+      if (result.failed > 0) {
+        toast.error(`Post: ${result.success} ok, ${result.failed} lỗi`);
+      } else {
+        toast.success(`Đã post cho ${result.success} Android`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Post thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const handleQuoteLatestPost = async (android: Android) => {
+    const folder = folderMap[android.index]?.quotePath;
+
+    if (!folder) {
+      toast.error("Chưa random quote folder");
+      return;
+    }
+    if (!android.is_android_started) {
+      toast.error("Android chưa chạy");
+      return;
+    }
+
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.quoteLatestPostOnAndroids([
+        { android, folder },
+      ]);
+      if (result.failed > 0) {
+        toast.error(result.results[0]?.error || "Quote/repost thất bại");
+      } else {
+        toast.success(`Quote/repost: ${android.name}`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error instanceof Error ? error.message : "Quote/repost thất bại"
+      );
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const handleBulkQuoteLatestPost = async () => {
+    const ordered = selectedIndexes
+      .map((index) => androidList.find((item) => item.index === index))
+      .filter(Boolean) as Android[];
+
+    const items = ordered
+      .map((android) => ({
+        android,
+        folder: folderMap[android.index]?.quotePath || "",
+      }))
+      .filter((item) => item.android.is_android_started && item.folder);
+
+    if (items.length === 0) {
+      toast.error("Không có máy đang chạy + đã random quote folder");
+      return;
+    }
+
+    setActionIndex("quote-repost");
+    try {
+      const result = await windowInstance.api.quoteLatestPostOnAndroids(items);
+      if (result.failed > 0) {
+        toast.error(`Quote: ${result.success} ok, ${result.failed} lỗi`);
+      } else {
+        toast.success(`Đã quote/repost cho ${result.success} Android`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error instanceof Error ? error.message : "Quote/repost thất bại"
+      );
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const handleEditLatestPost = async (
     android: Android,
-    type: "post" | "quote"
+    type: "post" | "quote" = "post"
   ) => {
     const folder =
       type === "quote"
@@ -206,9 +336,7 @@ const AndroidManage = () => {
 
     if (!folder) {
       toast.error(
-        type === "quote"
-          ? "Chưa random quote folder"
-          : "Chưa random folder"
+        type === "quote" ? "Chưa random quote folder" : "Chưa random folder"
       );
       return;
     }
@@ -219,25 +347,30 @@ const AndroidManage = () => {
 
     setActionIndex(android.index);
     try {
-      const result = await windowInstance.api.uploadFilesToPostOnAndroids([
+      const result = await windowInstance.api.editLatestPostOnAndroids([
         { android, folder },
       ]);
+      const label = type === "quote" ? "Edit quote" : "Edit post";
       if (result.failed > 0) {
-        toast.error(result.results[0]?.error || "Upload thất bại");
+        toast.error(result.results[0]?.error || `${label} thất bại`);
       } else {
-        toast.success(
-          `Upload ${type === "quote" ? "quote" : "post"}: ${android.name}`
-        );
+        toast.success(`${label}: ${android.name}`);
       }
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Upload thất bại");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : type === "quote"
+            ? "Edit quote thất bại"
+            : "Edit post thất bại"
+      );
     } finally {
       setActionIndex(null);
     }
   };
 
-  const handleBulkUploadToPost = async (type: "post" | "quote") => {
+  const handleBulkEditLatestPost = async (type: "post" | "quote" = "post") => {
     const ordered = selectedIndexes
       .map((index) => androidList.find((item) => item.index === index))
       .filter(Boolean) as Android[];
@@ -252,6 +385,8 @@ const AndroidManage = () => {
       }))
       .filter((item) => item.android.is_android_started && item.folder);
 
+    const label = type === "quote" ? "Edit quote" : "Edit post";
+
     if (items.length === 0) {
       toast.error(
         type === "quote"
@@ -261,19 +396,17 @@ const AndroidManage = () => {
       return;
     }
 
-    setActionIndex(`upload-${type}`);
+    setActionIndex(`edit-${type}`);
     try {
-      const result = await windowInstance.api.uploadFilesToPostOnAndroids(items);
+      const result = await windowInstance.api.editLatestPostOnAndroids(items);
       if (result.failed > 0) {
-        toast.error(
-          `Upload ${type}: ${result.success} ok, ${result.failed} lỗi`
-        );
+        toast.error(`${label}: ${result.success} ok, ${result.failed} lỗi`);
       } else {
-        toast.success(`Đã upload ${type} cho ${result.success} Android`);
+        toast.success(`Đã ${label.toLowerCase()} cho ${result.success} Android`);
       }
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Upload thất bại");
+      toast.error(error instanceof Error ? error.message : `${label} thất bại`);
     } finally {
       setActionIndex(null);
     }
@@ -512,8 +645,8 @@ const AndroidManage = () => {
                 (item) => !item.is_android_started || !folderMap[item.index]?.path
               )
             }
-            tooltip="Upload post media (selected)"
-            onClick={() => handleBulkUploadToPost("post")}
+            tooltip="Create post (selected)"
+            onClick={() => handleBulkCreatePost()}
             className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
           >
             <i className="fa-solid fa-paper-plane mr-1"></i>
@@ -527,11 +660,40 @@ const AndroidManage = () => {
                   !item.is_android_started || !folderMap[item.index]?.quotePath
               )
             }
-            tooltip="Upload quote media (selected)"
-            onClick={() => handleBulkUploadToPost("quote")}
+            tooltip="Quote/repost latest post (selected)"
+            onClick={() => handleBulkQuoteLatestPost()}
             className="px-3 py-1.5 bg-pink-500 text-white rounded-md hover:bg-pink-600 disabled:opacity-50"
           >
             <i className="fa-solid fa-quote-right mr-1"></i>
+          </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some(
+                (item) => !item.is_android_started || !folderMap[item.index]?.path
+              )
+            }
+            tooltip="Edit latest post + append link (selected)"
+            onClick={() => handleBulkEditLatestPost("post")}
+            className="px-3 py-1.5 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-pen-to-square mr-1"></i>
+          </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some(
+                (item) =>
+                  !item.is_android_started || !folderMap[item.index]?.quotePath
+              )
+            }
+            tooltip="Edit latest quote + append link (selected)"
+            onClick={() => handleBulkEditLatestPost("quote")}
+            className="px-3 py-1.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-pen-fancy mr-1"></i>
           </Button>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
@@ -970,8 +1132,8 @@ const AndroidManage = () => {
                             !item.is_android_started ||
                             !folderMap[item.index]?.path
                           }
-                          onClick={() => handleUploadToPost(item, "post")}
-                          tooltip="Upload post media → New thread"
+                          onClick={() => handleCreatePost(item)}
+                          tooltip="Create post → caption → media → Post"
                           className="!px-1.5 !py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-paper-plane"></i>
@@ -982,11 +1144,35 @@ const AndroidManage = () => {
                             !item.is_android_started ||
                             !folderMap[item.index]?.quotePath
                           }
-                          onClick={() => handleUploadToPost(item, "quote")}
-                          tooltip="Upload quote media → New thread"
+                          onClick={() => handleQuoteLatestPost(item)}
+                          tooltip="Quote/repost latest post → caption → media → Post"
                           className="!px-1.5 !py-1 bg-pink-500 text-white rounded-md hover:bg-pink-600 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-quote-right"></i>
+                        </Button>
+                        <Button
+                          disabled={
+                            busy ||
+                            !item.is_android_started ||
+                            !folderMap[item.index]?.path
+                          }
+                          onClick={() => handleEditLatestPost(item, "post")}
+                          tooltip="Edit latest post → append link → Post"
+                          className="!px-1.5 !py-1 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-pen-to-square"></i>
+                        </Button>
+                        <Button
+                          disabled={
+                            busy ||
+                            !item.is_android_started ||
+                            !folderMap[item.index]?.quotePath
+                          }
+                          onClick={() => handleEditLatestPost(item, "quote")}
+                          tooltip="Edit latest quote → append link → Post"
+                          className="!px-1.5 !py-1 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-pen-fancy"></i>
                         </Button>
                         <Button
                           disabled={busy || !item.is_android_started || !item.account?.proxy}
