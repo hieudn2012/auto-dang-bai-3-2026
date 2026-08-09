@@ -36,7 +36,7 @@ import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 import { getAffShopeeLink } from './features/shopee'
 import { deletePost } from './features/threads-delete'
 import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
-import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, connectAllRunningAndroids, exportAccountsFromOutput, fullSetupOnAndroids, getAndroidList, openAndroid, openThreadsAppOnAndroids, randomMuMuName, setupProxiesOnAndroids } from './features/android'
+import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, connectAllRunningAndroids, exportAccountsFromOutput, fullSetupOnAndroids, getAndroidList, openAndroid, openThreadsAppOnAndroids, randomMuMuName, setupProxiesOnAndroids, uploadFilesToPostOnAndroids } from './features/android'
 import { checkAccountViews, getCheckViewsReport, listCheckViewsReports } from './features/check-account-views'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
@@ -343,6 +343,10 @@ handle(InvokeChannel.OPEN_THREADS_APP_ON_ANDROIDS, async (event, androids) => {
 
 handle(InvokeChannel.FULL_SETUP_ON_ANDROIDS, async (event, androids) => {
   return fullSetupOnAndroids(androids, event);
+});
+
+handle(InvokeChannel.UPLOAD_FILES_TO_POST_ON_ANDROIDS, async (event, items) => {
+  return uploadFilesToPostOnAndroids(items, event);
 });
 
 handle(InvokeChannel.CHECK_ACCOUNT_VIEWS, async (event, params) => {

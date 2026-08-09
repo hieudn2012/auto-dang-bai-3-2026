@@ -69,6 +69,7 @@ export enum InvokeChannel {
   CONNECT_ALL_RUNNING_ANDROIDS = 'connect-all-running-androids',
   OPEN_THREADS_APP_ON_ANDROIDS = 'open-threads-app-on-androids',
   FULL_SETUP_ON_ANDROIDS = 'full-setup-on-androids',
+  UPLOAD_FILES_TO_POST_ON_ANDROIDS = 'upload-files-to-post-on-androids',
   CHECK_ACCOUNT_VIEWS = 'check-account-views',
   LIST_CHECK_VIEWS_REPORTS = 'list-check-views-reports',
   GET_CHECK_VIEWS_REPORT = 'get-check-views-report',

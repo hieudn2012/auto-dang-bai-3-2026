@@ -1,12 +1,13 @@
-import { exec } from 'child_process';
+import { exec, execFile } from 'child_process';
 import { IpcMainEvent } from 'electron';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { basename, extname, join } from 'path';
 import { promisify } from 'util';
 import { remote } from 'webdriverio';
 import { loadMainConfig } from './common';
 import { sendMessage } from './event';
+import { getMediaInFolder } from './foder';
 
 type AppiumDriver = WebdriverIO.Browser;
 
@@ -50,11 +51,13 @@ interface SetupProxyParams {
 }
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 const ACCOUNT_FILE = 'account.txt';
 const EXPORT_FILE = 'export.txt';
 const PROXY_PLACEHOLDER = '##proxy##';
 const THREADS_PACKAGE = 'com.instagram.barcelona';
+const ADB_TIMEOUT_MS = 45_000;
 
 const ROOT = process.env.ROOT || 'D:';
 const MUMU_MANAGER_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\nx_main\\MuMuManager.exe`;
@@ -62,8 +65,12 @@ const MUMU_ADB_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\nx_main\\adb
 const MUMU_VMS_PATH = `${ROOT}\\Program Files\\Netease\\MuMuPlayer\\vms`;
 const MUMU_MANAGER_INFO_COMMAND = 'info --vmindex all';
 
-const run = async (cmd: string, { silent = false } = {}) => {
-    const { stdout, stderr } = await execAsync(cmd);
+const run = async (cmd: string, { silent = false, timeout = ADB_TIMEOUT_MS } = {}) => {
+    const { stdout, stderr } = await execAsync(cmd, {
+        maxBuffer: 20 * 1024 * 1024,
+        timeout,
+        windowsHide: true,
+    });
     if (!silent) {
         if (stdout) console.log(stdout.trim());
         if (stderr) console.log(stderr.trim());
@@ -74,6 +81,458 @@ const run = async (cmd: string, { silent = false } = {}) => {
 const runMuMu = (args: string) => run(`"${MUMU_MANAGER_PATH}" ${args}`);
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** Full component — tránh relative ".handleractivity" bị resolve sai trên một số MuMu/adb */
+const THREADS_SHARE_COMPONENT =
+    'com.instagram.barcelona/com.instagram.barcelona.handleractivity.BarcelonaShareHandlerActivity';
+
+type UploadedMedia = {
+    localPath: string;
+    remotePath: string;
+    remoteName: string;
+    mime: string;
+    mediaId: string;
+    contentUri: string;
+};
+
+const getMimeType = (filePath: string) => {
+    const ext = extname(filePath).toLowerCase();
+    switch (ext) {
+        case '.png':
+            return 'image/png';
+        case '.jpg':
+        case '.jpeg':
+            return 'image/jpeg';
+        case '.webp':
+            return 'image/webp';
+        case '.gif':
+            return 'image/gif';
+        case '.heic':
+            return 'image/heic';
+        case '.mp4':
+            return 'video/mp4';
+        case '.mov':
+            return 'video/quicktime';
+        case '.webm':
+            return 'video/webm';
+        default:
+            return 'application/octet-stream';
+    }
+};
+
+const isVideoMime = (mime: string) => mime.startsWith('video/');
+
+const mediaCollectionUri = (mime: string) =>
+    isVideoMime(mime)
+        ? 'content://media/external/video/media'
+        : 'content://media/external/images/media';
+
+/**
+ * Tên file ASCII trên Android — alpha để Gallery sắp video trước, ảnh sau:
+ * a00.mp4, a01.mp4, … rồi b00.jpg, b01.jpg, …
+ */
+const safeRemoteFileName = (filePath: string, index: number) => {
+    const ext = extname(filePath).toLowerCase() || '.bin';
+    const prefix = isVideoMime(getMimeType(filePath)) ? 'a' : 'b';
+    return `${prefix}${String(index).padStart(2, '0')}${ext}`;
+};
+
+/** adb với argv — tránh lỗi quote/Unicode path trên Windows */
+const adbFile = async (
+    serial: string,
+    args: string[],
+    { silent = true, timeout = ADB_TIMEOUT_MS } = {}
+) => {
+    const { stdout, stderr } = await execFileAsync(MUMU_ADB_PATH, ['-s', serial, ...args], {
+        maxBuffer: 20 * 1024 * 1024,
+        timeout,
+        windowsHide: true,
+    });
+    if (!silent) {
+        if (stdout) console.log(String(stdout).trim());
+        if (stderr) console.log(String(stderr).trim());
+    }
+    return String(stdout || '');
+};
+
+const adbFileSoft = async (serial: string, args: string[], timeout = ADB_TIMEOUT_MS) => {
+    try {
+        return await adbFile(serial, args, { timeout });
+    } catch (error: any) {
+        const out = `${error?.stdout || ''}${error?.stderr || ''}`;
+        if (out.includes('_id=') || out.includes('Broadcast completed') || out.includes('file pushed')) {
+            return out;
+        }
+        throw error;
+    }
+};
+
+const queryMediaIdByName = async (serial: string, collection: string, remoteName: string) => {
+    // Một câu lệnh shell duy nhất để giữ nguyên quotes
+    const cmd =
+        `content query --uri ${collection} --projection _id ` +
+        `--where "_display_name='${remoteName}'"`;
+    const out = await adbFileSoft(serial, ['shell', cmd]);
+    return out.match(/_id=(\d+)/)?.[1] || null;
+};
+
+const grantThreadsMediaPermission = async (serial: string) => {
+    const grants = [
+        'android.permission.READ_EXTERNAL_STORAGE',
+        'android.permission.READ_MEDIA_IMAGES',
+        'android.permission.READ_MEDIA_VIDEO',
+        'android.permission.READ_MEDIA_VISUAL_USER_SELECTED',
+    ];
+    for (const perm of grants) {
+        await adbFileSoft(serial, ['shell', 'pm', 'grant', THREADS_PACKAGE, perm]).catch(() => '');
+    }
+};
+
+/**
+ * Xoá toàn bộ media trên Android trước khi upload (file + MediaStore),
+ * để Gallery chỉ còn file vừa push.
+ */
+const clearAllAndroidMedia = async (serial: string, log: (msg: string) => void) => {
+    log('Clearing all media on Android...');
+
+    // Folder media thường gặp + thư mục upload của app
+    await adbFileSoft(serial, [
+        'shell',
+        'rm -rf /sdcard/ThreadsPost' +
+            ' /sdcard/DCIM/* /sdcard/Pictures/* /sdcard/Movies/* /sdcard/Download/* /sdcard/Camera/*' +
+            ' /storage/emulated/0/DCIM/* /storage/emulated/0/Pictures/*' +
+            ' /storage/emulated/0/Movies/* /storage/emulated/0/Download/*' +
+            ' 2>/dev/null; true',
+    ]).catch(() => '');
+
+    // Quét xoá file ảnh/video còn sót
+    await adbFileSoft(serial, [
+        'shell',
+        "find /sdcard /storage/emulated/0 -type f" +
+            " \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp'" +
+            " -o -iname '*.gif' -o -iname '*.heic' -o -iname '*.bmp'" +
+            " -o -iname '*.mp4' -o -iname '*.mov' -o -iname '*.webm' -o -iname '*.mkv'" +
+            " -o -iname '*.3gp' -o -iname '*.avi' -o -iname '*.m4v' \\)" +
+            ' -delete 2>/dev/null; true',
+    ]).catch(() => '');
+
+    // Xoá entry MediaStore để Gallery không còn cache cũ
+    for (const uri of [
+        'content://media/external/images/media',
+        'content://media/external/video/media',
+        'content://media/external/file',
+    ]) {
+        await adbFileSoft(serial, ['shell', `content delete --uri ${uri}`]).catch(() => '');
+    }
+
+    await sleep(600);
+    log('Android media cleared');
+};
+
+/**
+ * Gallery Threads sort theo ngày (mới → cũ), không theo tên.
+ * Video cần date cao hơn ảnh để hiện trước.
+ */
+const mediaSortDateSec = (mime: string, index: number) => {
+    const now = Math.floor(Date.now() / 1000);
+    return isVideoMime(mime) ? now + 100 + index : now - 100 + index;
+};
+
+/**
+ * Push file PC → /sdcard/ThreadsPost/<port>/ + MediaStore content:// URI
+ */
+const pushFileToAndroidMedia = async (
+    serial: string,
+    port: number | string,
+    localPath: string,
+    index: number
+): Promise<UploadedMedia> => {
+    await fs.access(localPath);
+    const mime = getMimeType(localPath);
+    const remoteName = safeRemoteFileName(localPath, index);
+    const remoteDir = `/sdcard/ThreadsPost/${port}`;
+    const remotePath = `${remoteDir}/${remoteName}`;
+    const collection = mediaCollectionUri(mime);
+    const dateSec = mediaSortDateSec(mime, index);
+    const dateTakenMs = dateSec * 1000;
+
+    const tmpLocal = join(tmpdir(), remoteName);
+    await fs.copyFile(localPath, tmpLocal);
+
+    try {
+        await adbFile(serial, ['shell', 'mkdir', '-p', remoteDir]);
+        await adbFile(serial, ['push', tmpLocal, remotePath], { silent: false });
+
+        // mtime file → MediaScanner / Gallery ưu tiên video (date cao hơn)
+        await adbFileSoft(serial, [
+            'shell',
+            `touch -d @${dateSec} "${remotePath}" 2>/dev/null || touch "${remotePath}"`,
+        ]).catch(() => '');
+
+        const fileUri = `file://${remotePath}`;
+        await adbFileSoft(serial, [
+            'shell',
+            'am',
+            'broadcast',
+            '-a',
+            'android.intent.action.MEDIA_SCANNER_SCAN_FILE',
+            '-d',
+            fileUri,
+        ]);
+        await sleep(300);
+
+        await adbFileSoft(serial, [
+            'shell',
+            `content insert --uri ${collection}` +
+                ` --bind _data:s:${remotePath}` +
+                ` --bind mime_type:s:${mime}` +
+                ` --bind _display_name:s:${remoteName}` +
+                ` --bind date_added:i:${dateSec}` +
+                ` --bind date_modified:i:${dateSec}` +
+                ` --bind datetaken:i:${dateTakenMs}`,
+        ]).catch(() => '');
+
+        let mediaId: string | null = null;
+        let contentUri = '';
+        for (let attempt = 0; attempt < 8; attempt++) {
+            mediaId = await queryMediaIdByName(serial, collection, remoteName);
+            if (mediaId) {
+                contentUri = `${collection}/${mediaId}`;
+                break;
+            }
+            mediaId = await queryMediaIdByName(serial, 'content://media/external/file', remoteName);
+            if (mediaId) {
+                contentUri = `content://media/external/file/${mediaId}`;
+                break;
+            }
+            await sleep(350);
+        }
+
+        if (!mediaId || !contentUri) {
+            throw new Error(`MediaStore id not found for ${remoteName}`);
+        }
+
+        // Ép lại date sau scan (scanner hay ghi đè theo mtime/now)
+        await adbFileSoft(serial, [
+            'shell',
+            `content update --uri ${contentUri}` +
+                ` --bind date_added:i:${dateSec}` +
+                ` --bind date_modified:i:${dateSec}` +
+                ` --bind datetaken:i:${dateTakenMs}`,
+        ]).catch(() => '');
+
+        return { localPath, remotePath, remoteName, mime, mediaId, contentUri };
+    } finally {
+        await fs.unlink(tmpLocal).catch(() => undefined);
+    }
+};
+
+/** am start argv (không wildcard mime). */
+const amStart = (serial: string, amArgs: string[], timeoutMs: number) =>
+    adbFile(serial, ['shell', 'am', ...amArgs], { silent: false, timeout: timeoutMs });
+
+const createAppiumDriver = async (serial: string) =>
+    remote({
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: 4723,
+        path: '/',
+        logLevel: 'warn',
+        capabilities: {
+            platformName: 'Android',
+            'appium:automationName': 'UiAutomator2',
+            'appium:udid': serial,
+            'appium:noReset': true,
+            'appium:autoGrantPermissions': true,
+        },
+    });
+
+async function waitForXpath(
+    driver: AppiumDriver,
+    xpath: string,
+    { timeoutMs = 15000, intervalMs = 500 } = {}
+) {
+    await driver.setTimeout({ implicit: 0 });
+    const deadline = Date.now() + timeoutMs;
+    const selector = `xpath:${xpath}`;
+    while (Date.now() < deadline) {
+        const [el] = await driver.$$(selector);
+        if (el) {
+            const visible = await el.isDisplayed().catch(() => false);
+            if (visible) return el;
+        }
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) break;
+        await driver.pause(Math.min(intervalMs, remaining));
+    }
+    return null;
+}
+
+/**
+ * Appium: Gallery → chọn media theo thứ tự video → ảnh → Done.
+ * Dùng khi MuMu am không hỗ trợ SEND_MULTIPLE/--clip.
+ */
+const attachMediaViaAppiumGallery = async (
+    serial: string,
+    totalMedia: number,
+    log: (msg: string) => void
+) => {
+    const driver = await createAppiumDriver(serial);
+    try {
+        log('Appium: waiting for New thread composer...');
+        const composerReady = await waitForXpath(
+            driver,
+            '//*[@resource-id="new_thread_screen_gallery_button" or @resource-id="new_thread_screen_composer"]',
+            { timeoutMs: 20000 }
+        );
+        if (!composerReady) throw new Error('Composer / Gallery button not found');
+
+        log('Appium: open Gallery...');
+        const galleryOpened =
+            (await clickByXpath(driver, '//*[@resource-id="new_thread_screen_gallery_button"]', {
+                timeoutMs: 8000,
+                intervalMs: 500,
+            })) ||
+            (await clickByXpath(driver, '//*[@content-desc="Gallery"]', {
+                timeoutMs: 5000,
+                intervalMs: 500,
+            }));
+        if (!galleryOpened) throw new Error('Cannot tap Gallery button');
+
+        await driver.pause(1200);
+        const gridReady = await waitForXpath(
+            driver,
+            '//*[@resource-id="com.instagram.barcelona:id/gallery_picker_grid_item_container"]',
+            { timeoutMs: 15000 }
+        );
+        if (!gridReady) throw new Error('Gallery picker grid not found');
+
+        const cells = await driver.$$(
+            'xpath://*[@resource-id="com.instagram.barcelona:id/gallery_picker_grid_item_container" and string-length(@content-desc) > 0]'
+        );
+
+        type CellInfo = {
+            el: WebdriverIO.Element;
+            desc: string;
+            recent: boolean;
+            selected: boolean;
+            kind: number; // 0 video, 1 photo, 2 other
+        };
+        const kindOf = (desc: string) =>
+            /video\s+thumbnail/i.test(desc) ? 0 : /photo\s+thumbnail/i.test(desc) ? 1 : 2;
+
+        const infos: CellInfo[] = [];
+        for (const el of cells) {
+            const desc = (await el.getAttribute('content-desc')) || '';
+            if (!/thumbnail/i.test(desc)) continue;
+            infos.push({
+                el,
+                desc,
+                recent: /seconds ago|minute ago|minutes ago/i.test(desc),
+                selected: /\d+\s+of\s+\d+\s+selected/i.test(desc),
+                kind: kindOf(desc),
+            });
+        }
+
+        const recent = infos.filter((i) => i.recent);
+        const pool = (recent.length >= totalMedia ? recent : infos)
+            .slice()
+            // Video trước, ảnh sau — thứ tự chọn = thứ tự gắn vào thread
+            .sort((a, b) => a.kind - b.kind || a.desc.localeCompare(b.desc));
+        const targets = pool.slice(0, totalMedia);
+
+        if (!targets.length) throw new Error('No gallery thumbnails to select');
+
+        // Bỏ chọn sẵn (từ SEND) rồi chọn lại đúng thứ tự video → ảnh
+        for (const item of targets) {
+            if (!item.selected) continue;
+            await item.el.click();
+            await driver.pause(350);
+            item.selected = false;
+            log(`Deselected: ${item.desc}`);
+        }
+
+        log(`Appium: selecting ${targets.length}/${totalMedia} (video → photo)...`);
+        for (const item of targets) {
+            await item.el.click();
+            await driver.pause(450);
+            log(`Selected: ${item.desc}`);
+        }
+
+        const done =
+            (await clickByXpath(driver, '//*[@text="Done"]', { timeoutMs: 8000, intervalMs: 400 })) ||
+            (await clickByXpath(driver, '//*[@content-desc="Done"]', {
+                timeoutMs: 4000,
+                intervalMs: 400,
+            }));
+        if (!done) throw new Error('Done button not found in gallery');
+
+        await driver.pause(1000);
+        log('Appium: Gallery Done — media attached to thread');
+        return true;
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
+};
+
+/**
+ * Mở Threads New thread với media:
+ * 1) am SEND file đầu (mở composer) — MuMu không hỗ trợ multi-URI
+ * 2) nếu >1 file: Appium Gallery chọn đủ N media vừa push → Done
+ */
+const openThreadsComposerWithMedia = async (
+    serial: string,
+    items: UploadedMedia[],
+    log: (msg: string) => void
+) => {
+    if (!items.length) throw new Error('No media to share');
+
+    await grantThreadsMediaPermission(serial);
+
+    const primary = items[0];
+    log(`SEND ${primary.contentUri} (${basename(primary.localPath)})`);
+
+    const out = await amStart(
+        serial,
+        [
+            'start',
+            '-W',
+            '-a',
+            'android.intent.action.SEND',
+            '-t',
+            isVideoMime(primary.mime) ? 'video/mp4' : primary.mime,
+            '-n',
+            THREADS_SHARE_COMPONENT,
+            '--eu',
+            'android.intent.extra.STREAM',
+            primary.contentUri,
+            '--grant-read-uri-permission',
+            '-f',
+            '0x10000001',
+        ],
+        25_000
+    );
+
+    if (/Error type|does not exist|Exception/i.test(out)) {
+        throw new Error(out.trim());
+    }
+
+    log(out.trim().split(/\r?\n/).filter(Boolean).slice(-2).join(' | ') || 'SEND ok');
+    await sleep(1200);
+
+    if (items.length === 1) {
+        return { mode: 'send' as const };
+    }
+
+    try {
+        await attachMediaViaAppiumGallery(serial, items.length, log);
+        return { mode: 'send_plus_appium_gallery' as const };
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        log(`Appium gallery failed: ${msg}`);
+        throw new Error(`Multi-media attach failed: ${msg}`);
+    }
+};
 
 // info RPC hay cache name cũ khi instance đang chạy — đọc playerName từ config mới đúng
 const getPlayerNameFromConfig = async (index: string, androidVersion = '15.0') => {
@@ -950,6 +1409,121 @@ export const fullSetupOnAndroids = async (androids: Android[], event: IpcMainEve
 
     return {
         total: androids.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
+};
+
+/**
+ * Upload media từ PC → New thread (Threads) trên 1 Android.
+ *
+ * Flow:
+ * 0) Xoá hết media cũ trên Android (file + MediaStore)
+ * 1) Copy temp ASCII → adb push /sdcard/ThreadsPost/<port>/
+ * 2) MediaStore insert/query → content:// URI
+ * 3) pm grant READ_MEDIA_* cho Threads
+ * 4) am start -W BarcelonaShareHandlerActivity (SEND)
+ * 5) nếu >1 file: Appium Gallery chọn đủ media → Done
+ */
+export const uploadFilesToPost = async (
+    android: Android,
+    folder: string,
+    event?: IpcMainEvent
+) => {
+    const files = getMediaInFolder(folder);
+    if (!files.length) throw new Error('Không tìm thấy file trong folder');
+
+    const androidInstance = await getAndroid(Number(android.index));
+    const key = androidInstance.name;
+    const serial = await connectAndroid(androidInstance);
+    const port = androidInstance.adb_port;
+    if (!port) throw new Error(`Android index ${androidInstance.index} chưa có adb_port`);
+
+    const log = (message: string) => {
+        console.log(`[uploadFilesToPost][${key}] ${message}`);
+        if (event) sendMessage(event, { username: key, message });
+    };
+
+    await clearAllAndroidMedia(serial, log);
+
+    // Push ảnh trước, video sau → mtime video mới hơn → Gallery (newest first) hiện video trước
+    const filesForPush = [...files].sort((a, b) => {
+        const av = isVideoMime(getMimeType(a)) ? 1 : 0;
+        const bv = isVideoMime(getMimeType(b)) ? 1 : 0;
+        return av - bv;
+    });
+
+    log(`Uploading ${filesForPush.length} file(s) to Threads...`);
+
+    const uploaded: UploadedMedia[] = [];
+    for (let i = 0; i < filesForPush.length; i++) {
+        const localPath = filesForPush[i];
+        log(`Push (${i + 1}/${filesForPush.length}): ${basename(localPath)}`);
+        const item = await pushFileToAndroidMedia(serial, port, localPath, i);
+        uploaded.push(item);
+        log(`MediaStore OK → ${item.contentUri} (${item.remoteName})`);
+        await sleep(400);
+    }
+
+    // SEND / Appium: video trước, ảnh sau
+    uploaded.sort(
+        (a, b) => Number(isVideoMime(b.mime)) - Number(isVideoMime(a.mime)) || a.remoteName.localeCompare(b.remoteName)
+    );
+
+    log(`Opening Threads composer with ${uploaded.length} media...`);
+    const shareResult = await openThreadsComposerWithMedia(serial, uploaded, log);
+
+    await sleep(1200);
+    log(`Done (${shareResult.mode}) — check New thread on device`);
+
+    return {
+        index: androidInstance.index,
+        name: key,
+        serial,
+        port,
+        mode: shareResult.mode,
+        files: uploaded,
+    };
+};
+
+export type UploadFilesToPostItem = {
+    android: Android;
+    folder: string;
+};
+
+/** Upload media → New thread trên nhiều Android (stagger 2s) */
+export const uploadFilesToPostOnAndroids = async (
+    items: UploadFilesToPostItem[],
+    event?: IpcMainEvent
+) => {
+    if (!items.length) throw new Error('Chưa chọn Android nào');
+
+    const tasks = items.map(async (item, i) => {
+        if (i > 0) await sleep(i * 2000);
+        try {
+            if (!item.folder) throw new Error('Chưa gán folder');
+            const result = await uploadFilesToPost(item.android, item.folder, event);
+            return {
+                index: result.index,
+                name: result.name,
+                ok: true as const,
+                fileCount: result.files.length,
+            };
+        } catch (error) {
+            return {
+                index: item.android.index,
+                name: item.android.name,
+                ok: false as const,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    });
+
+    const results = await Promise.all(tasks);
+
+    return {
+        total: items.length,
         success: results.filter((r) => r.ok).length,
         failed: results.filter((r) => !r.ok).length,
         results,

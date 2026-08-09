@@ -47,7 +47,7 @@ const ConvertCookie = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
@@ -170,32 +170,6 @@ const ConvertCookie = () => {
           })()}
         </div>
       )}
-
-      {/* Instructions */}
-      <div className="mt-6 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-900/20 dark:to-yellow-900/20 rounded-lg p-6 border border-orange-200 dark:border-orange-800">
-        <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-100 mb-3 flex items-center">
-          <i className="fas fa-book-open text-orange-500 mr-2"></i>
-          How to Use
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-orange-800 dark:text-orange-200">
-          <div className="space-y-2">
-            <h4 className="font-medium text-orange-900 dark:text-orange-100">Step 1:</h4>
-            <p>Paste your raw cookie strings in the text area above</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-orange-900 dark:text-orange-100">Step 2:</h4>
-            <p>Each line should contain cookies in format: name=value; name2=value2</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-orange-900 dark:text-orange-100">Step 3:</h4>
-            <p>Click "Convert & Copy" to transform and copy to clipboard</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-orange-900 dark:text-orange-100">Result:</h4>
-            <p>Paste the JSON format cookies in your automation tools</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

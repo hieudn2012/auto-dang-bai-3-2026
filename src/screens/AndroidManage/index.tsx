@@ -7,10 +7,26 @@ import { windowInstance } from "@/services/window";
 import { Android } from "electron/features/android";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+type FolderMap = Record<
+  string,
+  {
+    name: string;
+    path: string;
+    quoteName: string;
+    quotePath: string;
+  }
+>;
+
 const formatBytes = (bytes: number) => {
   if (!bytes) return "-";
   const gb = bytes / (1024 * 1024 * 1024);
   return `${gb.toFixed(2)} GB`;
+};
+
+const shortName = (name: string) => {
+  const maxLength = 14;
+  if (!name || name.length <= maxLength) return name || "N/A";
+  return `${name.slice(0, maxLength / 2)}...${name.slice(-maxLength / 2)}`;
 };
 
 const AndroidManage = () => {
@@ -22,6 +38,7 @@ const AndroidManage = () => {
   const [outputAccount, setOutputAccount] = useState("");
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [proxyFolder, setProxyFolder] = useState("");
+  const [folderMap, setFolderMap] = useState<FolderMap>({});
 
   const fetchAndroidList = useCallback(async () => {
     setLoading(true);
@@ -109,6 +126,157 @@ const AndroidManage = () => {
     const folderPath = await windowInstance.api.openDialogFolder();
     if (!folderPath) return;
     await saveAndroidFolder(key, folderPath);
+  };
+
+  const handleRandomFolder = async (androidIndex: string) => {
+    const currentPaths = Object.values(folderMap).map((item) => item.path).filter(Boolean);
+    const quoteCurrentPaths = Object.values(folderMap).map((item) => item.quotePath).filter(Boolean);
+
+    const folder = await windowInstance.api.randomFolderNotUsed(currentPaths);
+    const quoteFolder = await windowInstance.api.randomQuoteFolderNotUsed(quoteCurrentPaths);
+
+    if (!folder.path && !quoteFolder.path) {
+      toast.error("Không tìm thấy folder hợp lệ (workingDir / quoteWorkingDir)");
+      return;
+    }
+
+    setFolderMap((prev) => ({
+      ...prev,
+      [androidIndex]: {
+        name: folder.name || "",
+        path: folder.path || "",
+        quoteName: quoteFolder.name || "",
+        quotePath: quoteFolder.path || "",
+      },
+    }));
+  };
+
+  const handleBulkRandomFolder = async () => {
+    if (selectedIndexes.length === 0) {
+      toast.error("Chọn ít nhất 1 Android");
+      return;
+    }
+
+    setActionIndex("random-folder");
+    try {
+      let nextMap = { ...folderMap };
+      for (const index of selectedIndexes) {
+        const currentPaths = Object.values(nextMap).map((item) => item.path).filter(Boolean);
+        const quoteCurrentPaths = Object.values(nextMap).map((item) => item.quotePath).filter(Boolean);
+
+        const folder = await windowInstance.api.randomFolderNotUsed(currentPaths);
+        const quoteFolder = await windowInstance.api.randomQuoteFolderNotUsed(quoteCurrentPaths);
+
+        nextMap = {
+          ...nextMap,
+          [index]: {
+            name: folder.name || "",
+            path: folder.path || "",
+            quoteName: quoteFolder.name || "",
+            quotePath: quoteFolder.path || "",
+          },
+        };
+      }
+      setFolderMap(nextMap);
+      toast.success(`Đã random folder cho ${selectedIndexes.length} Android`);
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Random folder thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const handleOpenFolder = async (path: string) => {
+    if (!path) {
+      toast.error("Chưa có folder");
+      return;
+    }
+    await windowInstance.api.openFolder(path);
+  };
+
+  const handleUploadToPost = async (
+    android: Android,
+    type: "post" | "quote"
+  ) => {
+    const folder =
+      type === "quote"
+        ? folderMap[android.index]?.quotePath
+        : folderMap[android.index]?.path;
+
+    if (!folder) {
+      toast.error(
+        type === "quote"
+          ? "Chưa random quote folder"
+          : "Chưa random folder"
+      );
+      return;
+    }
+    if (!android.is_android_started) {
+      toast.error("Android chưa chạy");
+      return;
+    }
+
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.uploadFilesToPostOnAndroids([
+        { android, folder },
+      ]);
+      if (result.failed > 0) {
+        toast.error(result.results[0]?.error || "Upload thất bại");
+      } else {
+        toast.success(
+          `Upload ${type === "quote" ? "quote" : "post"}: ${android.name}`
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Upload thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const handleBulkUploadToPost = async (type: "post" | "quote") => {
+    const ordered = selectedIndexes
+      .map((index) => androidList.find((item) => item.index === index))
+      .filter(Boolean) as Android[];
+
+    const items = ordered
+      .map((android) => ({
+        android,
+        folder:
+          type === "quote"
+            ? folderMap[android.index]?.quotePath || ""
+            : folderMap[android.index]?.path || "",
+      }))
+      .filter((item) => item.android.is_android_started && item.folder);
+
+    if (items.length === 0) {
+      toast.error(
+        type === "quote"
+          ? "Không có máy đang chạy + đã random quote folder"
+          : "Không có máy đang chạy + đã random folder"
+      );
+      return;
+    }
+
+    setActionIndex(`upload-${type}`);
+    try {
+      const result = await windowInstance.api.uploadFilesToPostOnAndroids(items);
+      if (result.failed > 0) {
+        toast.error(
+          `Upload ${type}: ${result.success} ok, ${result.failed} lỗi`
+        );
+      } else {
+        toast.success(`Đã upload ${type} cho ${result.success} Android`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Upload thất bại");
+    } finally {
+      setActionIndex(null);
+    }
   };
 
   const handleOpen = async (android: Android) => {
@@ -327,6 +495,43 @@ const AndroidManage = () => {
             className="px-3 py-1.5 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50"
           >
             <i className="fa-solid fa-shuffle mr-1"></i>
+          </Button>
+          <Button
+            disabled={selectedIndexes.length === 0 || !!actionIndex}
+            tooltip="Random folder + quote folder"
+            onClick={handleBulkRandomFolder}
+            className="px-3 py-1.5 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-folder-tree mr-1"></i>
+          </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some(
+                (item) => !item.is_android_started || !folderMap[item.index]?.path
+              )
+            }
+            tooltip="Upload post media (selected)"
+            onClick={() => handleBulkUploadToPost("post")}
+            className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-paper-plane mr-1"></i>
+          </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some(
+                (item) =>
+                  !item.is_android_started || !folderMap[item.index]?.quotePath
+              )
+            }
+            tooltip="Upload quote media (selected)"
+            onClick={() => handleBulkUploadToPost("quote")}
+            className="px-3 py-1.5 bg-pink-500 text-white rounded-md hover:bg-pink-600 disabled:opacity-50"
+          >
+            <i className="fa-solid fa-quote-right mr-1"></i>
           </Button>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
@@ -624,6 +829,7 @@ const AndroidManage = () => {
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Message</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Account</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Folder</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Proxy</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">ADB</th>
@@ -668,6 +874,36 @@ const AndroidManage = () => {
                     </td>
                     <td className="px-2 py-3 text-gray-600 dark:text-gray-300 overflow-hidden truncate" title={item.account?.username || undefined}>
                       {item.account?.username || "-"}
+                    </td>
+                    <td className="px-2 py-3 overflow-hidden text-gray-600 dark:text-gray-300">
+                      {(() => {
+                        const folder = folderMap[item.index];
+                        if (!folder?.path && !folder?.quotePath) {
+                          return <span className="text-gray-400">-</span>;
+                        }
+                        return (
+                          <div className="space-y-0.5 min-w-0">
+                            <button
+                              type="button"
+                              className="block w-full truncate text-left text-emerald-600 hover:underline dark:text-emerald-400"
+                              title={folder.path || undefined}
+                              onClick={() => handleOpenFolder(folder.path)}
+                              disabled={!folder.path}
+                            >
+                              {shortName(folder.name)}
+                            </button>
+                            <button
+                              type="button"
+                              className="block w-full truncate text-left text-pink-600 hover:underline dark:text-pink-400"
+                              title={folder.quotePath || undefined}
+                              onClick={() => handleOpenFolder(folder.quotePath)}
+                              disabled={!folder.quotePath}
+                            >
+                              {shortName(folder.quoteName)}
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-2 py-3 overflow-hidden">
                       <div className="relative group inline-flex">
@@ -721,6 +957,38 @@ const AndroidManage = () => {
                           <i className="fa-solid fa-shuffle"></i>
                         </Button>
                         <Button
+                          disabled={busy}
+                          onClick={() => handleRandomFolder(item.index)}
+                          tooltip="Random folder + quote folder"
+                          className="!px-1.5 !py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-folder-tree"></i>
+                        </Button>
+                        <Button
+                          disabled={
+                            busy ||
+                            !item.is_android_started ||
+                            !folderMap[item.index]?.path
+                          }
+                          onClick={() => handleUploadToPost(item, "post")}
+                          tooltip="Upload post media → New thread"
+                          className="!px-1.5 !py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-paper-plane"></i>
+                        </Button>
+                        <Button
+                          disabled={
+                            busy ||
+                            !item.is_android_started ||
+                            !folderMap[item.index]?.quotePath
+                          }
+                          onClick={() => handleUploadToPost(item, "quote")}
+                          tooltip="Upload quote media → New thread"
+                          className="!px-1.5 !py-1 bg-pink-500 text-white rounded-md hover:bg-pink-600 disabled:opacity-50"
+                        >
+                          <i className="fa-solid fa-quote-right"></i>
+                        </Button>
+                        <Button
                           disabled={busy || !item.is_android_started || !item.account?.proxy}
                           onClick={() => handleSetupProxy(item)}
                           tooltip="Setup proxy"
@@ -770,7 +1038,7 @@ const AndroidManage = () => {
               })}
               {!loading && androidList.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={10} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     No Android devices found
                   </td>
                 </tr>

@@ -134,6 +134,12 @@ type WindownInstance = typeof window & {
       failed: number
       results: { index: string; name: string; ok: boolean; error?: string }[]
     }>,
+    uploadFilesToPostOnAndroids: (items: { android: Android; folder: string }[]) => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: { index: string; name: string; ok: boolean; error?: string; fileCount?: number }[]
+    }>,
     checkAccountViews: (params: {
       ws: string
       groupId: number

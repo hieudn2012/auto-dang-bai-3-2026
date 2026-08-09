@@ -49,7 +49,7 @@ const CheckLive = () => {
   }, [mainConfig]);
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
@@ -190,32 +190,6 @@ const CheckLive = () => {
           </p>
         </div>
       )}
-
-      {/* Instructions */}
-      <div className="mt-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3 flex items-center">
-          <i className="fas fa-info-circle text-blue-500 mr-2"></i>
-          How to Use
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800 dark:text-blue-200">
-          <div className="space-y-2">
-            <h4 className="font-medium text-blue-900 dark:text-blue-100">Step 1:</h4>
-            <p>Select a group of accounts to check</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-blue-900 dark:text-blue-100">Step 2:</h4>
-            <p>Enter WebSocket URL and batch size</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-blue-900 dark:text-blue-100">Step 3:</h4>
-            <p>Click "Check Live Accounts" to test connectivity</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-blue-900 dark:text-blue-100">Step 4:</h4>
-            <p>Review results and delete dead accounts if needed</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -195,3 +195,34 @@ export const moveDataToFolder = ({ data, folder, fileName }: MoveData): void => 
     throw error;
   }
 }
+
+const VIDEO_EXTS = new Set(['.mp4', '.mov', '.webm', '.avi', '.mkv', '.m4v']);
+const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.bmp']);
+
+/** Get media paths in folder: videos first, then images. */
+export const getMediaInFolder = (folderPath: string): string[] => {
+  if (!folderPath || !fs.existsSync(folderPath)) {
+    return [];
+  }
+
+  try {
+    const videos: string[] = [];
+    const images: string[] = [];
+
+    for (const entry of fs.readdirSync(folderPath, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const ext = path.extname(entry.name).toLowerCase();
+      const fullPath = path.join(folderPath, entry.name);
+      if (VIDEO_EXTS.has(ext)) {
+        videos.push(fullPath);
+      } else if (IMAGE_EXTS.has(ext)) {
+        images.push(fullPath);
+      }
+    }
+
+    return [...videos, ...images];
+  } catch (error) {
+    console.error('Error reading media in folder:', folderPath, error);
+    return [];
+  }
+};

@@ -41,7 +41,7 @@ const SetupAcc = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
@@ -136,32 +136,6 @@ const SetupAcc = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Instructions */}
-      <div className="mt-6 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
-        <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-3 flex items-center">
-          <i className="fas fa-book-open text-purple-500 mr-2"></i>
-          How to Use
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-purple-800 dark:text-purple-200">
-          <div className="space-y-2">
-            <h4 className="font-medium text-purple-900 dark:text-purple-100">Step 1:</h4>
-            <p>Paste your account data in the text area above, one account per line</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-purple-900 dark:text-purple-100">Step 2:</h4>
-            <p>Click "Copy Names" to extract all UIDs to clipboard</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-purple-900 dark:text-purple-100">Step 3:</h4>
-            <p>Click "Copy Cookies" to extract all cookies to clipboard</p>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-purple-900 dark:text-purple-100">Result:</h4>
-            <p>Use the copied data in your automation tools or scripts</p>
-          </div>
         </div>
       </div>
     </div>
