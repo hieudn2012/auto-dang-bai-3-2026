@@ -3,8 +3,22 @@ import Dialog from "@/components/Dialog";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
 import { toast } from "@/components/ToastContainer";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { windowInstance } from "@/services/window";
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type ReportItem = {
   profile: string;
@@ -27,14 +41,6 @@ type ReportData = {
   totalComments: number;
   totalShares: number;
   totalSends: number;
-};
-
-type BarRow = {
-  id: string;
-  label: string;
-  value: number;
-  color: string;
-  subLabel?: string;
 };
 
 const formatNumber = (n: number) => n.toLocaleString("en-US");
@@ -71,187 +77,45 @@ const BAR_COLORS = [
   "#84cc16",
 ];
 
-const HorizontalBarChart = ({
+const ENGAGEMENT_COLORS: Record<string, string> = {
+  Views: "#059669",
+  Likes: "#dc2626",
+  Comments: "#2563eb",
+  Shares: "#d97706",
+  Sends: "#0d9488",
+};
+
+const ChartCard = ({
   title,
-  rows,
-  emptyText = "Không có dữ liệu",
+  subtitle,
+  right,
+  children,
+  className = "",
 }: {
   title: string;
-  rows: BarRow[];
-  emptyText?: string;
-}) => {
-  const max = Math.max(...rows.map((r) => r.value), 0);
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+  subtitle?: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}
+  >
+    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between gap-3">
+      <div>
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{title}</h3>
+        {subtitle ? (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>
+        ) : null}
       </div>
-      <div className="p-4 space-y-3 max-h-[360px] overflow-y-auto">
-        {rows.length === 0 ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">{emptyText}</div>
-        ) : (
-          rows.map((row) => {
-            const width = max > 0 ? Math.max((row.value / max) * 100, 2) : 0;
-            return (
-              <div key={row.id} className="space-y-1">
-                <div className="flex items-center justify-between gap-3 text-xs">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium text-gray-800 dark:text-gray-100" title={row.label}>
-                      {row.label}
-                    </div>
-                    {row.subLabel ? (
-                      <div className="truncate text-gray-400 dark:text-gray-500" title={row.subLabel}>
-                        {row.subLabel}
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="shrink-0 font-semibold text-gray-700 dark:text-gray-200">
-                    {compactNumber(row.value)}
-                  </div>
-                </div>
-                <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-700/80 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${width}%`, backgroundColor: row.color }}
-                  />
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+      {right}
     </div>
-  );
-};
-
-const ENGAGEMENT_METRICS = [
-  {
-    id: "views",
-    label: "Views",
-    icon: "fas fa-eye",
-    color: "#059669",
-    soft: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300",
-    bar: "from-emerald-400 to-emerald-600",
-  },
-  {
-    id: "likes",
-    label: "Likes",
-    icon: "fas fa-heart",
-    color: "#dc2626",
-    soft: "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300",
-    bar: "from-rose-400 to-rose-600",
-  },
-  {
-    id: "comments",
-    label: "Comments",
-    icon: "fas fa-comment",
-    color: "#2563eb",
-    soft: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300",
-    bar: "from-sky-400 to-sky-600",
-  },
-  {
-    id: "shares",
-    label: "Shares",
-    icon: "fas fa-retweet",
-    color: "#d97706",
-    soft: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-    bar: "from-amber-400 to-amber-600",
-  },
-  {
-    id: "sends",
-    label: "Sends",
-    icon: "fas fa-paper-plane",
-    color: "#0d9488",
-    soft: "bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300",
-    bar: "from-teal-400 to-teal-600",
-  },
-] as const;
-
-const EngagementBars = ({ report }: { report: ReportData }) => {
-  const values: Record<(typeof ENGAGEMENT_METRICS)[number]["id"], number> = {
-    views: report.totalViews,
-    likes: report.totalLikes,
-    comments: report.totalComments,
-    shares: report.totalShares,
-    sends: report.totalSends,
-  };
-
-  const max = Math.max(...Object.values(values), 0);
-  const engagementActions =
-    report.totalLikes + report.totalComments + report.totalShares + report.totalSends;
-  const engagementRate =
-    report.totalViews > 0 ? ((engagementActions / report.totalViews) * 100).toFixed(2) : "0.00";
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Engagement totals</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            So sánh theo tổng metrics của report
-          </p>
-        </div>
-        <div className="text-right shrink-0">
-          <div className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            Eng. rate
-          </div>
-          <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-            {engagementRate}%
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-3">
-        {ENGAGEMENT_METRICS.map((metric) => {
-          const value = values[metric.id];
-          const width = max > 0 ? Math.max((value / max) * 100, value > 0 ? 4 : 0) : 0;
-          const share = max > 0 ? Math.round((value / max) * 100) : 0;
-
-          return (
-            <div
-              key={metric.id}
-              className="group rounded-xl border border-gray-100 dark:border-gray-700/80 bg-gradient-to-r from-gray-50/80 to-white dark:from-gray-900/40 dark:to-gray-800/40 px-3 py-2.5 transition-colors hover:border-gray-200 dark:hover:border-gray-600"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${metric.soft}`}
-                >
-                  <i className={`${metric.icon} text-sm`} />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2 mb-1.5">
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                      {metric.label}
-                    </span>
-                    <div className="flex items-baseline gap-1.5 shrink-0">
-                      <span className="text-sm font-semibold tabular-nums text-gray-900 dark:text-white">
-                        {compactNumber(value)}
-                      </span>
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
-                        {share}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-gray-200/80 dark:bg-gray-700 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${metric.bar} transition-all duration-700 ease-out`}
-                      style={{ width: `${width}%` }}
-                      title={`${metric.label}: ${formatNumber(value)}`}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+    <div className="p-3">{children}</div>
+  </div>
+);
 
 const ViewsAnalysis = () => {
+  const { isDarkMode } = useDarkMode();
   const [files, setFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState("");
   const [loadingFiles, setLoadingFiles] = useState(false);
@@ -260,6 +124,16 @@ const ViewsAnalysis = () => {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [minViewsInput, setMinViewsInput] = useState("0");
   const [exporting, setExporting] = useState(false);
+
+  const axisColor = isDarkMode ? "#9ca3af" : "#6b7280";
+  const gridColor = isDarkMode ? "#374151" : "#e5e7eb";
+  const tooltipStyle = {
+    backgroundColor: isDarkMode ? "#1f2937" : "#ffffff",
+    border: `1px solid ${isDarkMode ? "#374151" : "#e5e7eb"}`,
+    borderRadius: 8,
+    color: isDarkMode ? "#f3f4f6" : "#111827",
+    fontSize: 12,
+  };
 
   const loadFiles = async () => {
     setLoadingFiles(true);
@@ -341,26 +215,52 @@ const ViewsAnalysis = () => {
     return Array.from(map.values()).sort((a, b) => b.totalViews - a.totalViews);
   }, [report]);
 
-  const topPostsChart = useMemo<BarRow[]>(() => {
+  const engagementData = useMemo(() => {
     if (!report) return [];
-    return report.items.slice(0, 15).map((item, index) => ({
-      id: `${item.profile}-${item.postUrl}-${index}`,
-      label: `@${item.profile}`,
-      subLabel: item.postUrl,
-      value: item.views,
-      color: BAR_COLORS[index % BAR_COLORS.length],
+    return [
+      { name: "Views", value: report.totalViews },
+      { name: "Likes", value: report.totalLikes },
+      { name: "Comments", value: report.totalComments },
+      { name: "Shares", value: report.totalShares },
+      { name: "Sends", value: report.totalSends },
+    ];
+  }, [report]);
+
+  const topPostsData = useMemo(() => {
+    if (!report) return [];
+    return report.items.slice(0, 12).map((item, index) => ({
+      name: `@${item.profile}`,
+      views: item.views,
+      url: item.postUrl,
+      fill: BAR_COLORS[index % BAR_COLORS.length],
     }));
   }, [report]);
 
-  const topProfilesChart = useMemo<BarRow[]>(() => {
-    return profileStats.slice(0, 15).map((item, index) => ({
-      id: item.profile,
-      label: `@${item.profile}`,
-      subLabel: `${item.posts} posts`,
-      value: item.totalViews,
-      color: BAR_COLORS[index % BAR_COLORS.length],
+  const topProfilesData = useMemo(() => {
+    return profileStats.slice(0, 12).map((item, index) => ({
+      name: `@${item.profile}`,
+      views: item.totalViews,
+      posts: item.posts,
+      fill: BAR_COLORS[index % BAR_COLORS.length],
     }));
   }, [profileStats]);
+
+  const profileStackedData = useMemo(() => {
+    return profileStats.slice(0, 10).map((item) => ({
+      name: `@${item.profile}`,
+      likes: item.totalLikes,
+      comments: item.totalComments,
+      shares: item.totalShares,
+      sends: item.totalSends,
+    }));
+  }, [profileStats]);
+
+  const engagementRate = useMemo(() => {
+    if (!report || report.totalViews <= 0) return "0.00";
+    const actions =
+      report.totalLikes + report.totalComments + report.totalShares + report.totalSends;
+    return ((actions / report.totalViews) * 100).toFixed(2);
+  }, [report]);
 
   const minViews = Math.max(0, Number(minViewsInput.replace(/[^\d]/g, "")) || 0);
 
@@ -568,10 +468,203 @@ const ViewsAnalysis = () => {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
-            <EngagementBars report={report} />
-            <HorizontalBarChart title="Top posts by views" rows={topPostsChart} />
-            <HorizontalBarChart title="Top profiles by views" rows={topProfilesChart} />
+            <ChartCard
+              title="Engagement totals"
+              subtitle="Tỷ lệ metrics trong report"
+              right={
+                <div className="text-right shrink-0">
+                  <div className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    Eng. rate
+                  </div>
+                  <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    {engagementRate}%
+                  </div>
+                </div>
+              }
+            >
+              <div className="h-[280px]">
+                {engagementData.every((d) => d.value === 0) ? (
+                  <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                    Không có dữ liệu
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={engagementData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={90}
+                        paddingAngle={2}
+                      >
+                        {engagementData.map((entry) => (
+                          <Cell
+                            key={entry.name}
+                            fill={ENGAGEMENT_COLORS[entry.name] || "#94a3b8"}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={(value) => [formatNumber(Number(value ?? 0)), ""]}
+                      />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={36}
+                        formatter={(value) => (
+                          <span className="text-xs text-gray-600 dark:text-gray-300">{value}</span>
+                        )}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ChartCard>
+
+            <ChartCard title="Top posts by views" subtitle="12 posts cao nhất">
+              <div className="h-[280px]">
+                {topPostsData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                    Không có dữ liệu
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={topPostsData}
+                      layout="vertical"
+                      margin={{ top: 4, right: 12, left: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
+                      <XAxis
+                        type="number"
+                        tick={{ fill: axisColor, fontSize: 11 }}
+                        tickFormatter={compactNumber}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={88}
+                        tick={{ fill: axisColor, fontSize: 11 }}
+                      />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={(value) => [formatNumber(Number(value ?? 0)), "Views"]}
+                        labelFormatter={(_, payload) => {
+                          const url = payload?.[0]?.payload?.url;
+                          return url ? shortenMiddle(String(url), 16, 12) : "";
+                        }}
+                      />
+                      <Bar dataKey="views" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                        {topPostsData.map((entry) => (
+                          <Cell key={`${entry.name}-${entry.url}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ChartCard>
+
+            <ChartCard title="Top profiles by views" subtitle="12 profiles cao nhất">
+              <div className="h-[280px]">
+                {topProfilesData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                    Không có dữ liệu
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={topProfilesData}
+                      layout="vertical"
+                      margin={{ top: 4, right: 12, left: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
+                      <XAxis
+                        type="number"
+                        tick={{ fill: axisColor, fontSize: 11 }}
+                        tickFormatter={compactNumber}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={88}
+                        tick={{ fill: axisColor, fontSize: 11 }}
+                      />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={(value, _name, item) => [
+                          formatNumber(Number(value ?? 0)),
+                          `Views (${item?.payload?.posts ?? 0} posts)`,
+                        ]}
+                      />
+                      <Bar dataKey="views" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                        {topProfilesData.map((entry) => (
+                          <Cell key={entry.name} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ChartCard>
           </div>
+
+          <ChartCard
+            title="Engagement by profile"
+            subtitle="Top 10 profiles — likes / comments / shares / sends"
+            className="mb-6"
+          >
+            <div className="h-[320px]">
+              {profileStackedData.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                  Không có dữ liệu
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={profileStackedData}
+                    margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: axisColor, fontSize: 11 }}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                      height={56}
+                    />
+                    <YAxis
+                      tick={{ fill: axisColor, fontSize: 11 }}
+                      tickFormatter={compactNumber}
+                    />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(value) => formatNumber(Number(value ?? 0))}
+                    />
+                    <Legend
+                      formatter={(value) => (
+                        <span className="text-xs text-gray-600 dark:text-gray-300">{value}</span>
+                      )}
+                    />
+                    <Bar dataKey="likes" stackId="eng" fill="#dc2626" name="Likes" />
+                    <Bar dataKey="comments" stackId="eng" fill="#2563eb" name="Comments" />
+                    <Bar dataKey="shares" stackId="eng" fill="#d97706" name="Shares" />
+                    <Bar
+                      dataKey="sends"
+                      stackId="eng"
+                      fill="#0d9488"
+                      name="Sends"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </ChartCard>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">

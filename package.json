@@ -41,6 +41,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.5.2",
     "react-toastify": "^11.0.5",
+    "recharts": "^3.10.1",
     "sharp": "^0.34.3",
     "tailwind-merge": "^3.3.0",
     "utf-8-validate": "^6.0.5",
