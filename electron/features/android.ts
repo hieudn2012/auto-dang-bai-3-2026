@@ -2,7 +2,7 @@ import { exec, execFile } from 'child_process';
 import { IpcMainEvent } from 'electron';
 import { promises as fs } from 'fs';
 import { tmpdir } from 'os';
-import { basename, extname, join } from 'path';
+import { extname, join } from 'path';
 import { promisify } from 'util';
 import { remote } from 'webdriverio';
 import { loadMainConfig } from './common';
@@ -582,27 +582,47 @@ const connectAndroid = async (android: Android) => {
     return serial;
 };
 
-const escapeAdbText = (text: string) =>
-    text
-        .replace(/\\/g, '\\\\')
-        .replace(/ /g, '%s')
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/&/g, '\\&')
-        .replace(/</g, '\\<')
-        .replace(/>/g, '\\>')
-        .replace(/\|/g, '\\|')
-        .replace(/;/g, '\\;')
-        .replace(/\(/g, '\\(')
-        .replace(/\)/g, '\\)');
+/**
+ * Escape a single char for `adb shell input text` (argv via execFile — no Windows % env expansion).
+ * Spaces must NOT use %s here; use KEYCODE_SPACE instead.
+ */
+const escapeAdbChar = (ch: string) => {
+    if (/[\\'"&<>|;()#*]/.test(ch)) return `\\${ch}`;
+    return ch;
+};
 
-/** Type text via adb (avoids Appium UnicodeIME issues with special chars). */
+const randomTypingDelayMs = (ch: string) => {
+    if (ch === ' ' || ch === '\n') return 90 + Math.floor(Math.random() * 140);
+    if (/[.,!?;:]/.test(ch)) return 120 + Math.floor(Math.random() * 180);
+    return 35 + Math.floor(Math.random() * 85);
+};
+
+/**
+ * Type text char-by-char via adb (human-like), not paste.
+ * Fixes Windows cmd eating `%s` when spaces were encoded that way.
+ */
 const typeTextViaAdb = async (serial: string, value: string) => {
-    await run(
-        `"${MUMU_ADB_PATH}" -s ${serial} shell input text ${escapeAdbText(value)}`,
-        { silent: true }
-    );
-    console.log(`typed: ${value}`);
+    const text = String(value || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    if (!text) return;
+
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+
+        if (ch === ' ') {
+            await adbFile(serial, ['shell', 'input', 'keyevent', '62']); // SPACE
+        } else if (ch === '\n') {
+            await adbFile(serial, ['shell', 'input', 'keyevent', '66']); // ENTER
+        } else if (ch === '\t') {
+            await adbFile(serial, ['shell', 'input', 'keyevent', '61']); // TAB
+        } else {
+            // One char per call — realistic typing; execFile avoids cmd % expansion
+            await adbFile(serial, ['shell', 'input', 'text', escapeAdbChar(ch)]);
+        }
+
+        await sleep(randomTypingDelayMs(ch));
+    }
+
+    console.log(`typed (${text.length} chars): ${text.slice(0, 80)}${text.length > 80 ? '…' : ''}`);
 };
 
 const pressEnterViaAdb = async (serial: string) => {
@@ -1629,7 +1649,7 @@ export const editLatestPost = async (
         log(`Append link on new line: ${link}`);
         await pressEnterViaAdb(serial);
         await sleep(300);
-        await pasteTextViaClipboard(driver, serial, link);
+        await pasteTextViaClipboard(driver, serial, `Product link: ${link}`);
         await driver.pause(800);
 
         log('Tap Post...');
@@ -1721,7 +1741,7 @@ const pushFolderMedia = async (
     const uploaded: UploadedMedia[] = [];
     for (let i = 0; i < filesForPush.length; i++) {
         const localPath = filesForPush[i];
-        log(`Push (${i + 1}/${filesForPush.length}): ${basename(localPath)}`);
+        log(`Push (${i + 1}/${filesForPush.length})`);
         const item = await pushFileToAndroidMedia(serial, port, localPath, i);
         uploaded.push(item);
         log(`MediaStore OK → ${item.contentUri} (${item.remoteName})`);
