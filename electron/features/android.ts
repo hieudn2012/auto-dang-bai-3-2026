@@ -253,7 +253,11 @@ const pushFileToAndroidMedia = async (
     const dateSec = mediaSortDateSec(mime, index);
     const dateTakenMs = dateSec * 1000;
 
-    const tmpLocal = join(tmpdir(), remoteName);
+    // Unique per device/run — avoid race when many Androids push a00/b00 at once
+    const tmpLocal = join(
+        tmpdir(),
+        `threads-${port}-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}${extname(localPath).toLowerCase() || '.bin'}`
+    );
     await fs.copyFile(localPath, tmpLocal);
 
     try {
@@ -281,12 +285,12 @@ const pushFileToAndroidMedia = async (
         await adbFileSoft(serial, [
             'shell',
             `content insert --uri ${collection}` +
-            ` --bind _data:s:${remotePath}` +
-            ` --bind mime_type:s:${mime}` +
-            ` --bind _display_name:s:${remoteName}` +
-            ` --bind date_added:i:${dateSec}` +
-            ` --bind date_modified:i:${dateSec}` +
-            ` --bind datetaken:i:${dateTakenMs}`,
+                ` --bind _data:s:${remotePath}` +
+                ` --bind mime_type:s:${mime}` +
+                ` --bind _display_name:s:${remoteName}` +
+                ` --bind date_added:i:${dateSec}` +
+                ` --bind date_modified:i:${dateSec}` +
+                ` --bind datetaken:i:${dateTakenMs}`,
         ]).catch(() => '');
 
         let mediaId: string | null = null;
@@ -313,9 +317,9 @@ const pushFileToAndroidMedia = async (
         await adbFileSoft(serial, [
             'shell',
             `content update --uri ${contentUri}` +
-            ` --bind date_added:i:${dateSec}` +
-            ` --bind date_modified:i:${dateSec}` +
-            ` --bind datetaken:i:${dateTakenMs}`,
+                ` --bind date_added:i:${dateSec}` +
+                ` --bind date_modified:i:${dateSec}` +
+                ` --bind datetaken:i:${dateTakenMs}`,
         ]).catch(() => '');
 
         return { localPath, remotePath, remoteName, mime, mediaId, contentUri };
@@ -1466,7 +1470,7 @@ export const createPost = async (
     const uploaded: UploadedMedia[] = [];
     for (let i = 0; i < filesForPush.length; i++) {
         const localPath = filesForPush[i];
-        log(`Push (${i + 1}/${filesForPush.length}): ${basename(localPath)}`);
+        log(`Push (${i + 1}/${filesForPush.length})`);
         const item = await pushFileToAndroidMedia(serial, port, localPath, i);
         uploaded.push(item);
         log(`MediaStore OK → ${item.contentUri} (${item.remoteName})`);
