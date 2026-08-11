@@ -81,6 +81,27 @@ type WindownInstance = typeof window & {
     openAndroid: (android: Android) => Promise<string>,
     closeAndroid: (android: Android) => Promise<string>,
     randomMuMuName: (android: Android) => Promise<string>,
+    randomDeviceIdentity: (android: Android) => Promise<{
+      index: string
+      name: string
+      brand: string
+      model: string
+      imei: string
+    }>,
+    randomDeviceIdentityOnAndroids: (androids: Android[]) => Promise<{
+      total: number
+      success: number
+      failed: number
+      results: {
+        index: string
+        name: string
+        ok: boolean
+        brand?: string
+        model?: string
+        imei?: string
+        error?: string
+      }[]
+    }>,
     assignAccountsToAndroids: (androids: Android[]) => Promise<{
       assigned: number
       remaining: number

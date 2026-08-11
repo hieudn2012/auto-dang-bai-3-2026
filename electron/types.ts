@@ -61,6 +61,8 @@ export enum InvokeChannel {
   OPEN_ANDROID = 'open-android',
   CLOSE_ANDROID = 'close-android',
   RANDOM_MUMU_NAME = 'random-mumu-name',
+  RANDOM_DEVICE_IDENTITY = 'random-device-identity',
+  RANDOM_DEVICE_IDENTITY_ON_ANDROIDS = 'random-device-identity-on-androids',
   ASSIGN_ACCOUNTS_TO_ANDROIDS = 'assign-accounts-to-androids',
   ASSIGN_PROXIES_TO_ANDROIDS = 'assign-proxies-to-androids',
   SETUP_PROXIES_ON_ANDROIDS = 'setup-proxies-on-androids',

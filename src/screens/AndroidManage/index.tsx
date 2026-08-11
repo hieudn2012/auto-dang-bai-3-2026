@@ -529,6 +529,56 @@ const AndroidManage = () => {
     }
   };
 
+  const handleRandomDeviceIdentity = async (android: Android) => {
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.randomDeviceIdentity(android);
+      toast.success(
+        `Device: ${result.brand} · ${result.model} · IMEI ${result.imei}`
+      );
+      await fetchAndroidList();
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error instanceof Error ? error.message : "Random device thất bại"
+      );
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
+  const handleBulkRandomDeviceIdentity = async () => {
+    if (selectedIndexes.length === 0) {
+      toast.error("Chưa chọn Android nào");
+      return;
+    }
+    const ordered = selectedIndexes
+      .map((index) => androidList.find((item) => item.index === index))
+      .filter(Boolean) as Android[];
+
+    setActionIndex("random-device");
+    try {
+      const result = await windowInstance.api.randomDeviceIdentityOnAndroids(
+        ordered
+      );
+      if (result.failed > 0) {
+        toast.error(
+          `Random device: ${result.success} ok, ${result.failed} lỗi`
+        );
+      } else {
+        toast.success(`Đã random brand/model/IMEI cho ${result.success} Android`);
+      }
+      await fetchAndroidList();
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error instanceof Error ? error.message : "Random device thất bại"
+      );
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
   const handleSetupProxy = async (android: Android) => {
     setActionIndex(android.index);
     try {
@@ -753,7 +803,15 @@ const AndroidManage = () => {
             }
             className="px-3 py-1.5 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50"
           >
-            <i className="fa-solid fa-shuffle mr-1"></i>
+            <i className="fa-solid fa-shuffle"></i>
+          </Button>
+          <Button
+            disabled={selectedIndexes.length === 0 || !!actionIndex}
+            tooltip="Random brand / model / IMEI (selected)"
+            onClick={handleBulkRandomDeviceIdentity}
+            className="px-3 py-1.5 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:opacity-50"
+          >
+            <i className="fa-brands fa-android"></i>
           </Button>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
@@ -761,7 +819,7 @@ const AndroidManage = () => {
             onClick={handleBulkRandomFolder}
             className="px-3 py-1.5 bg-purple-500 text-white rounded-md hover:bg-purple-600 disabled:opacity-50"
           >
-            <i className="fa-solid fa-folder-tree mr-1"></i>
+            <i className="fa-solid fa-folder-tree"></i>
           </Button>
           <Button
             disabled={
@@ -775,7 +833,7 @@ const AndroidManage = () => {
             onClick={() => handleBulkCreatePost()}
             className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
           >
-            <i className="fa-solid fa-paper-plane mr-1"></i>
+            <i className="fa-solid fa-paper-plane"></i>
           </Button>
           <Button
             disabled={
@@ -790,7 +848,7 @@ const AndroidManage = () => {
             onClick={() => handleBulkQuoteLatestPost()}
             className="px-3 py-1.5 bg-pink-500 text-white rounded-md hover:bg-pink-600 disabled:opacity-50"
           >
-            <i className="fa-solid fa-quote-right mr-1"></i>
+            <i className="fa-solid fa-quote-right"></i>
           </Button>
           <Button
             disabled={
@@ -804,7 +862,7 @@ const AndroidManage = () => {
             onClick={() => handleBulkEditLatestPost("post")}
             className="px-3 py-1.5 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-50"
           >
-            <i className="fa-solid fa-pen-to-square mr-1"></i>
+            <i className="fa-solid fa-pen-to-square"></i>
           </Button>
           <Button
             disabled={
@@ -819,7 +877,7 @@ const AndroidManage = () => {
             onClick={() => handleBulkEditLatestPost("quote")}
             className="px-3 py-1.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
           >
-            <i className="fa-solid fa-pen-fancy mr-1"></i>
+            <i className="fa-solid fa-pen-fancy"></i>
           </Button>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
@@ -845,7 +903,7 @@ const AndroidManage = () => {
             }}
             className="px-3 py-1.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
           >
-            <i className="fa-solid fa-file-import mr-1"></i>
+            <i className="fa-solid fa-file-import"></i>
           </Button>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
@@ -870,7 +928,7 @@ const AndroidManage = () => {
             }}
             className="px-3 py-1.5 bg-teal-500 text-white rounded-md hover:bg-teal-600 disabled:opacity-50"
           >
-            <i className="fa-solid fa-network-wired mr-1"></i>
+            <i className="fa-solid fa-network-wired"></i>
           </Button>
           <Button
             disabled={
@@ -931,7 +989,7 @@ const AndroidManage = () => {
             }}
             className="px-3 py-1.5 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50"
           >
-            <i className="fa-regular fa-folder-open mr-1"></i>
+            <i className="fa-regular fa-folder-open"></i>
           </Button>
           <Button
             disabled={
@@ -962,7 +1020,7 @@ const AndroidManage = () => {
             }}
             className="px-3 py-1.5 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50"
           >
-            <i className="fa-solid fa-user-plus mr-1"></i>
+            <i className="fa-solid fa-user-plus"></i>
           </Button>
           <Button
             disabled={
@@ -1166,7 +1224,7 @@ const AndroidManage = () => {
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Proxy</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">ADB</th>
-                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
+                <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
@@ -1198,9 +1256,54 @@ const AndroidManage = () => {
                       />
                     </td>
                     <td className="px-2 py-3 truncate overflow-hidden text-gray-900 dark:text-gray-100">{item.index}</td>
-                    <td className="px-2 py-3 font-medium overflow-hidden text-gray-900 dark:text-white" title={`${item.name}\n${meta}`}>
-                      <div className="truncate">{item.name}</div>
-                      <div className="truncate text-xs font-normal text-gray-400 dark:text-gray-500">{meta}</div>
+                    <td
+                      className="px-2 py-3 font-medium overflow-hidden text-gray-900 dark:text-white"
+                      title={`${item.name}\n${meta}\n${[item.brand, item.model].filter(Boolean).join(' · ') || ''}${item.imei ? `\nIMEI ${item.imei}` : ''}`}
+                    >
+                      <div className="flex items-start gap-1.5 min-w-0">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate">{item.name}</div>
+                          <div className="truncate text-xs font-normal text-gray-400 dark:text-gray-500">
+                            {meta}
+                          </div>
+                          {(item.brand || item.model) && (
+                            <div
+                              className="truncate text-xs font-normal text-indigo-500 dark:text-indigo-400"
+                              title={[item.brand, item.model].filter(Boolean).join(' · ')}
+                            >
+                              {[item.brand, item.model].filter(Boolean).join(' · ')}
+                            </div>
+                          )}
+                          {item.imei && (
+                            <div
+                              className="truncate text-xs font-normal text-teal-600 dark:text-teal-400"
+                              title={`IMEI ${item.imei}`}
+                            >
+                              IMEI {item.imei}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 flex-col gap-0.5">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            title="Random name"
+                            onClick={() => handleRandomName(item)}
+                            className="text-indigo-500 hover:text-indigo-600 disabled:opacity-40 p-0.5"
+                          >
+                            <i className="fa-solid fa-shuffle text-sm"></i>
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            title="Random brand / model / IMEI"
+                            onClick={() => handleRandomDeviceIdentity(item)}
+                            className="text-teal-600 hover:text-teal-700 disabled:opacity-40 p-0.5"
+                          >
+                            <i className="fa-brands fa-android text-sm"></i>
+                          </button>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-2 py-3 text-gray-600 dark:text-gray-300 overflow-hidden">
                       <div id={`message-${item.name}`} className="truncate min-h-[20px]"></div>
@@ -1286,7 +1389,7 @@ const AndroidManage = () => {
                       {adb}
                     </td>
                     <td className="px-2 py-3 text-right overflow-hidden">
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 justify-end">
                         <Button
                           disabled={busy || item.is_android_started}
                           onClick={() => handleOpen(item)}
@@ -1300,14 +1403,6 @@ const AndroidManage = () => {
                           className="!px-1.5 !py-1 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50"
                         >
                           <i className="fa-solid fa-stop"></i>
-                        </Button>
-                        <Button
-                          disabled={busy}
-                          onClick={() => handleRandomName(item)}
-                          tooltip="Random name"
-                          className="!px-1.5 !py-1 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50"
-                        >
-                          <i className="fa-solid fa-shuffle"></i>
                         </Button>
                         <Button
                           disabled={busy}

@@ -36,7 +36,7 @@ import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 import { getAffShopeeLink } from './features/shopee'
 import { deletePost } from './features/threads-delete'
 import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
-import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, connectAllRunningAndroids, createPostOnAndroids, editLatestPostOnAndroids, exportAccountsFromOutput, fullSetupOnAndroids, getAndroidList, openAndroid, openThreadsAppOnAndroids, quoteLatestPostOnAndroids, randomMuMuName, setupProxiesOnAndroids } from './features/android'
+import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, connectAllRunningAndroids, createPostOnAndroids, editLatestPostOnAndroids, exportAccountsFromOutput, fullSetupOnAndroids, getAndroidList, openAndroid, openThreadsAppOnAndroids, quoteLatestPostOnAndroids, randomDeviceIdentity, randomDeviceIdentityOnAndroids, randomMuMuName, setupProxiesOnAndroids } from './features/android'
 import { checkAccountViews, getCheckViewsReport, listCheckViewsReports } from './features/check-account-views'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
@@ -311,6 +311,14 @@ handle(InvokeChannel.CLOSE_ANDROID, async (_event, android) => {
 
 handle(InvokeChannel.RANDOM_MUMU_NAME, async (_event, android) => {
   return randomMuMuName(android);
+});
+
+handle(InvokeChannel.RANDOM_DEVICE_IDENTITY, async (_event, android) => {
+  return randomDeviceIdentity(android);
+});
+
+handle(InvokeChannel.RANDOM_DEVICE_IDENTITY_ON_ANDROIDS, async (_event, androids) => {
+  return randomDeviceIdentityOnAndroids(androids);
 });
 
 handle(InvokeChannel.ASSIGN_ACCOUNTS_TO_ANDROIDS, async (_event, androids) => {

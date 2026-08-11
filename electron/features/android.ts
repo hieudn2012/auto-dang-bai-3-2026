@@ -41,6 +41,9 @@ export interface Android {
     main_wnd?: string;
     render_wnd?: string;
     player_state?: string;
+    brand?: string | null;
+    model?: string | null;
+    imei?: string | null;
     account?: AndroidAccount | null;
 }
 
@@ -481,6 +484,36 @@ const getPlayerNameFromConfig = async (index: string, androidVersion = '15.0') =
     }
 };
 
+/** Read phone brand/model/imei from MuMu customer_config.json (setting.phone). */
+const getBrandModelFromConfig = async (index: string, androidVersion = '15.0') => {
+    try {
+        const configPath = join(
+            MUMU_VMS_PATH,
+            `MuMuPlayerGlobal-${androidVersion}-${index}`,
+            'configs',
+            'customer_config.json'
+        );
+        const raw = await fs.readFile(configPath, 'utf8');
+        const cfg = JSON.parse(raw) as {
+            setting?: {
+                phone?: { brand?: string; model?: string; manufacturer?: string; imei?: string };
+            };
+            phone?: { brand?: string; model?: string; imei?: string };
+        };
+        const phone = cfg.setting?.phone || cfg.phone;
+        const brand = String(phone?.brand || '').trim();
+        const model = String(phone?.model || '').trim();
+        const imei = String(phone?.imei || '').trim();
+        return {
+            brand: brand || null,
+            model: model || null,
+            imei: imei || null,
+        };
+    } catch {
+        return { brand: null, model: null, imei: null };
+    }
+};
+
 const normalizeProxy = (proxy: string) => {
     const value = (proxy || '').trim();
     if (!value || value === PROXY_PLACEHOLDER) return '';
@@ -793,12 +826,19 @@ export const getAndroidList = async () => {
     return Promise.all(
         Object.entries(data).map(async ([key, value]) => {
             const index = value.index ?? key;
-            const playerName = await getPlayerNameFromConfig(index, value.android_version);
+            const androidVersion = value.android_version || '15.0';
+            const [playerName, device] = await Promise.all([
+                getPlayerNameFromConfig(index, androidVersion),
+                getBrandModelFromConfig(index, androidVersion),
+            ]);
             const name = playerName || value.name;
             return {
                 ...value,
                 index,
                 name,
+                brand: device.brand,
+                model: device.model,
+                imei: device.imei,
                 account: accountByName.get(name) || null,
             };
         })
@@ -825,6 +865,215 @@ export const randomMuMuName = async (androidOrIndex: Android | string | number) 
     const randomName = `${Math.random().toString(36).substring(2, 15)}_${android.index}`;
     await runMuMu(`rename -v ${android.index} -n "${randomName}"`);
     return randomName;
+};
+
+const PHONE_PRESETS: { brand: string; model: string; manufacturer: string }[] = [
+    // Samsung
+    { brand: 'Samsung', model: 'Galaxy A14', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy A15', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy A23', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy A24', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy A34', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy A54', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy A55', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy M14', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy M34', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy S21', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy S22', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy S23', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy S23 FE', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy S24', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy S24 Ultra', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy Z Flip5', manufacturer: 'Samsung' },
+    { brand: 'Samsung', model: 'Galaxy Z Fold5', manufacturer: 'Samsung' },
+    // Xiaomi / Redmi / POCO
+    { brand: 'Xiaomi', model: '13', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: '13T', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: '14', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: '14T', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'Redmi 12', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'Redmi 13C', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'Redmi Note 11', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'Redmi Note 12', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'Redmi Note 12 Pro', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'Redmi Note 13', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'Redmi Note 13 Pro', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'POCO X5', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'POCO X6', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'POCO F5', manufacturer: 'Xiaomi' },
+    { brand: 'Xiaomi', model: 'POCO M6 Pro', manufacturer: 'Xiaomi' },
+    // Google
+    { brand: 'Google', model: 'Pixel 6a', manufacturer: 'Google' },
+    { brand: 'Google', model: 'Pixel 7', manufacturer: 'Google' },
+    { brand: 'Google', model: 'Pixel 7a', manufacturer: 'Google' },
+    { brand: 'Google', model: 'Pixel 7 Pro', manufacturer: 'Google' },
+    { brand: 'Google', model: 'Pixel 8', manufacturer: 'Google' },
+    { brand: 'Google', model: 'Pixel 8a', manufacturer: 'Google' },
+    { brand: 'Google', model: 'Pixel 8 Pro', manufacturer: 'Google' },
+    { brand: 'Google', model: 'Pixel 9', manufacturer: 'Google' },
+    // OPPO
+    { brand: 'OPPO', model: 'A58', manufacturer: 'OPPO' },
+    { brand: 'OPPO', model: 'A78', manufacturer: 'OPPO' },
+    { brand: 'OPPO', model: 'A98', manufacturer: 'OPPO' },
+    { brand: 'OPPO', model: 'Reno8', manufacturer: 'OPPO' },
+    { brand: 'OPPO', model: 'Reno10', manufacturer: 'OPPO' },
+    { brand: 'OPPO', model: 'Reno11', manufacturer: 'OPPO' },
+    { brand: 'OPPO', model: 'Find X5', manufacturer: 'OPPO' },
+    { brand: 'OPPO', model: 'Find X6', manufacturer: 'OPPO' },
+    // vivo
+    { brand: 'vivo', model: 'Y22', manufacturer: 'vivo' },
+    { brand: 'vivo', model: 'Y27', manufacturer: 'vivo' },
+    { brand: 'vivo', model: 'Y36', manufacturer: 'vivo' },
+    { brand: 'vivo', model: 'V25', manufacturer: 'vivo' },
+    { brand: 'vivo', model: 'V27', manufacturer: 'vivo' },
+    { brand: 'vivo', model: 'V29', manufacturer: 'vivo' },
+    { brand: 'vivo', model: 'X90', manufacturer: 'vivo' },
+    { brand: 'vivo', model: 'X100', manufacturer: 'vivo' },
+    // OnePlus
+    { brand: 'OnePlus', model: 'Nord CE 2', manufacturer: 'OnePlus' },
+    { brand: 'OnePlus', model: 'Nord CE 3', manufacturer: 'OnePlus' },
+    { brand: 'OnePlus', model: 'Nord 3', manufacturer: 'OnePlus' },
+    { brand: 'OnePlus', model: '11', manufacturer: 'OnePlus' },
+    { brand: 'OnePlus', model: '12', manufacturer: 'OnePlus' },
+    { brand: 'OnePlus', model: '12R', manufacturer: 'OnePlus' },
+    // Realme
+    { brand: 'Realme', model: 'C53', manufacturer: 'realme' },
+    { brand: 'Realme', model: 'C55', manufacturer: 'realme' },
+    { brand: 'Realme', model: 'C67', manufacturer: 'realme' },
+    { brand: 'Realme', model: '10', manufacturer: 'realme' },
+    { brand: 'Realme', model: '11', manufacturer: 'realme' },
+    { brand: 'Realme', model: '11 Pro', manufacturer: 'realme' },
+    { brand: 'Realme', model: '12 Pro', manufacturer: 'realme' },
+    { brand: 'Realme', model: 'GT Neo 5', manufacturer: 'realme' },
+    // Huawei / Honor
+    { brand: 'Huawei', model: 'nova 10', manufacturer: 'HUAWEI' },
+    { brand: 'Huawei', model: 'nova 11', manufacturer: 'HUAWEI' },
+    { brand: 'Huawei', model: 'nova 12', manufacturer: 'HUAWEI' },
+    { brand: 'Huawei', model: 'P60', manufacturer: 'HUAWEI' },
+    { brand: 'Huawei', model: 'Mate 50', manufacturer: 'HUAWEI' },
+    { brand: 'Honor', model: 'X8', manufacturer: 'HONOR' },
+    { brand: 'Honor', model: 'X9a', manufacturer: 'HONOR' },
+    { brand: 'Honor', model: '90', manufacturer: 'HONOR' },
+    { brand: 'Honor', model: 'Magic5', manufacturer: 'HONOR' },
+    // Motorola
+    { brand: 'Motorola', model: 'moto g54', manufacturer: 'motorola' },
+    { brand: 'Motorola', model: 'moto g84', manufacturer: 'motorola' },
+    { brand: 'Motorola', model: 'moto edge 40', manufacturer: 'motorola' },
+    { brand: 'Motorola', model: 'moto edge 50', manufacturer: 'motorola' },
+    // Sony
+    { brand: 'Sony', model: 'Xperia 1 V', manufacturer: 'Sony' },
+    { brand: 'Sony', model: 'Xperia 5 V', manufacturer: 'Sony' },
+    { brand: 'Sony', model: 'Xperia 10 V', manufacturer: 'Sony' },
+    // Nothing / Asus / Tecno / Infinix
+    { brand: 'Nothing', model: 'Phone (1)', manufacturer: 'Nothing' },
+    { brand: 'Nothing', model: 'Phone (2)', manufacturer: 'Nothing' },
+    { brand: 'Nothing', model: 'Phone (2a)', manufacturer: 'Nothing' },
+    { brand: 'Asus', model: 'Zenfone 10', manufacturer: 'asus' },
+    { brand: 'Asus', model: 'ROG Phone 7', manufacturer: 'asus' },
+    { brand: 'Tecno', model: 'Spark 20', manufacturer: 'TECNO' },
+    { brand: 'Tecno', model: 'Camon 20', manufacturer: 'TECNO' },
+    { brand: 'Infinix', model: 'Hot 40', manufacturer: 'INFINIX' },
+    { brand: 'Infinix', model: 'Note 30', manufacturer: 'INFINIX' },
+    // TCL / Nokia
+    { brand: 'Tcl', model: 'Alcatel 1', manufacturer: 'TCL' },
+    { brand: 'Tcl', model: '40 SE', manufacturer: 'TCL' },
+    { brand: 'Nokia', model: 'G22', manufacturer: 'HMD Global' },
+    { brand: 'Nokia', model: 'G42', manufacturer: 'HMD Global' },
+    { brand: 'Nokia', model: 'X30', manufacturer: 'HMD Global' },
+];
+
+/**
+ * MuMu IMEI format: 15 digits like 869874033636000
+ * = prefix 86987403 + 7 random digits (no Luhn).
+ */
+const generateRandomImei = () => {
+    const prefix = '86987403';
+    const rand = Math.floor(Math.random() * 10_000_000);
+    return `${prefix}${String(rand).padStart(7, '0')}`;
+};
+
+const customerConfigPath = (index: string, androidVersion = '15.0') =>
+    join(MUMU_VMS_PATH, `MuMuPlayerGlobal-${androidVersion}-${index}`, 'configs', 'customer_config.json');
+
+const writePhoneIdentityToConfig = async (
+    index: string,
+    androidVersion: string,
+    phone: { brand: string; model: string; manufacturer: string; imei: string }
+) => {
+    const configPath = customerConfigPath(index, androidVersion);
+    const raw = await fs.readFile(configPath, 'utf8');
+    const cfg = JSON.parse(raw) as Record<string, any>;
+    if (!cfg.setting) cfg.setting = {};
+    if (!cfg.setting.phone) cfg.setting.phone = {};
+    cfg.setting.phone.brand = phone.brand;
+    cfg.setting.phone.model = phone.model;
+    cfg.setting.phone.manufacturer = phone.manufacturer;
+    cfg.setting.phone.imei = phone.imei;
+    await fs.writeFile(configPath, JSON.stringify(cfg, null, 2), 'utf8');
+};
+
+const setSimulationProp = (index: string | number, key: string, value: string) =>
+    runMuMu(`simulation -v ${index} -sk ${key} -sv "${value.replace(/"/g, '\\"')}"`);
+
+/**
+ * Randomize MuMu phone identity: brand + model + imei
+ * via MuMuManager simulation + customer_config.json
+ */
+export const randomDeviceIdentity = async (androidOrIndex: Android | string | number) => {
+    const index =
+        typeof androidOrIndex === 'object' ? String(androidOrIndex.index) : String(androidOrIndex);
+    const list = await getAndroidList();
+    const android = list.find((item) => String(item.index) === index);
+    if (!android) throw new Error(`Android index ${index} not found`);
+
+    const androidVersion = android.android_version || '15.0';
+    const preset = PHONE_PRESETS[Math.floor(Math.random() * PHONE_PRESETS.length)];
+    const imei = generateRandomImei();
+
+    await setSimulationProp(index, 'brand', preset.brand);
+    await setSimulationProp(index, 'model', preset.model);
+    await setSimulationProp(index, 'imei', imei);
+
+    try {
+        await writePhoneIdentityToConfig(index, androidVersion, { ...preset, imei });
+    } catch (error) {
+        console.warn('Failed to sync customer_config.json phone identity:', error);
+    }
+
+    return {
+        index,
+        name: android.name,
+        brand: preset.brand,
+        model: preset.model,
+        imei,
+    };
+};
+
+/** Random device identity for multiple Androids */
+export const randomDeviceIdentityOnAndroids = async (androids: Android[]) => {
+    if (!androids.length) throw new Error('No Android selected');
+
+    const results = [];
+    for (const android of androids) {
+        try {
+            const identity = await randomDeviceIdentity(android);
+            results.push({ ...identity, ok: true as const });
+        } catch (error) {
+            results.push({
+                index: android.index,
+                name: android.name,
+                ok: false as const,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    }
+
+    return {
+        total: androids.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
 };
 
 /**
