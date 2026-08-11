@@ -2,6 +2,7 @@ import Button from "@/components/Button";
 import Dialog from "@/components/Dialog";
 import Input from "@/components/Input";
 import Layout from "@/components/Layout";
+import TextArea from "@/components/TextArea";
 import { toast } from "@/components/ToastContainer";
 import { windowInstance } from "@/services/window";
 import { Android } from "electron/features/android";
@@ -39,6 +40,11 @@ const AndroidManage = () => {
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [proxyFolder, setProxyFolder] = useState("");
   const [folderMap, setFolderMap] = useState<FolderMap>({});
+  const [noteMap, setNoteMap] = useState<Record<string, string>>({});
+  const [noteFilter, setNoteFilter] = useState("");
+  const [editingNoteIndexes, setEditingNoteIndexes] = useState<string[] | null>(null);
+  const [editingNoteValue, setEditingNoteValue] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   const fetchAndroidList = useCallback(async () => {
     setLoading(true);
@@ -60,10 +66,20 @@ const AndroidManage = () => {
     setProxyFolder(config?.android?.proxyFolder || "");
   }, []);
 
+  const loadNotes = useCallback(async () => {
+    try {
+      const notes = await windowInstance.api.loadAndroidNotes();
+      setNoteMap(notes || {});
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchAndroidList();
     loadAndroidFolders();
-  }, [fetchAndroidList, loadAndroidFolders]);
+    loadNotes();
+  }, [fetchAndroidList, loadAndroidFolders, loadNotes]);
 
   useEffect(() => {
     const handleToast = (_event: unknown, arg: { username?: string; message?: string }) => {
@@ -84,9 +100,19 @@ const AndroidManage = () => {
     };
   }, []);
 
+  const filteredAndroidList = useMemo(() => {
+    const q = noteFilter.trim().toLowerCase();
+    if (!q) return androidList;
+    return androidList.filter((item) =>
+      (noteMap[item.index] || "").toLowerCase().includes(q)
+    );
+  }, [androidList, noteMap, noteFilter]);
+
   const allSelected = useMemo(
-    () => androidList.length > 0 && selectedIndexes.length === androidList.length,
-    [androidList.length, selectedIndexes.length]
+    () =>
+      filteredAndroidList.length > 0 &&
+      filteredAndroidList.every((item) => selectedIndexes.includes(item.index)),
+    [filteredAndroidList, selectedIndexes]
   );
 
   const selectedAndroids = useMemo(
@@ -101,8 +127,16 @@ const AndroidManage = () => {
   };
 
   const toggleSelectAll = () => {
-    if (allSelected) setSelectedIndexes([]);
-    else setSelectedIndexes(androidList.map((item) => item.index));
+    if (allSelected) {
+      const visible = new Set(filteredAndroidList.map((item) => item.index));
+      setSelectedIndexes((prev) => prev.filter((index) => !visible.has(index)));
+    } else {
+      setSelectedIndexes((prev) => {
+        const next = new Set(prev);
+        filteredAndroidList.forEach((item) => next.add(item.index));
+        return [...next];
+      });
+    }
   };
 
   const saveAndroidFolder = async (
@@ -193,6 +227,58 @@ const AndroidManage = () => {
       return;
     }
     await windowInstance.api.openFolder(path);
+  };
+
+  const openEditNote = (android: Android) => {
+    setEditingNoteIndexes([android.index]);
+    setEditingNoteValue(noteMap[android.index] || "");
+  };
+
+  const openBulkEditNote = () => {
+    if (selectedIndexes.length === 0) {
+      toast.error("Chưa chọn Android nào");
+      return;
+    }
+    const indexes = [...selectedIndexes];
+    const firstNote = noteMap[indexes[0]] || "";
+    const sameNote = indexes.every((index) => (noteMap[index] || "") === firstNote);
+    setEditingNoteIndexes(indexes);
+    setEditingNoteValue(sameNote ? firstNote : "");
+  };
+
+  const closeEditNote = () => {
+    setEditingNoteIndexes(null);
+    setEditingNoteValue("");
+  };
+
+  const applyEditNote = () => {
+    if (!editingNoteIndexes?.length) return;
+    setNoteMap((prev) => {
+      const next = { ...prev };
+      for (const index of editingNoteIndexes) {
+        next[index] = editingNoteValue;
+      }
+      return next;
+    });
+    toast.success(
+      editingNoteIndexes.length > 1
+        ? `Đã cập nhật note cho ${editingNoteIndexes.length} Android`
+        : "Đã cập nhật note"
+    );
+    closeEditNote();
+  };
+
+  const handleSaveNotes = async () => {
+    setSavingNotes(true);
+    try {
+      const result = await windowInstance.api.saveAndroidNotes(noteMap);
+      toast.success(`Đã lưu ${result.count} note → android-notes.txt`);
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Lưu note thất bại");
+    } finally {
+      setSavingNotes(false);
+    }
   };
 
   const handleCreatePost = async (android: Android) => {
@@ -544,6 +630,24 @@ const AndroidManage = () => {
           <div className="flex items-center gap-3">
             {loading && <span className="text-sm text-gray-500 dark:text-gray-400">Loading...</span>}
             <Button
+              disabled={savingNotes || !!actionIndex}
+              tooltip="Save notes → android-notes.txt"
+              onClick={handleSaveNotes}
+              className="px-3 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+            >
+              <i className="fa-solid fa-floppy-disk mr-1"></i>
+              Save notes
+            </Button>
+            <Button
+              disabled={selectedIndexes.length === 0 || !!actionIndex}
+              tooltip="Edit note for selected Androids"
+              onClick={openBulkEditNote}
+              className="px-3 py-1.5 bg-amber-500 text-white rounded-md hover:bg-amber-600 disabled:opacity-50"
+            >
+              <i className="fa-solid fa-pen mr-1"></i>
+              Edit notes
+            </Button>
+            <Button
               onClick={() => setShowMoreActions(true)}
               className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               tooltip="Settings"
@@ -588,7 +692,29 @@ const AndroidManage = () => {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             Selected: <b className="text-gray-900 dark:text-white">{selectedIndexes.length}</b>
+            {noteFilter.trim() ? (
+              <span className="ml-2 text-gray-500">
+                · Showing {filteredAndroidList.length}/{androidList.length}
+              </span>
+            ) : null}
           </span>
+          <div className="flex items-center gap-2 min-w-[200px] max-w-xs flex-1 sm:flex-none">
+            <Input
+              placeholder="Filter by note..."
+              value={noteFilter}
+              onChange={(e) => setNoteFilter(e.target.value)}
+              className="flex-1 !py-1.5 text-sm"
+            />
+            {noteFilter ? (
+              <Button
+                tooltip="Clear note filter"
+                onClick={() => setNoteFilter("")}
+                className="px-2 py-1.5 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </Button>
+            ) : null}
+          </div>
           <div className="flex-1"></div>
           <Button
             disabled={selectedIndexes.length === 0 || !!actionIndex}
@@ -975,6 +1101,50 @@ const AndroidManage = () => {
           </div>
         </Dialog>
 
+        <Dialog
+          open={editingNoteIndexes != null}
+          onClose={closeEditNote}
+          className="sm:max-w-lg"
+        >
+          <div className="p-5 space-y-4">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+              {editingNoteIndexes && editingNoteIndexes.length > 1
+                ? `Edit note · ${editingNoteIndexes.length} Androids`
+                : `Edit note · index ${editingNoteIndexes?.[0] ?? ""}`}
+            </h3>
+            {editingNoteIndexes && editingNoteIndexes.length > 1 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Note sẽ được áp dụng cho tất cả máy đang chọn.
+              </p>
+            ) : null}
+            <TextArea
+              label="Note"
+              rows={4}
+              value={editingNoteValue}
+              onChange={(e) => setEditingNoteValue(e.target.value)}
+              placeholder="Nhập note..."
+              className="w-full"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                onClick={closeEditNote}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={applyEditNote}
+                className="px-3 py-1.5 bg-amber-500 text-white rounded-md hover:bg-amber-600"
+              >
+                Apply
+                {editingNoteIndexes && editingNoteIndexes.length > 1
+                  ? ` (${editingNoteIndexes.length})`
+                  : ""}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+
         <div className="max-w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-900/50">
@@ -991,6 +1161,7 @@ const AndroidManage = () => {
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Message</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Account</th>
+                <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Note</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Folder</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Proxy</th>
                 <th className="px-2 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
@@ -999,7 +1170,7 @@ const AndroidManage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-              {androidList.map((item) => {
+              {filteredAndroidList.map((item) => {
                 const busy = actionIndex === item.index;
                 const checked = selectedIndexes.includes(item.index);
                 const adb =
@@ -1036,6 +1207,26 @@ const AndroidManage = () => {
                     </td>
                     <td className="px-2 py-3 text-gray-600 dark:text-gray-300 overflow-hidden truncate" title={item.account?.username || undefined}>
                       {item.account?.username || "-"}
+                    </td>
+                    <td className="px-2 py-3 overflow-hidden text-gray-600 dark:text-gray-300">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className="truncate flex-1 min-w-0"
+                          title={noteMap[item.index] || undefined}
+                        >
+                          {noteMap[item.index]?.trim() || (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          className="shrink-0 text-amber-500 hover:text-amber-600 dark:text-amber-400"
+                          title="Edit note"
+                          onClick={() => openEditNote(item)}
+                        >
+                          <i className="fa-solid fa-pen"></i>
+                        </button>
+                      </div>
                     </td>
                     <td className="px-2 py-3 overflow-hidden text-gray-600 dark:text-gray-300">
                       {(() => {
@@ -1224,8 +1415,15 @@ const AndroidManage = () => {
               })}
               {!loading && androidList.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={11} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     No Android devices found
+                  </td>
+                </tr>
+              )}
+              {!loading && androidList.length > 0 && filteredAndroidList.length === 0 && (
+                <tr>
+                  <td colSpan={11} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No rows match note filter “{noteFilter.trim()}”
                   </td>
                 </tr>
               )}

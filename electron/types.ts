@@ -72,6 +72,8 @@ export enum InvokeChannel {
   CREATE_POST_ON_ANDROIDS = 'create-post-on-androids',
   EDIT_LATEST_POST_ON_ANDROIDS = 'edit-latest-post-on-androids',
   QUOTE_LATEST_POST_ON_ANDROIDS = 'quote-latest-post-on-androids',
+  LOAD_ANDROID_NOTES = 'load-android-notes',
+  SAVE_ANDROID_NOTES = 'save-android-notes',
   CHECK_ACCOUNT_VIEWS = 'check-account-views',
   LIST_CHECK_VIEWS_REPORTS = 'list-check-views-reports',
   GET_CHECK_VIEWS_REPORT = 'get-check-views-report',

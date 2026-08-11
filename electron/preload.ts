@@ -122,6 +122,9 @@ contextBridge.exposeInMainWorld('api', {
     invoke(InvokeChannel.EDIT_LATEST_POST_ON_ANDROIDS, items),
   quoteLatestPostOnAndroids: (items: { android: Android; folder: string }[]) =>
     invoke(InvokeChannel.QUOTE_LATEST_POST_ON_ANDROIDS, items),
+  loadAndroidNotes: () => invoke(InvokeChannel.LOAD_ANDROID_NOTES),
+  saveAndroidNotes: (notes: Record<string, string>) =>
+    invoke(InvokeChannel.SAVE_ANDROID_NOTES, notes),
   checkAccountViews: (params: { ws: string; groupId: number; profiles: string[]; reportName: string }) =>
     invoke(InvokeChannel.CHECK_ACCOUNT_VIEWS, params),
   listCheckViewsReports: () => invoke(InvokeChannel.LIST_CHECK_VIEWS_REPORTS),

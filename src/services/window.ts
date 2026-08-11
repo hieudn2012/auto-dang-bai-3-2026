@@ -152,6 +152,8 @@ type WindownInstance = typeof window & {
       failed: number
       results: { index: string; name: string; ok: boolean; error?: string; fileCount?: number }[]
     }>,
+    loadAndroidNotes: () => Promise<Record<string, string>>,
+    saveAndroidNotes: (notes: Record<string, string>) => Promise<{ path: string; count: number }>,
     checkAccountViews: (params: {
       ws: string
       groupId: number

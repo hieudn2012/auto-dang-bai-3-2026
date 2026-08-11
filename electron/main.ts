@@ -18,7 +18,7 @@ import {
 } from './features/threads-folder'
 import { openProfile, updateProfileGroup } from './features/ixbrowser-api'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNewAccount } from './features/threads-profile'
-import { initConfigFile, loadMainConfig, saveHistoryTxt, saveMainConfig } from './features/common'
+import { initConfigFile, loadAndroidNotes, loadMainConfig, saveAndroidNotes, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
 import { deleteOldestReportNames, getReportByName, getReportNamesV2 } from './features/report'
@@ -355,6 +355,14 @@ handle(InvokeChannel.EDIT_LATEST_POST_ON_ANDROIDS, async (event, items) => {
 
 handle(InvokeChannel.QUOTE_LATEST_POST_ON_ANDROIDS, async (event, items) => {
   return quoteLatestPostOnAndroids(items, event);
+});
+
+handle(InvokeChannel.LOAD_ANDROID_NOTES, async () => {
+  return loadAndroidNotes();
+});
+
+handle(InvokeChannel.SAVE_ANDROID_NOTES, async (_event, notes) => {
+  return saveAndroidNotes(notes);
 });
 
 handle(InvokeChannel.CHECK_ACCOUNT_VIEWS, async (event, params) => {
