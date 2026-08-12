@@ -1765,7 +1765,7 @@ export const createPost = async (
         const caption = getRandomCaption(folder);
         if (caption) {
             log(`Caption typed (${caption.length} chars)`);
-            await typeTextViaAdb(serial, caption);
+            await pasteTextViaClipboard(driver, serial, caption);
             await driver.pause(800);
         }
 
@@ -2042,6 +2042,23 @@ export const quoteLatestPost = async (
         if (!profileOpened) throw new Error('Cannot open Profile tab');
         await driver.pause(2000);
 
+        // Tap center of first FeedPostRow to open post detail
+        const postXpath =
+            '(//android.view.View[@resource-id="IgLazyColumn"]/android.view.View[@resource-id="FeedPostRow"])[1]';
+        const postEl = await driver.$(`xpath:${postXpath}`);
+        await postEl.waitForDisplayed({ timeout: 20000 });
+        const loc = await postEl.getLocation();
+        const size = await postEl.getSize();
+        const cx = Math.floor(loc.x + size.width / 2);
+        const cy = Math.floor(loc.y + size.height / 2);
+        log(`Tap first post center @ (${cx},${cy}) size=${size.width}x${size.height}`);
+        try {
+            await driver.execute('mobile: clickGesture', { x: cx, y: cy });
+        } catch {
+            await adbFile(serial, ['shell', 'input', 'tap', String(cx), String(cy)]);
+        }
+        await driver.pause(2000);
+
         // First post actions are often under the bottom tab bar — scroll into view first
         log('Scroll profile to reveal Repost...');
         await swipeProfileUp(driver, serial);
@@ -2070,7 +2087,7 @@ export const quoteLatestPost = async (
         const caption = getRandomCaption(folder);
         if (caption) {
             log(`Caption typed (${caption.length} chars)`);
-            await typeTextViaAdb(serial, caption);
+            await pasteTextViaClipboard(driver, serial, caption);
             await driver.pause(800);
         }
 
