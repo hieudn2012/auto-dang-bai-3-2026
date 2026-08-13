@@ -117,6 +117,8 @@ contextBridge.exposeInMainWorld('api', {
   connectAllRunningAndroids: () => invoke(InvokeChannel.CONNECT_ALL_RUNNING_ANDROIDS),
   openThreadsAppOnAndroids: (androids: Android[]) =>
     invoke(InvokeChannel.OPEN_THREADS_APP_ON_ANDROIDS, androids),
+  loginInstagramOnAndroids: (androids: Android[]) =>
+    invoke(InvokeChannel.LOGIN_INSTAGRAM_ON_ANDROIDS, androids),
   fullSetupOnAndroids: (androids: Android[]) =>
     invoke(InvokeChannel.FULL_SETUP_ON_ANDROIDS, androids),
   createPostOnAndroids: (items: { android: Android; folder: string }[]) =>

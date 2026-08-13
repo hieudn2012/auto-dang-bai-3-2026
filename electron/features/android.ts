@@ -61,6 +61,7 @@ const ACCOUNT_FILE = 'account.txt';
 const EXPORT_FILE = 'export.txt';
 const PROXY_PLACEHOLDER = '##proxy##';
 const THREADS_PACKAGE = 'com.instagram.barcelona';
+const INSTAGRAM_PACKAGE = 'com.instagram.android';
 const ADB_TIMEOUT_MS = 45_000;
 
 const ROOT = process.env.ROOT || 'D:';
@@ -1615,6 +1616,213 @@ export const openThreadsAppOnAndroids = async (androids: Android[], event: IpcMa
         try {
             const android = await getAndroid(Number(selected.index));
             await openThreadsAppOnAndroid(android, event);
+            return { index: android.index, name: android.name, ok: true as const };
+        } catch (error) {
+            return {
+                index: selected.index,
+                name: selected.name,
+                ok: false as const,
+                error: error instanceof Error ? error.message : String(error),
+            };
+        }
+    });
+
+    const results = await Promise.all(tasks);
+
+    return {
+        total: androids.length,
+        success: results.filter((r) => r.ok).length,
+        failed: results.filter((r) => !r.ok).length,
+        results,
+    };
+};
+
+const clickRequired = async (
+    driver: AppiumDriver,
+    xpath: string,
+    label: string,
+    opts?: { timeoutMs?: number; intervalMs?: number }
+) => {
+    const ok = await clickByXpath(driver, xpath, opts);
+    if (!ok) throw new Error(`Cannot tap: ${label}`);
+};
+
+/** Fetch current TOTP from 2fa.live — response: { token: '123456' } */
+const fetchTwoFaToken = async (twoFaSecret: string) => {
+    const secret = twoFaSecret.trim().replace(/\s+/g, '');
+    if (!secret) throw new Error('2FA secret is empty');
+    const res = await fetch(`https://2fa.live/tok/${encodeURIComponent(secret)}`);
+    if (!res.ok) throw new Error(`2fa.live HTTP ${res.status}`);
+    const data = (await res.json()) as { token?: string };
+    const token = String(data?.token || '').trim();
+    if (!token) throw new Error('2fa.live returned empty token');
+    return token;
+};
+
+/**
+ * Login Instagram app:
+ * 1 open IG → 2 already have profile → 3–4 username → 5–6 password → 7 Log in
+ * → 8 wait → 9 Enter code (+ type 2FA if assigned) → 10 Continue → 11 wait
+ * → 12 Save → 13 wait → 14 Got it → 15 Continue → 16 deny permission
+ */
+export const loginInstagramOnAndroid = async (
+    android: Android,
+    account: AndroidAccount | null | undefined,
+    event: IpcMainEvent
+) => {
+    console.log('loginInstagramOnAndroid', account);
+    const androidInstance = await getAndroid(Number(android.index));
+    const acc = account || androidInstance.account;
+    const key = androidInstance.name;
+    if (!acc?.username || !acc?.password) {
+        throw new Error(`Android index ${android.index} has no username/password`);
+    }
+
+    const serial = await connectAndroid(androidInstance);
+    const driver = await createAppiumDriver(serial);
+    const log = (message: string) => {
+        console.log(`[loginInstagram][${key}] ${message}`);
+        sendMessage(event, { username: key, message });
+    };
+
+    try {
+        log('Open Instagram...');
+        await driver.execute('mobile: activateApp', { appId: INSTAGRAM_PACKAGE });
+        await driver.pause(4000);
+
+        log('Tap username field...');
+        await clickRequired(
+            driver,
+            '//android.widget.EditText[@content-desc="Username, email or mobile number,"]',
+            'Username field',
+            { timeoutMs: 30000, intervalMs: 800 }
+        );
+        await driver.pause(400);
+        log(`Type username: ${acc.username}`);
+        await typeTextViaAdb(serial, acc.username);
+        await driver.pause(600);
+
+        log('Tap password field...');
+        await clickRequired(
+            driver,
+            '//android.view.View[@content-desc="Password"]',
+            'Password field',
+            { timeoutMs: 20000, intervalMs: 800 }
+        );
+        await driver.pause(400);
+        log('Type password...');
+        await typeTextViaAdb(serial, acc.password);
+        await driver.pause(600);
+
+        log('Tap Log in...');
+        await clickRequired(
+            driver,
+            '//android.widget.Button[@content-desc="Log in"]',
+            'Log in',
+            { timeoutMs: 20000, intervalMs: 800 }
+        );
+
+        log('Waiting to login...');
+        await driver.pause(5000);
+
+        // 2FA optional — sometimes login goes straight in
+        log('Check for 2FA / Enter code (optional)...');
+        const codeOpened = await clickByXpath(
+            driver,
+            '//android.view.View[@content-desc="Code"]',
+            { timeoutMs: 15000, intervalMs: 1500 }
+        );
+        if (codeOpened) {
+            await driver.pause(800);
+            if (acc.twoFa?.trim()) {
+                log('Fetch 2FA code from 2fa.live...');
+                const code = await fetchTwoFaToken(acc.twoFa);
+                log(`Type 2FA code: ${code}`);
+                await typeTextViaAdb(serial, code);
+                await driver.pause(800);
+            } else {
+                log('No 2FA secret — skip typing code');
+            }
+
+            log('Tap Continue (after code)...');
+            await clickRequired(
+                driver,
+                '//android.widget.Button[@content-desc="Continue"]/android.view.ViewGroup',
+                'Continue',
+                { timeoutMs: 60000, intervalMs: 1500 }
+            );
+            await driver.pause(2000);
+        } else {
+            log('No 2FA screen — skip Enter code');
+        }
+
+        log('Waiting...');
+        await driver.pause(4000);
+
+        log('Tap Save...');
+        await clickRequired(
+            driver,
+            '//android.widget.Button[@content-desc="Save"]/android.view.ViewGroup',
+            'Save',
+            { timeoutMs: 60000, intervalMs: 1500 }
+        );
+
+        log('Waiting...');
+        await driver.pause(3000);
+
+        log('Tap Got it...');
+        await clickRequired(
+            driver,
+            '//android.widget.FrameLayout[@content-desc="Got it"]',
+            'Got it',
+            { timeoutMs: 60000, intervalMs: 1500 }
+        );
+        await driver.pause(1500);
+
+        log('Tap Continue...');
+        await clickRequired(
+            driver,
+            '//android.widget.Button[@content-desc="Continue"]',
+            'Continue',
+            { timeoutMs: 60000, intervalMs: 1500 }
+        );
+        await driver.pause(1500);
+
+        log('Deny permission...');
+        await clickRequired(
+            driver,
+            '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_deny_button"]',
+            'permission_deny_button',
+            { timeoutMs: 30000, intervalMs: 1000 }
+        );
+
+        log('Login Instagram success ✅');
+        return {
+            index: androidInstance.index,
+            name: key,
+            serial,
+        };
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        log(`Login Instagram failed ❌ ${message}`);
+        throw error;
+    } finally {
+        await driver.deleteSession().catch(() => undefined);
+    }
+};
+
+/** Login Instagram on multiple Androids (stagger 2s) */
+export const loginInstagramOnAndroids = async (androids: Android[], event: IpcMainEvent) => {
+    if (!androids.length) throw new Error('No Android selected');
+
+    const tasks = androids.map(async (selected, i) => {
+        if (i > 0) await sleep(i * 2000);
+        try {
+            const android = await getAndroid(Number(selected.index));
+            if (!android.account?.username || !android.account?.password) {
+                throw new Error('Account not assigned');
+            }
+            await loginInstagramOnAndroid(android, android.account, event);
             return { index: android.index, name: android.name, ok: true as const };
         } catch (error) {
             return {

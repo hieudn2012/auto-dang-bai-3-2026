@@ -70,6 +70,7 @@ export enum InvokeChannel {
   EXPORT_ACCOUNTS_FROM_OUTPUT = 'export-accounts-from-output',
   CONNECT_ALL_RUNNING_ANDROIDS = 'connect-all-running-androids',
   OPEN_THREADS_APP_ON_ANDROIDS = 'open-threads-app-on-androids',
+  LOGIN_INSTAGRAM_ON_ANDROIDS = 'login-instagram-on-androids',
   FULL_SETUP_ON_ANDROIDS = 'full-setup-on-androids',
   CREATE_POST_ON_ANDROIDS = 'create-post-on-androids',
   EDIT_LATEST_POST_ON_ANDROIDS = 'edit-latest-post-on-androids',

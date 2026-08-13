@@ -36,7 +36,7 @@ import { loadSexyContent, saveSexyCaption, saveSexyLink } from './features/file'
 import { getAffShopeeLink } from './features/shopee'
 import { deletePost } from './features/threads-delete'
 import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
-import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, connectAllRunningAndroids, createPostOnAndroids, editLatestPostOnAndroids, exportAccountsFromOutput, fullSetupOnAndroids, getAndroidList, openAndroid, openThreadsAppOnAndroids, quoteLatestPostOnAndroids, randomDeviceIdentity, randomDeviceIdentityOnAndroids, randomMuMuName, setupProxiesOnAndroids } from './features/android'
+import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, connectAllRunningAndroids, createPostOnAndroids, editLatestPostOnAndroids, exportAccountsFromOutput, fullSetupOnAndroids, getAndroidList, loginInstagramOnAndroids, openAndroid, openThreadsAppOnAndroids, quoteLatestPostOnAndroids, randomDeviceIdentity, randomDeviceIdentityOnAndroids, randomMuMuName, setupProxiesOnAndroids } from './features/android'
 import { checkAccountViews, getCheckViewsReport, listCheckViewsReports } from './features/check-account-views'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
@@ -347,6 +347,10 @@ handle(InvokeChannel.CONNECT_ALL_RUNNING_ANDROIDS, async () => {
 
 handle(InvokeChannel.OPEN_THREADS_APP_ON_ANDROIDS, async (event, androids) => {
   return openThreadsAppOnAndroids(androids, event);
+});
+
+handle(InvokeChannel.LOGIN_INSTAGRAM_ON_ANDROIDS, async (event, androids) => {
+  return loginInstagramOnAndroids(androids, event);
 });
 
 handle(InvokeChannel.FULL_SETUP_ON_ANDROIDS, async (event, androids) => {

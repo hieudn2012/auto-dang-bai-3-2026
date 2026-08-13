@@ -632,6 +632,23 @@ const AndroidManage = () => {
     }
   };
 
+  const handleLoginInstagram = async (android: Android) => {
+    setActionIndex(android.index);
+    try {
+      const result = await windowInstance.api.loginInstagramOnAndroids([android]);
+      if (result.failed > 0) {
+        toast.error(result.results[0]?.error || "Login Instagram thất bại");
+      } else {
+        toast.success(`Đã login Instagram: ${android.name}`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Login Instagram thất bại");
+    } finally {
+      setActionIndex(null);
+    }
+  };
+
   const handleFullSetup = async (android: Android) => {
     setActionIndex(android.index);
     try {
@@ -990,6 +1007,41 @@ const AndroidManage = () => {
             className="px-3 py-1.5 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50"
           >
             <i className="fa-regular fa-folder-open"></i>
+          </Button>
+          <Button
+            disabled={
+              selectedIndexes.length === 0 ||
+              !!actionIndex ||
+              selectedAndroids.some(
+                (item) =>
+                  !item.is_android_started ||
+                  !item.account?.username ||
+                  !item.account?.password
+              )
+            }
+            tooltip="Login Instagram selected"
+            onClick={async () => {
+              try {
+                setActionIndex('login-instagram');
+                const ordered = selectedIndexes
+                  .map((index) => androidList.find((item) => item.index === index))
+                  .filter(Boolean) as Android[];
+                const result = await windowInstance.api.loginInstagramOnAndroids(ordered);
+                if (result.failed > 0) {
+                  toast.error(`Login Instagram: ${result.success} ok, ${result.failed} lỗi`);
+                } else {
+                  toast.success(`Đã login Instagram ${result.success} android`);
+                }
+              } catch (error) {
+                console.error(error);
+                toast.error(error instanceof Error ? error.message : 'Login Instagram thất bại');
+              } finally {
+                setActionIndex(null);
+              }
+            }}
+            className="px-3 py-1.5 bg-fuchsia-600 text-white rounded-md hover:bg-fuchsia-700 disabled:opacity-50"
+          >
+            <i className="fa-brands fa-instagram"></i>
           </Button>
           <Button
             disabled={
@@ -1475,6 +1527,19 @@ const AndroidManage = () => {
                           className="!px-1.5 !py-1 bg-pink-600 text-white rounded-md hover:bg-pink-700 disabled:opacity-50"
                         >
                           <i className="fa-regular fa-folder-open"></i>
+                        </Button>
+                        <Button
+                          disabled={
+                            busy ||
+                            !item.is_android_started ||
+                            !item.account?.username ||
+                            !item.account?.password
+                          }
+                          onClick={() => handleLoginInstagram(item)}
+                          tooltip="Login Instagram"
+                          className="!px-1.5 !py-1 bg-fuchsia-600 text-white rounded-md hover:bg-fuchsia-700 disabled:opacity-50"
+                        >
+                          <i className="fa-brands fa-instagram"></i>
                         </Button>
                         <Button
                           disabled={
