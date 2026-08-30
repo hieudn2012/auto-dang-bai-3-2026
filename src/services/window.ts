@@ -37,6 +37,7 @@ type WindownInstance = typeof window & {
     clickEditLatestPostButton: (info: ClickEditLatestPostButtonParams) => Promise<any>,
     saveHistoryTxt: ({ profile_id, folder }: { profile_id: number, folder: string }) => Promise<any>,
     setupNewAccount: (info: SetupNewAccountParams) => Promise<any>,
+    setupNewAccountMobile: (info: SetupNewAccountParams) => Promise<any>,
     checkLiveAccounts: (info: { ws: string, accounts: string[], batchSize?: number }) => Promise<{ liveAccounts: string[], deadAccounts: string[] }>,
     saveTelegramToken: (token: string) => Promise<void>,
     getTelegramToken: () => Promise<string | null>,

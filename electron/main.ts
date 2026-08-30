@@ -17,7 +17,7 @@ import {
   saveProductInfo
 } from './features/threads-folder'
 import { openProfile, updateProfileGroup } from './features/ixbrowser-api'
-import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNewAccount } from './features/threads-profile'
+import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNewAccount, setupNewAccountMobile } from './features/threads-profile'
 import { initConfigFile, loadAndroidNotes, loadMainConfig, saveAndroidNotes, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
@@ -170,6 +170,10 @@ handle(InvokeChannel.SAVE_HISTORY_TXT, async (_event, profile_id, folder) => {
 
 handle(InvokeChannel.SETUP_NEW_ACCOUNT, async (event, info) => {
   return setupNewAccount(info, event);
+})
+
+handle(InvokeChannel.SETUP_NEW_ACCOUNT_MOBILE, async (event, info) => {
+  return setupNewAccountMobile(info, event);
 })
 
 handle(InvokeChannel.CHECK_LIVE_ACCOUNTS, async (_event, accounts) => {

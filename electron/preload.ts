@@ -57,6 +57,7 @@ contextBridge.exposeInMainWorld('api', {
   clickEditLatestPostButton: (info: UserInfo) => invoke(InvokeChannel.CLICK_EDIT_LATEST_POST_BUTTON, info),
   saveHistoryTxt: ({ profile_id, folder }: History) => invoke(InvokeChannel.SAVE_HISTORY_TXT, profile_id, folder),
   setupNewAccount: (info: { ws: string }) => invoke(InvokeChannel.SETUP_NEW_ACCOUNT, info),
+  setupNewAccountMobile: (info: { ws: string }) => invoke(InvokeChannel.SETUP_NEW_ACCOUNT_MOBILE, info),
   checkLiveAccounts: (accounts: string[]) => invoke(InvokeChannel.CHECK_LIVE_ACCOUNTS, accounts),
   saveTelegramToken: (token: string) => invoke(InvokeChannel.SAVE_TELEGRAM_TOKEN, token),
   getTelegramToken: () => invoke(InvokeChannel.GET_TELEGRAM_TOKEN),

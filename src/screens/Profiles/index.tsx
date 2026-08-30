@@ -209,6 +209,10 @@ const Profiles = () => {
     await windowInstance.api.setupNewAccount({ id, ws, username, reportName, isAuto: false });
   }
 
+  const setupNewAccountMobile = async ({ id, ws, username }: { id: number, ws: string, username: string }) => {
+    await windowInstance.api.setupNewAccountMobile({ id, ws, username, reportName, isAuto: false });
+  }
+
   const handleCopyWs = async (ws: string) => {
     await navigator.clipboard.writeText(ws);
     await windowInstance.api.saveMainConfig({ wsUrl: ws });
@@ -277,6 +281,15 @@ const Profiles = () => {
     for (const id of ids) {
       if (openedList?.[id]?.ws) {
         document.getElementById(`setup-new-account-${id}`)?.click();
+        await waitFor(3);
+      }
+    }
+  }
+
+  const handleBulkSetupNewAccountMobile = async (ids: number[], openedList: any) => {
+    for (const id of ids) {
+      if (openedList?.[id]?.ws) {
+        document.getElementById(`setup-new-account-mobile-${id}`)?.click();
         await waitFor(3);
       }
     }
@@ -554,6 +567,10 @@ const Profiles = () => {
                     <i className="fa-solid fa-user-plus mr-1"></i>
                     Setup
                   </Button>
+                  <Button onClick={() => handleBulkSetupNewAccountMobile(selectedIds, openedList)} tooltip="Setup New Account Mobile" className="px-2 py-1 bg-teal-500 hover:bg-teal-600 text-white text-sm">
+                    <i className="fa-solid fa-mobile-screen mr-1"></i>
+                    Setup Mobile
+                  </Button>
                   <Button
                     onClick={() => setShowProxyModal(true)}
                     tooltip="Update Proxy"
@@ -787,6 +804,15 @@ const Profiles = () => {
                                 tooltip="Setup new account"
                                 id={`setup-new-account-${profile.profile_id}`}
                                 className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-300 text-xs"
+                              >
+                                <i className="fa-solid fa-user-plus"></i>
+                              </Button>
+                              <Button
+                                onClick={() => setupNewAccountMobile({ id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
+                                tooltip="Setup new account (mobile)"
+                                id={`setup-new-account-mobile-${profile.profile_id}`}
+                                className="px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 dark:bg-teal-900/40 dark:hover:bg-teal-900/60 dark:text-teal-300 text-xs"
+                                disabled={!openedList?.[profile.profile_id]?.ws}
                               >
                                 <i className="fa-solid fa-user-plus"></i>
                               </Button>

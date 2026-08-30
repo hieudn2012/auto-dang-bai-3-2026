@@ -24,7 +24,8 @@ export default defineConfig({
         },
         vite: {
           build: {
-            watch: null,
+            // Bật watch để sửa electron/*.ts được rebuild khi yarn dev
+            watch: {},
             rollupOptions: {
               external: [
                 'gologin',

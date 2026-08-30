@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import puppeteer, { Page } from 'puppeteer';
+import puppeteer, { Browser, Page } from 'puppeteer';
 import { execSync } from 'child_process'
 import { loadMainConfig, waitRandom } from "./common";
 import fsSync from "node:fs";
@@ -331,6 +331,255 @@ export interface SetupNewAccountParams {
   isAuto: boolean,
   reportName: string,
 }
+
+const getCurrentTab = async (browser: Browser): Promise<Page> => {
+  const pages = await browser.pages();
+  const usable = pages.filter((p) => {
+    try {
+      const url = p.url();
+      return Boolean(url) && !url.startsWith('devtools://') && !url.startsWith('chrome-extension://');
+    } catch {
+      return false;
+    }
+  });
+
+  const page =
+    usable.find((p) => {
+      const url = p.url();
+      return url.includes('instagram.com') || url.includes('threads.com');
+    }) ??
+    usable.find((p) => {
+      const url = p.url();
+      return url !== 'about:blank' && !url.startsWith('chrome://');
+    }) ??
+    usable[0] ??
+    pages[0];
+
+  if (!page) {
+    throw new Error('Không tìm thấy tab hiện tại');
+  }
+
+  try {
+    await page.bringToFront();
+  } catch {
+    /* ignore */
+  }
+  return page;
+};
+
+/** Click 1 lần trên page nếu thấy text (ưu tiên exact trên button / aria-label / text node). */
+const tryClickByTextOnPage = async (page: Page, text: string): Promise<boolean> => {
+  return page.evaluate((needle) => {
+    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+    const want = normalize(needle);
+
+    const isVisible = (el: HTMLElement | null) => {
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return (
+        r.width > 0 &&
+        r.height > 0 &&
+        style.visibility !== 'hidden' &&
+        style.display !== 'none' &&
+        style.pointerEvents !== 'none'
+      );
+    };
+
+    const clickableOf = (el: HTMLElement) =>
+      (el.closest('button, a, [role="button"], div[role="button"], [tabindex]') as HTMLElement | null) ||
+      el;
+
+    const candidates = Array.from(
+      document.querySelectorAll(
+        'button, a, [role="button"], div[role="button"], span[role="button"], [tabindex="0"]',
+      ),
+    ) as HTMLElement[];
+
+    let best: HTMLElement | null = null;
+    let bestScore = 0;
+
+    for (const el of candidates) {
+      if (!isVisible(el)) continue;
+      const aria = normalize(el.getAttribute('aria-label') || '');
+      const inner = normalize(el.innerText || '');
+      let score = 0;
+      if (aria === want || inner === want) score = 1000;
+      else if (want.length > 10 && (inner.includes(want) || aria.includes(want)) && inner.length < want.length + 40) {
+        score = 200;
+      }
+      if (score > bestScore) {
+        best = el;
+        bestScore = score;
+      }
+    }
+
+    // Fallback: text node đúng chữ → lấy parent clickable
+    if (!best) {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        if (normalize(node.textContent || '') !== want) continue;
+        const parent = node.parentElement as HTMLElement | null;
+        const target = parent ? clickableOf(parent) : null;
+        if (isVisible(target)) {
+          best = target;
+          break;
+        }
+      }
+    }
+
+    if (!best) return false;
+    best.scrollIntoView({ block: 'center', inline: 'center' });
+    best.click();
+    return true;
+  }, text);
+};
+
+type PageRef = { page: Page };
+
+/**
+ * Chờ + click text trên mọi tab (OAuth IG hay mở tab mới).
+ * Heartbeat `onWait` mỗi ~3s để UI không “im” khi đang chờ.
+ */
+const waitAndClickByText = async (
+  browser: Browser,
+  pageRef: PageRef,
+  texts: string | string[],
+  opts: {
+    timeout?: number;
+    onWait?: (elapsedSec: number, lookingFor: string) => void;
+  } = {},
+) => {
+  const needles = Array.isArray(texts) ? texts : [texts];
+  const lookingFor = needles.join('" / "');
+  const timeout = opts.timeout ?? 120_000;
+  const start = Date.now();
+  let lastBeat = -1;
+
+  while (Date.now() - start < timeout) {
+    const elapsedSec = Math.floor((Date.now() - start) / 1000);
+    if (opts.onWait && elapsedSec !== lastBeat && elapsedSec % 3 === 0) {
+      lastBeat = elapsedSec;
+      opts.onWait(elapsedSec, lookingFor);
+    }
+
+    try {
+      const pages = await browser.pages();
+      for (const p of pages) {
+        try {
+          const url = p.url();
+          if (!url || url.startsWith('devtools://') || url.startsWith('chrome-extension://')) {
+            continue;
+          }
+          for (const needle of needles) {
+            const clicked = await tryClickByTextOnPage(p, needle);
+            if (clicked) {
+              pageRef.page = p;
+              await p.bringToFront().catch(() => { });
+              return needle;
+            }
+          }
+        } catch {
+          // tab navigated / context destroyed — thử lại
+        }
+      }
+    } catch {
+      // browser tạm lỗi — thử lại
+    }
+
+    await new Promise((r) => setTimeout(r, 400));
+  }
+
+  throw new Error(`Timeout ${timeout / 1000}s — không thấy nút "${lookingFor}"`);
+};
+
+/** Setup Threads trên profile mobile — dùng tab hiện tại (giữ fingerprint). */
+export const setupNewAccountMobile = async ({
+  id,
+  ws,
+  username,
+  isAuto,
+  reportName,
+}: SetupNewAccountParams, event: IpcMainEvent) => {
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: ws,
+    defaultViewport: null,
+  });
+
+  const msg = (message: string) => sendMessage(event, { id, username, message });
+
+  try {
+    const pageRef: PageRef = { page: await getCurrentTab(browser) };
+
+    // Step 1: mở threads.com/login
+    msg('Mobile setup [1/5]: mở threads.com/login…');
+    await pageRef.page.goto('https://www.threads.com/login', {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+
+    // Step 2: tìm + click "Join with Instagram"
+    msg('Mobile setup [2/5]: chờ "Join with Instagram"…');
+    await waitAndClickByText(browser, pageRef, 'Join with Instagram', {
+      onWait: (s, t) => msg(`Mobile setup [2/5]: chờ "${t}"… (${s}s)`),
+    });
+    msg('Mobile setup [2/5]: đã click "Join with Instagram" ✅');
+
+    // Step 3: chờ nút "Next" rồi click (quét mọi tab)
+    msg('Mobile setup [3/5]: chờ nút "Next"…');
+    await waitAndClickByText(browser, pageRef, ['Next', 'Continue'], {
+      onWait: (s, t) => msg(`Mobile setup [3/5]: chờ "${t}"… (${s}s)`),
+    });
+    msg('Mobile setup [3/5]: đã click "Next" ✅');
+
+    // Chờ UI bước Join hiện ra
+    msg('Mobile setup: chờ 5s trước bước Join Threads…');
+    await waitRandom(5000, 5000);
+
+    // Step 4: chờ nút "Join Threads" rồi click
+    msg('Mobile setup [4/5]: chờ nút "Join Threads"…');
+    await waitAndClickByText(browser, pageRef, 'Join Threads', {
+      onWait: (s, t) => msg(`Mobile setup [4/5]: chờ "${t}"… (${s}s)`),
+    });
+    msg('Mobile setup [4/5]: đã click "Join Threads" ✅');
+
+    // Step 5: chờ 10s => done
+    msg('Mobile setup [5/5]: chờ 10s…');
+    await waitRandom(10000, 10000);
+
+    msg('Setup new account mobile success ✅');
+    sendLog(event, { id, username, message: `Setup new account mobile success cho ${id}` });
+    saveReport({
+      reportName,
+      description: 'Setup new account mobile success ✅',
+      userId: id,
+      status: 'completed',
+      username,
+      type: 'setup-new-account',
+    });
+  } catch (error) {
+    console.error(error);
+    const message = error instanceof Error ? error.message : 'Setup new account mobile failed ❌';
+    msg(message);
+    sendLog(event, { id, username, message: `Setup new account mobile failed cho ${id}` });
+    saveReport({
+      reportName,
+      description: message,
+      userId: id,
+      status: 'failed',
+      username,
+      type: 'setup-new-account',
+    });
+  } finally {
+    if (isAuto) {
+      await browser?.close().catch(() => { });
+    }
+    if (browser) {
+      await browser?.disconnect().catch(() => { });
+    }
+  }
+};
 
 export const setupNewAccount = async ({
   id,

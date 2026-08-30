@@ -19,6 +19,7 @@ export enum InvokeChannel {
   CLICK_EDIT_LATEST_POST_BUTTON = 'click-edit-latest-post-button',
   SAVE_HISTORY_TXT = 'save-history-txt',
   SETUP_NEW_ACCOUNT = 'setup-new-account',
+  SETUP_NEW_ACCOUNT_MOBILE = 'setup-new-account-mobile',
   CHECK_LIVE_ACCOUNTS = 'check-live-accounts',
   SAVE_TELEGRAM_TOKEN = 'save-telegram-token',
   GET_TELEGRAM_TOKEN = 'get-telegram-token',
