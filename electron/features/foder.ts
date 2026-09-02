@@ -33,8 +33,9 @@ const isUsableProductFolder = (folderPath: string): boolean => {
 
 export const getRandomFolder = (
   rootPath: string,
-  excludeFolders: string[] = [],
+  exclude: string[] = [],
 ): string => {
+  const excludeFolders: string[] = [];
   if (!rootPath) {
     console.error('Root path is undefined or empty');
     return '';
