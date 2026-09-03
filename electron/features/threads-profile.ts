@@ -250,12 +250,6 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
     sendMessage(event, { id, username, message: 'Đang tải media...' });
     const isUploadSuccess = await uploadMedia({ page, username, folder, mode });
     if (!isUploadSuccess) {
-      if (attempt < 3) {
-        sendMessage(event, { id, username, message: `Tải media thất bại, thử lại lần ${attempt + 1}/3...` });
-        await browser.disconnect();
-        browser = null;
-        return await clickPostButton(params, event, attempt + 1);
-      }
       throw new Error('Kết nối internet có thể không ổn định, tải media thất bại');
     }
     await waitRandom(3000, 5000);
@@ -694,7 +688,7 @@ export const uploadMedia = async ({
   let isImageUploaded = false;
 
   const waitForUploadSuccess = async (
-    timeoutMs = 0.5 * 60 * 1000,
+    timeoutMs = 180 * 1000,
     intervalMs = 3000
   ): Promise<boolean> => {
     const start = Date.now();
