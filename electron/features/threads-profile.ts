@@ -237,6 +237,11 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
         throw new Error('Không tìm thấy nút "Repost"');
       }
       await repostSvg.click();
+      await waitRandom(1000, 2000);
+      await repostSvg.click();
+      await waitRandom(1000, 2000);
+      await repostSvg.click();
+      await waitRandom(1000, 2000);
       await waitRandom(3000, 5000);
 
       const quoteButton = await page.$(QUOTE_BUTTON_SELECTOR);
@@ -853,6 +858,10 @@ export const clickEditLatestPostButton = async ({
     if (!moreBtn) {
       throw new Error('Không tìm thấy nút "Xem thêm"');
     }
+    await moreBtn.click();
+    await waitRandom(1000, 2000);
+    await moreBtn.click();
+    await waitRandom(1000, 2000);
     await moreBtn.click();
     await waitRandom(3000, 5000);
 
