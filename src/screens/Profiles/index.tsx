@@ -684,195 +684,210 @@ const Profiles = () => {
 
           {/* Profile Grid */}
           <div className="flex-1 min-h-0 overflow-y-auto">
-          <LoadingWraper loading={isPending}>
-            {(() => {
-              const allProfiles = data?.data?.data?.data || [];
+            <LoadingWraper loading={isPending}>
+              {(() => {
+                const allProfiles = data?.data?.data?.data || [];
 
-              return (
-                <>
-                  <div className="divide-y divide-gray-200 dark:divide-gray-700 text-xs">
-                    {map(allProfiles, (profile, index) => (
-                      <div key={profile.profile_id} className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                          {/* Selection & ID */}
-                          <div className="lg:col-span-2 flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.includes(profile.profile_id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedIds(prev => [...prev, profile.profile_id]);
-                                } else {
-                                  setSelectedIds(prev => prev.filter(id => id !== profile.profile_id));
-                                }
-                              }}
-                              className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-blue-500"
-                            />
-                            <div>
-                              <div className="font-semibold text-gray-900 dark:text-white">#{index + 1}</div>
-                              <div className="text-gray-500 dark:text-gray-400">ID: {profile.profile_id}</div>
+                return (
+                  <>
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700 text-xs">
+                      {map(allProfiles, (profile, index) => (
+                        <div key={profile.profile_id} className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                            {/* Selection & ID */}
+                            <div className="lg:col-span-2 flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.includes(profile.profile_id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedIds(prev => [...prev, profile.profile_id]);
+                                  } else {
+                                    setSelectedIds(prev => prev.filter(id => id !== profile.profile_id));
+                                  }
+                                }}
+                                className="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-blue-600 focus:ring-blue-500"
+                              />
+                              <div>
+                                <div className="font-semibold text-gray-900 dark:text-white">#{index + 1}</div>
+                                <div className="text-gray-500 dark:text-gray-400">ID: {profile.profile_id}</div>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Profile Info */}
-                          <div className="lg:col-span-3">
-                            <div className="font-medium text-gray-900 dark:text-white">{profile.name}</div>
-                            <div className="text-gray-500 dark:text-gray-400">
-                              {profile.proxy_ip}:{profile.proxy_port}
+                            {/* Profile Info */}
+                            <div className="lg:col-span-2">
+                              <div className="font-medium text-gray-900 dark:text-white">{profile.name}</div>
+                              <div className="text-gray-500 dark:text-gray-400">
+                                {profile.proxy_ip}:{profile.proxy_port}
+                              </div>
+                              <div className="text-green-600 dark:text-green-400">
+                                {profileResult?.[profile.profile_id]?.username}
+                                {` - `}
+                                {profileResult?.[profile.profile_id]?.sex}
+                              </div>
                             </div>
-                            <div className="text-green-600 dark:text-green-400">
-                              {profileResult?.[profile.profile_id]?.username}
-                              {` - `}
-                              {profileResult?.[profile.profile_id]?.sex}
-                            </div>
-                          </div>
 
-                          {/* Status */}
-                          <div className="lg:col-span-2">
-                            <div className="flex items-center gap-2">
-                              {openedList?.[profile.profile_id]?.open_time ? (
-                                <div className="flex items-center text-green-600 dark:text-green-400">
-                                  <i className="fa-solid fa-check-circle mr-1"></i>
-                                  <span className="text-sm">Active</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center text-red-600 dark:text-red-400">
-                                  <i className="fa-solid fa-times-circle mr-1"></i>
-                                  <span>Inactive</span>
-                                </div>
-                              )}
+                            {/* Status */}
+                            <div className="lg:col-span-2">
+                              <div className="flex items-center gap-2">
+                                {openedList?.[profile.profile_id]?.open_time ? (
+                                  <div className="flex items-center text-green-600 dark:text-green-400">
+                                    <i className="fa-solid fa-check-circle mr-1"></i>
+                                    <span className="text-sm">Active</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center text-red-600 dark:text-red-400">
+                                    <i className="fa-solid fa-times-circle mr-1"></i>
+                                    <span>Inactive</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-gray-500 dark:text-gray-400 mt-1">
+                                {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
+                              </div>
+                              <div className="text-gray-500 dark:text-gray-400 mt-1">
+                                {shortName(userMap?.[profile.profile_id]?.quoteName || 'N/A')}
+                              </div>
                             </div>
-                            <div className="text-gray-500 dark:text-gray-400 mt-1">
-                              {shortName(userMap?.[profile.profile_id]?.name || 'N/A')}
-                            </div>
-                            <div className="text-gray-500 dark:text-gray-400 mt-1">
-                              {shortName(userMap?.[profile.profile_id]?.quoteName || 'N/A')}
-                            </div>
-                          </div>
 
-                          {/* Message */}
-                          <div className="lg:col-span-2">
-                            <div id={`message-${profile.profile_id}`} className="text-sm text-gray-600 dark:text-gray-300 min-h-[20px]"></div>
-                          </div>
+                            {/* Message */}
+                            <div className="lg:col-span-2">
+                              <div id={`message-${profile.profile_id}`} className="text-sm text-gray-600 dark:text-gray-300 min-h-[20px]"></div>
+                            </div>
 
-                          {/* Manual Actions */}
-                          <div className="lg:col-span-3">
-                            <div className="flex flex-wrap gap-1">
-                              <OpenProfle id={profile.profile_id} total={totalBrowsers} onOpen={() => setTotalBrowsers(prev => prev + 1)} />
-                              <Button
-                                id={`random-folder-${profile.profile_id}`}
-                                onClick={() => handleRandomFolder(profile.profile_id)}
-                                tooltip="Random folder"
-                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
-                              >
-                                <i className="fa-solid fa-arrow-rotate-right"></i>
-                              </Button>
-                              <Button
-                                onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}
-                                tooltip="Show info"
-                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
-                              >
-                                <i className="fa-regular fa-eye"></i>
-                              </Button>
-                              <Button
-                                onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}
-                                tooltip="Copy ws"
-                                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
-                              >
-                                <i className="fa-solid fa-copy"></i>
-                              </Button>
-                              <Button
-                                id={`post-button-${profile.profile_id}`}
-                                tooltip="Post"
-                                onClick={() => clickPostButton(profile.profile_id, 'post', openedList, userMap)}
-                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 text-xs"
-                                disabled={!reportName || !openedList?.[profile.profile_id]?.ws}
-                              >
-                                <i className="fa-solid fa-circle-play"></i>
-                              </Button>
-                              <Button
-                                id={`quote-button-${profile.profile_id}`}
-                                onClick={() => clickPostButton(profile.profile_id, 'quote', openedList, userMap)}
-                                tooltip="Quote"
-                                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:text-purple-300 text-xs"
-                                disabled={!reportName || !openedList?.[profile.profile_id]?.ws}
-                              >
-                                <i className="fa-solid fa-retweet"></i>
-                              </Button>
-                              <Button
-                                onClick={() => setupNewAccount({ id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
-                                tooltip="Setup new account"
-                                id={`setup-new-account-${profile.profile_id}`}
-                                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-300 text-xs"
-                              >
-                                <i className="fa-solid fa-user-plus"></i>
-                              </Button>
-                              <Button
-                                onClick={() => setupNewAccountMobile({ id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
-                                tooltip="Setup new account (mobile)"
-                                id={`setup-new-account-mobile-${profile.profile_id}`}
-                                className="px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 dark:bg-teal-900/40 dark:hover:bg-teal-900/60 dark:text-teal-300 text-xs"
-                                disabled={!openedList?.[profile.profile_id]?.ws}
-                              >
-                                <i className="fa-solid fa-user-plus"></i>
-                              </Button>
-                              <Button
-                                id={`edit-folder-${profile.profile_id}`}
-                                tooltip="Edit folder for post"
-                                onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap, 'post')}
-                                className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 dark:bg-yellow-900/40 dark:hover:bg-yellow-900/60 dark:text-yellow-300 text-xs"
-                              >
-                                <i className="fa-solid fa-pen-to-square"></i>
-                              </Button>
-                              <Button
-                                id={`edit-folder-${profile.profile_id}`}
-                                tooltip="Edit folder for quote"
-                                onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap, 'quote')}
-                                className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:text-purple-300 text-xs"
-                              >
-                                <i className="fa-solid fa-pen-to-square"></i>
-                              </Button>
-                              <Button
-                                tooltip="Open profile folder"
-                                className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 dark:bg-yellow-900/40 dark:hover:bg-yellow-900/60 dark:text-yellow-300 text-xs"
-                                onClick={() => windowInstance.api.openProfileFolder(profile.profile_id)}
-                              >
-                                <i className="fa-solid fa-folder-open"></i>
-                              </Button>
-                              <Button
-                                tooltip="Generate profile"
-                                className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-300 text-xs"
-                                onClick={() => handleGenerateProfile(sex, profile.profile_id)}
-                              >
-                                <i className="fa-brands fa-hubspot"></i>
-                              </Button>
-                              <Button
-                                tooltip="Change profile info"
-                                className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 text-xs"
-                                onClick={() => handleChangeProfileInfo(profile.profile_id)}
-                              >
-                                <i className="fa-regular fa-address-book"></i>
-                              </Button>
-                              <Button
-                                tooltip="Delete latest post"
-                                className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/40 dark:hover:bg-red-900/60 dark:text-red-300 text-xs"
-                                onClick={() => handleDeletePost({ user_id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
-                              >
-                                <i className="fa-solid fa-trash"></i>
-                              </Button>
-                              <p className="hidden" id={`profile-info-${profile.profile_id}`}>
-                                {`${profile.name}||${userMap?.[profile.profile_id]?.path}||${userMap?.[profile.profile_id]?.quotePath}`}
-                              </p>
+                            {/* Manual Actions */}
+                            <div className="lg:col-span-3">
+                              <div className="flex flex-wrap gap-1">
+                                <OpenProfle id={profile.profile_id} total={totalBrowsers} onOpen={() => setTotalBrowsers(prev => prev + 1)} />
+                                <Button
+                                  id={`random-folder-${profile.profile_id}`}
+                                  onClick={() => handleRandomFolder(profile.profile_id)}
+                                  tooltip="Random folder"
+                                  className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
+                                >
+                                  <i className="fa-solid fa-arrow-rotate-right"></i>
+                                </Button>
+                                <Button
+                                  onClick={() => handleShowInfo(userMap?.[profile.profile_id]?.path, profile.profile_id)}
+                                  tooltip="Show info"
+                                  className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
+                                >
+                                  <i className="fa-regular fa-eye"></i>
+                                </Button>
+                                <Button
+                                  onClick={() => handleCopyWs(openedList?.[profile.profile_id]?.ws || '')}
+                                  tooltip="Copy ws"
+                                  className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-xs"
+                                >
+                                  <i className="fa-solid fa-copy"></i>
+                                </Button>
+                                <Button
+                                  id={`post-button-${profile.profile_id}`}
+                                  tooltip="Post"
+                                  onClick={() => clickPostButton(profile.profile_id, 'post', openedList, userMap)}
+                                  className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 text-xs"
+                                  disabled={!reportName || !openedList?.[profile.profile_id]?.ws}
+                                >
+                                  <i className="fa-solid fa-circle-play"></i>
+                                </Button>
+                                <Button
+                                  id={`quote-button-${profile.profile_id}`}
+                                  onClick={() => clickPostButton(profile.profile_id, 'quote', openedList, userMap)}
+                                  tooltip="Quote"
+                                  className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:text-purple-300 text-xs"
+                                  disabled={!reportName || !openedList?.[profile.profile_id]?.ws}
+                                >
+                                  <i className="fa-solid fa-retweet"></i>
+                                </Button>
+                                <Button
+                                  onClick={() => setupNewAccount({ id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
+                                  tooltip="Setup new account"
+                                  id={`setup-new-account-${profile.profile_id}`}
+                                  className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-300 text-xs"
+                                >
+                                  <i className="fa-solid fa-user-plus"></i>
+                                </Button>
+                                <Button
+                                  onClick={() => setupNewAccountMobile({ id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
+                                  tooltip="Setup new account (mobile)"
+                                  id={`setup-new-account-mobile-${profile.profile_id}`}
+                                  className="px-2 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 dark:bg-teal-900/40 dark:hover:bg-teal-900/60 dark:text-teal-300 text-xs"
+                                  disabled={!openedList?.[profile.profile_id]?.ws}
+                                >
+                                  <i className="fa-solid fa-user-plus"></i>
+                                </Button>
+                                <Button
+                                  id={`edit-folder-${profile.profile_id}`}
+                                  tooltip="Edit folder for post"
+                                  onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap, 'post')}
+                                  className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 dark:bg-yellow-900/40 dark:hover:bg-yellow-900/60 dark:text-yellow-300 text-xs"
+                                >
+                                  <i className="fa-solid fa-pen-to-square"></i>
+                                </Button>
+                                <Button
+                                  id={`edit-folder-${profile.profile_id}`}
+                                  tooltip="Edit folder for quote"
+                                  onClick={() => clickEditLatestPostButton(profile.profile_id, openedList, userMap, 'quote')}
+                                  className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/40 dark:hover:bg-purple-900/60 dark:text-purple-300 text-xs"
+                                >
+                                  <i className="fa-solid fa-pen-to-square"></i>
+                                </Button>
+                                <Button
+                                  tooltip="Open profile folder"
+                                  className="px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 dark:bg-yellow-900/40 dark:hover:bg-yellow-900/60 dark:text-yellow-300 text-xs"
+                                  onClick={() => windowInstance.api.openProfileFolder(profile.profile_id)}
+                                >
+                                  <i className="fa-solid fa-folder-open"></i>
+                                </Button>
+                                <Button
+                                  tooltip="Generate profile"
+                                  className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 dark:bg-green-900/40 dark:hover:bg-green-900/60 dark:text-green-300 text-xs"
+                                  onClick={() => handleGenerateProfile(sex, profile.profile_id)}
+                                >
+                                  <i className="fa-brands fa-hubspot"></i>
+                                </Button>
+                                <Button
+                                  tooltip="Change profile info"
+                                  className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 dark:text-blue-300 text-xs"
+                                  onClick={() => handleChangeProfileInfo(profile.profile_id)}
+                                >
+                                  <i className="fa-regular fa-address-book"></i>
+                                </Button>
+                                <Button
+                                  tooltip="Delete latest post"
+                                  className="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/40 dark:hover:bg-red-900/60 dark:text-red-300 text-xs"
+                                  onClick={() => handleDeletePost({ user_id: profile.profile_id, ws: openedList?.[profile.profile_id]?.ws, username: profile.name })}
+                                >
+                                  <i className="fa-solid fa-trash"></i>
+                                </Button>
+                                <Button
+                                  tooltip="Copy 2FA code"
+                                  className="px-2 py-1 shrink-0 bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 dark:text-amber-200 text-xs"
+                                  onClick={async () => {
+                                    try {
+                                      const code = await windowInstance.api.fetchTwoFaToken(profile.tfa_secret);
+                                      await navigator.clipboard.writeText(code);
+                                      toast.success(`Đã copy code: ${code}`);
+                                    } catch (e) {
+                                      toast.error(e instanceof Error ? e.message : 'Lấy 2FA code thất bại');
+                                    }
+                                  }}
+                                >
+                                  <i className="fa-solid fa-copy"></i>
+                                </Button>
+                                <p className="hidden" id={`profile-info-${profile.profile_id}`}>
+                                  {`${profile.name}||${userMap?.[profile.profile_id]?.path}||${userMap?.[profile.profile_id]?.quotePath}`}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              );
-            })()}
-          </LoadingWraper>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </LoadingWraper>
           </div>
         </div>
       </div>

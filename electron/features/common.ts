@@ -10,6 +10,18 @@ export const waitRandom = async (from: number, to: number) => {
   await new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/** Fetch current TOTP from 2fa.live — response: { token: '123456' } */
+export const fetchTwoFaToken = async (twoFaSecret: string) => {
+  const secret = twoFaSecret.trim().replace(/\s+/g, '');
+  if (!secret) throw new Error('2FA secret is empty');
+  const res = await fetch(`https://2fa.live/tok/${encodeURIComponent(secret)}`);
+  if (!res.ok) throw new Error(`2fa.live HTTP ${res.status}`);
+  const data = (await res.json()) as { token?: string };
+  const token = String(data?.token || '').trim();
+  if (!token) throw new Error('2fa.live returned empty token');
+  return token;
+};
+
 // save main config
 export const saveMainConfig = async (config: MainConfig) => {
   const currentConfig = await loadMainConfig() || {};

@@ -135,6 +135,7 @@ contextBridge.exposeInMainWorld('api', {
     invoke(InvokeChannel.CHECK_ACCOUNT_VIEWS, params),
   listCheckViewsReports: () => invoke(InvokeChannel.LIST_CHECK_VIEWS_REPORTS),
   getCheckViewsReport: (fileName: string) => invoke(InvokeChannel.GET_CHECK_VIEWS_REPORT, fileName),
+  fetchTwoFaToken: (secret: string) => invoke(InvokeChannel.FETCH_TWO_FA_TOKEN, secret),
 });
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

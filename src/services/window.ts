@@ -209,6 +209,7 @@ type WindownInstance = typeof window & {
       totalShares: number
       totalSends: number
     }>,
+    fetchTwoFaToken: (secret: string) => Promise<string>,
   }
 }
 

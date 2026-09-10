@@ -18,7 +18,7 @@ import {
 } from './features/threads-folder'
 import { openProfile, updateProfileGroup } from './features/ixbrowser-api'
 import { checkLiveAccounts, clickEditLatestPostButton, clickPostButton, setupNewAccount, setupNewAccountMobile } from './features/threads-profile'
-import { initConfigFile, loadAndroidNotes, loadMainConfig, saveAndroidNotes, saveHistoryTxt, saveMainConfig } from './features/common'
+import { fetchTwoFaToken, initConfigFile, loadAndroidNotes, loadMainConfig, saveAndroidNotes, saveHistoryTxt, saveMainConfig } from './features/common'
 import { checkValidCaptionOrLink } from './features/caption'
 import { addJobs, handleClearJob, handleGetQueue } from './features/job'
 import { deleteOldestReportNames, getReportByName, getReportNamesV2 } from './features/report'
@@ -391,6 +391,10 @@ handle(InvokeChannel.LIST_CHECK_VIEWS_REPORTS, async () => {
 
 handle(InvokeChannel.GET_CHECK_VIEWS_REPORT, async (_event, fileName) => {
   return getCheckViewsReport(fileName);
+});
+
+handle(InvokeChannel.FETCH_TWO_FA_TOKEN, async (_event, secret: string) => {
+  return fetchTwoFaToken(secret);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

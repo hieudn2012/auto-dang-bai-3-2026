@@ -81,6 +81,7 @@ export enum InvokeChannel {
   CHECK_ACCOUNT_VIEWS = 'check-account-views',
   LIST_CHECK_VIEWS_REPORTS = 'list-check-views-reports',
   GET_CHECK_VIEWS_REPORT = 'get-check-views-report',
+  FETCH_TWO_FA_TOKEN = 'fetch-two-fa-token',
 }
 
 export type MainConfig = {
