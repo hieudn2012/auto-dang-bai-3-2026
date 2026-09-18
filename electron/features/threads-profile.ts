@@ -110,7 +110,7 @@ export interface PostParams {
 const POST_BUTTON_SELECTOR = 'div.xc26acl';
 const LATEST_POST_SELECTOR = 'div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7'
 const REPOST_BUTTON_SELECTOR = `div.x6s0dn4.x1eywl5b.x78zum5.xl56j7k svg[title="Repost"]`
-const QUOTE_BUTTON_SELECTOR = `svg[aria-label="Quote"]`
+const QUOTE_BUTTON_SELECTOR = `div.x6s0dn4.x78zum5.xdzw4kq svg[title="Quote"]`
 const MODAL_SELECTOR = 'div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is'
 const TEXT_AREA_CAPTION = 'div[aria-label="Empty text field. Type to compose a new post."]'
 const POST_BUTTON_SUBMIT = 'div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5'
