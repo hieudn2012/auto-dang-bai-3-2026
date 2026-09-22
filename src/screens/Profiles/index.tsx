@@ -421,25 +421,25 @@ const Profiles = () => {
   }
 
   useEffect(() => {
+    const ipc = (window as Window & { ipcRenderer?: { on: Function; off: Function } }).ipcRenderer;
+    if (!ipc?.on) return;
+
     const handleToast = (_event: any, arg: any) => {
       const { message, id } = arg as { type: 'success' | 'error' | 'info', message: string, id?: number };
       const el = document.getElementById(`message-${id}`);
       el && (el.textContent = message);
     }
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    window.ipcRenderer.on('show-toast', handleToast)
+    ipc.on('show-toast', handleToast)
 
     return () => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      window.ipcRenderer.off('show-toast', handleToast)
+      ipc.off?.('show-toast', handleToast)
     }
   }, [])
 
   useEffect(() => {
     const loadMainConfig = async () => {
+      if (!windowInstance.api?.loadMainConfig) return;
       const mainConfig = await windowInstance.api.loadMainConfig();
       if (mainConfig?.profile?.groupId) {
         setGroupId(mainConfig.profile.groupId);

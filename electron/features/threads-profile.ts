@@ -437,6 +437,101 @@ const tryClickByTextOnPage = async (page: Page, text: string): Promise<boolean> 
 
 type PageRef = { page: Page };
 
+/** Kiểm tra text có trên page (không click). */
+const hasTextOnPage = async (page: Page, text: string): Promise<boolean> => {
+  return page.evaluate((needle) => {
+    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+    const want = normalize(needle);
+    const isVisible = (el: HTMLElement | null) => {
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return (
+        r.width > 0 &&
+        r.height > 0 &&
+        style.visibility !== 'hidden' &&
+        style.display !== 'none'
+      );
+    };
+    const candidates = Array.from(
+      document.querySelectorAll(
+        'button, a, [role="button"], div[role="button"], span[role="button"], [tabindex="0"], body *',
+      ),
+    ) as HTMLElement[];
+    for (const el of candidates) {
+      if (!isVisible(el)) continue;
+      const aria = normalize(el.getAttribute('aria-label') || '');
+      const inner = normalize(el.innerText || '');
+      if (aria === want || inner === want) return true;
+      if (want.length > 10 && (inner.includes(want) || aria.includes(want)) && inner.length < want.length + 40) {
+        return true;
+      }
+    }
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      if (normalize(node.textContent || '') === want) {
+        const parent = node.parentElement as HTMLElement | null;
+        if (isVisible(parent)) return true;
+      }
+    }
+    return false;
+  }, text);
+};
+
+/**
+ * Chờ đến khi thấy 1 trong các text (không click) — trả về text khớp.
+ */
+const waitForAnyText = async (
+  browser: Browser,
+  pageRef: PageRef,
+  texts: string[],
+  opts: {
+    timeout?: number;
+    onWait?: (elapsedSec: number, lookingFor: string) => void;
+  } = {},
+) => {
+  const lookingFor = texts.join('" / "');
+  const timeout = opts.timeout ?? 120_000;
+  const start = Date.now();
+  let lastBeat = -1;
+
+  while (Date.now() - start < timeout) {
+    const elapsedSec = Math.floor((Date.now() - start) / 1000);
+    if (opts.onWait && elapsedSec !== lastBeat && elapsedSec % 3 === 0) {
+      lastBeat = elapsedSec;
+      opts.onWait(elapsedSec, lookingFor);
+    }
+
+    try {
+      const pages = await browser.pages();
+      for (const p of pages) {
+        try {
+          const url = p.url();
+          if (!url || url.startsWith('devtools://') || url.startsWith('chrome-extension://')) {
+            continue;
+          }
+          for (const needle of texts) {
+            if (await hasTextOnPage(p, needle)) {
+              pageRef.page = p;
+              await p.bringToFront().catch(() => { });
+              return needle;
+            }
+          }
+        } catch {
+          // tab navigated
+        }
+      }
+    } catch {
+      // browser tạm lỗi
+    }
+
+    await new Promise((r) => setTimeout(r, 400));
+  }
+
+  throw new Error(`Timeout ${timeout / 1000}s — không thấy "${lookingFor}"`);
+};
+
 /**
  * Chờ + click text trên mọi tab (OAuth IG hay mở tab mới).
  * Heartbeat `onWait` mỗi ~3s để UI không “im” khi đang chờ.
@@ -517,35 +612,103 @@ export const setupNewAccountMobile = async ({
       waitUntil: 'domcontentloaded',
       timeout: 60_000,
     });
+    msg('Mobile setup: chờ ngẫu nhiên sau khi mở login…');
+    await waitRandom(2500, 6000);
 
-    // Step 2: tìm + click "Join with Instagram"
-    msg('Mobile setup [2/5]: chờ "Join with Instagram"…');
-    await waitAndClickByText(browser, pageRef, 'Join with Instagram', {
-      onWait: (s, t) => msg(`Mobile setup [2/5]: chờ "${t}"… (${s}s)`),
-    });
-    msg('Mobile setup [2/5]: đã click "Join with Instagram" ✅');
+    // Step 2: chờ 1 trong 3 CTA rồi rẽ nhánh
+    const JOIN_INSTAGRAM = 'Join with Instagram';
+    const JOIN_META = 'Join using your Meta Account';
+    const CONTINUE_WITH_INSTAGRAM = 'Continue with Instagram';
 
-    // Step 3: chờ nút "Next" rồi click (quét mọi tab)
-    msg('Mobile setup [3/5]: chờ nút "Next"…');
-    await waitAndClickByText(browser, pageRef, ['Next', 'Continue'], {
-      onWait: (s, t) => msg(`Mobile setup [3/5]: chờ "${t}"… (${s}s)`),
-    });
-    msg('Mobile setup [3/5]: đã click "Next" ✅');
+    msg(`Mobile setup [2/5]: chờ "${JOIN_INSTAGRAM}" / "${JOIN_META}" / "${CONTINUE_WITH_INSTAGRAM}"…`);
+    const joinChoice = await waitForAnyText(
+      browser,
+      pageRef,
+      [JOIN_INSTAGRAM, JOIN_META, CONTINUE_WITH_INSTAGRAM],
+      {
+        onWait: (s, t) => msg(`Mobile setup [2/5]: chờ "${t}"… (${s}s)`),
+      },
+    );
+    msg(`Mobile setup [2/5]: thấy "${joinChoice}"`);
 
-    // Chờ UI bước Join hiện ra
-    msg('Mobile setup: chờ 5s trước bước Join Threads…');
-    await waitRandom(5000, 5000);
+    const pauseBetweenSteps = async (note = 'chờ ngẫu nhiên giữa step…') => {
+      msg(`Mobile setup: ${note}`);
+      await waitRandom(2500, 7000);
+    };
 
-    // Step 4: chờ nút "Join Threads" rồi click
-    msg('Mobile setup [4/5]: chờ nút "Join Threads"…');
-    await waitAndClickByText(browser, pageRef, 'Join Threads', {
-      onWait: (s, t) => msg(`Mobile setup [4/5]: chờ "${t}"… (${s}s)`),
-    });
-    msg('Mobile setup [4/5]: đã click "Join Threads" ✅');
+    if (joinChoice === JOIN_INSTAGRAM) {
+      // Trường hợp 1: Join with Instagram → flow hiện tại
+      await waitAndClickByText(browser, pageRef, JOIN_INSTAGRAM);
+      msg('Mobile setup [2/5]: đã click "Join with Instagram" ✅');
+      await pauseBetweenSteps();
 
-    // Step 5: chờ 10s => done
-    msg('Mobile setup [5/5]: chờ 10s…');
-    await waitRandom(10000, 10000);
+      // Step 3: chờ nút "Next" rồi click (quét mọi tab)
+      msg('Mobile setup [3/5]: chờ nút "Next"…');
+      await waitAndClickByText(browser, pageRef, ['Next', 'Continue'], {
+        onWait: (s, t) => msg(`Mobile setup [3/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [3/5]: đã click "Next" ✅');
+      await pauseBetweenSteps('chờ trước Join Threads…');
+
+      // Step 4: chờ nút "Join Threads" rồi click
+      msg('Mobile setup [4/5]: chờ nút "Join Threads"…');
+      await waitAndClickByText(browser, pageRef, 'Join Threads', {
+        onWait: (s, t) => msg(`Mobile setup [4/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [4/5]: đã click "Join Threads" ✅');
+      await pauseBetweenSteps();
+
+      // Step 5: chờ ngẫu nhiên => done
+      msg('Mobile setup [5/5]: chờ cuối…');
+      await waitRandom(8000, 15000);
+    } else if (joinChoice === JOIN_META) {
+      // Trường hợp 2: Join using your Meta Account
+      msg('Mobile setup [2/5]: click "Join using your Meta Account"…');
+      await waitAndClickByText(browser, pageRef, JOIN_META);
+      msg('Mobile setup [2/5]: đã click "Join using your Meta Account" ✅');
+      await pauseBetweenSteps();
+      msg('Mobile setup: chờ cuối…');
+      await waitRandom(12000, 18000);
+    } else if (joinChoice === CONTINUE_WITH_INSTAGRAM) {
+      // Trường hợp 3: Continue with Instagram
+      msg('Mobile setup [2/5]: click "Continue with Instagram"…');
+      await waitAndClickByText(browser, pageRef, CONTINUE_WITH_INSTAGRAM);
+      msg('Mobile setup [2/5]: đã click "Continue with Instagram" ✅');
+      await pauseBetweenSteps();
+
+      if (!username?.trim()) {
+        throw new Error('Thiếu username để chọn account Instagram');
+      }
+      msg(`Mobile setup [3/5]: chờ username "${username}"…`);
+      await waitAndClickByText(browser, pageRef, username.trim(), {
+        onWait: (s, t) => msg(`Mobile setup [3/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg(`Mobile setup [3/5]: đã click "${username}" ✅`);
+      await pauseBetweenSteps();
+
+      msg('Mobile setup [4/5]: chờ "Join Threads"…');
+      await waitAndClickByText(browser, pageRef, 'Join Threads', {
+        onWait: (s, t) => msg(`Mobile setup [4/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [4/5]: đã click "Join Threads" ✅');
+      await pauseBetweenSteps();
+
+      msg('Mobile setup [5/5]: chờ "Public profile"…');
+      await waitAndClickByText(browser, pageRef, 'Public profile', {
+        onWait: (s, t) => msg(`Mobile setup [5/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [5/5]: đã click "Public profile" ✅');
+      await pauseBetweenSteps();
+
+      msg('Mobile setup [5/5]: chờ "Next"…');
+      await waitAndClickByText(browser, pageRef, ['Next', 'Continue'], {
+        onWait: (s, t) => msg(`Mobile setup [5/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [5/5]: đã click "Next" ✅');
+
+      msg('Mobile setup: chờ cuối…');
+      await waitRandom(12000, 18000);
+    }
 
     msg('Setup new account mobile success ✅');
     sendLog(event, { id, username, message: `Setup new account mobile success cho ${id}` });
