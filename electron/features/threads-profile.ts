@@ -667,6 +667,28 @@ export const setupNewAccountMobile = async ({
       await waitAndClickByText(browser, pageRef, JOIN_META);
       msg('Mobile setup [2/5]: đã click "Join using your Meta Account" ✅');
       await pauseBetweenSteps();
+
+      msg('Mobile setup [5/5]: chờ "Public profile"…');
+      await waitAndClickByText(browser, pageRef, 'Public profile', {
+        onWait: (s, t) => msg(`Mobile setup [5/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [5/5]: đã click "Public profile" ✅');
+      await pauseBetweenSteps();
+
+      msg('Mobile setup [5/5]: chờ "Next"…');
+      await waitAndClickByText(browser, pageRef, ['Next', 'Continue'], {
+        onWait: (s, t) => msg(`Mobile setup [5/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [5/5]: đã click "Next" ✅');
+      await pauseBetweenSteps();
+
+      msg('Mobile setup [5/5]: chờ "Join Threads"…');
+      await waitAndClickByText(browser, pageRef, 'Join Threads', {
+        onWait: (s, t) => msg(`Mobile setup [5/5]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [5/5]: đã click "Join Threads" ✅');
+      await pauseBetweenSteps();
+
       msg('Mobile setup: chờ cuối…');
       await waitRandom(12000, 18000);
     } else if (joinChoice === CONTINUE_WITH_INSTAGRAM) {
