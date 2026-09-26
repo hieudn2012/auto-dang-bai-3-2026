@@ -703,35 +703,24 @@ export const setupNewAccountMobile = async ({
       msg('Mobile setup [2/6]: đã click "Continue with Instagram" ✅');
       await pauseBetweenSteps();
 
-      if (!username?.trim()) {
-        throw new Error('Thiếu username để chọn account Instagram');
-      }
-      // Step 3: chọn username
-      msg(`Mobile setup [3/6]: chờ username "${username}"…`);
-      await waitAndClickByText(browser, pageRef, username.trim(), {
+      // Step 3: Public profile
+      msg('Mobile setup [3/6]: chờ "Public profile"…');
+      await waitAndClickByText(browser, pageRef, 'Public profile', {
         onWait: (s, t) => msg(`Mobile setup [3/6]: chờ "${t}"… (${s}s)`),
       });
-      msg(`Mobile setup [3/6]: đã click "${username}" ✅`);
+      msg('Mobile setup [3/6]: đã click "Public profile" ✅');
       await pauseBetweenSteps();
 
-      // Step 4: Public profile
-      msg('Mobile setup [4/6]: chờ "Public profile"…');
-      await waitAndClickByText(browser, pageRef, 'Public profile', {
+      // Step 4: Next (trước Join Threads)
+      msg('Mobile setup [4/6]: chờ "Next"…');
+      await waitAndClickByText(browser, pageRef, ['Next', 'Continue'], {
         onWait: (s, t) => msg(`Mobile setup [4/6]: chờ "${t}"… (${s}s)`),
       });
-      msg('Mobile setup [4/6]: đã click "Public profile" ✅');
+      msg('Mobile setup [4/6]: đã click "Next" ✅');
       await pauseBetweenSteps();
 
-      // Step 5: Next (trước Join Threads)
-      msg('Mobile setup [5/6]: chờ "Next"…');
-      await waitAndClickByText(browser, pageRef, ['Next', 'Continue'], {
-        onWait: (s, t) => msg(`Mobile setup [5/6]: chờ "${t}"… (${s}s)`),
-      });
-      msg('Mobile setup [5/6]: đã click "Next" ✅');
-      await pauseBetweenSteps();
-
-      // Step 6: Join Threads
-      msg('Mobile setup [6/6]: chờ "Join Threads"…');
+      // Step 5: Join Threads
+      msg('Mobile setup [5/6]: chờ "Join Threads"…');
       await waitAndClickByText(browser, pageRef, 'Join Threads', {
         onWait: (s, t) => msg(`Mobile setup [6/6]: chờ "${t}"… (${s}s)`),
       });
