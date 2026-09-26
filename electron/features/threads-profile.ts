@@ -697,40 +697,45 @@ export const setupNewAccountMobile = async ({
       await waitRandom(12000, 18000);
     } else if (joinChoice === CONTINUE_WITH_INSTAGRAM) {
       // Trường hợp 3: Continue with Instagram
-      msg('Mobile setup [2/5]: click "Continue with Instagram"…');
+      // Step 2: Continue with Instagram
+      msg('Mobile setup [2/6]: click "Continue with Instagram"…');
       await waitAndClickByText(browser, pageRef, CONTINUE_WITH_INSTAGRAM);
-      msg('Mobile setup [2/5]: đã click "Continue with Instagram" ✅');
+      msg('Mobile setup [2/6]: đã click "Continue with Instagram" ✅');
       await pauseBetweenSteps();
 
       if (!username?.trim()) {
         throw new Error('Thiếu username để chọn account Instagram');
       }
-      msg(`Mobile setup [3/5]: chờ username "${username}"…`);
+      // Step 3: chọn username
+      msg(`Mobile setup [3/6]: chờ username "${username}"…`);
       await waitAndClickByText(browser, pageRef, username.trim(), {
-        onWait: (s, t) => msg(`Mobile setup [3/5]: chờ "${t}"… (${s}s)`),
+        onWait: (s, t) => msg(`Mobile setup [3/6]: chờ "${t}"… (${s}s)`),
       });
-      msg(`Mobile setup [3/5]: đã click "${username}" ✅`);
+      msg(`Mobile setup [3/6]: đã click "${username}" ✅`);
       await pauseBetweenSteps();
 
-      msg('Mobile setup [4/5]: chờ "Join Threads"…');
-      await waitAndClickByText(browser, pageRef, 'Join Threads', {
-        onWait: (s, t) => msg(`Mobile setup [4/5]: chờ "${t}"… (${s}s)`),
-      });
-      msg('Mobile setup [4/5]: đã click "Join Threads" ✅');
-      await pauseBetweenSteps();
-
-      msg('Mobile setup [5/5]: chờ "Public profile"…');
+      // Step 4: Public profile
+      msg('Mobile setup [4/6]: chờ "Public profile"…');
       await waitAndClickByText(browser, pageRef, 'Public profile', {
-        onWait: (s, t) => msg(`Mobile setup [5/5]: chờ "${t}"… (${s}s)`),
+        onWait: (s, t) => msg(`Mobile setup [4/6]: chờ "${t}"… (${s}s)`),
       });
-      msg('Mobile setup [5/5]: đã click "Public profile" ✅');
+      msg('Mobile setup [4/6]: đã click "Public profile" ✅');
       await pauseBetweenSteps();
 
-      msg('Mobile setup [5/5]: chờ "Next"…');
+      // Step 5: Next (trước Join Threads)
+      msg('Mobile setup [5/6]: chờ "Next"…');
       await waitAndClickByText(browser, pageRef, ['Next', 'Continue'], {
-        onWait: (s, t) => msg(`Mobile setup [5/5]: chờ "${t}"… (${s}s)`),
+        onWait: (s, t) => msg(`Mobile setup [5/6]: chờ "${t}"… (${s}s)`),
       });
-      msg('Mobile setup [5/5]: đã click "Next" ✅');
+      msg('Mobile setup [5/6]: đã click "Next" ✅');
+      await pauseBetweenSteps();
+
+      // Step 6: Join Threads
+      msg('Mobile setup [6/6]: chờ "Join Threads"…');
+      await waitAndClickByText(browser, pageRef, 'Join Threads', {
+        onWait: (s, t) => msg(`Mobile setup [6/6]: chờ "${t}"… (${s}s)`),
+      });
+      msg('Mobile setup [6/6]: đã click "Join Threads" ✅');
 
       msg('Mobile setup: chờ cuối…');
       await waitRandom(12000, 18000);
