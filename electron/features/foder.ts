@@ -15,20 +15,58 @@ const countNonEmptyLines = (data: string) =>
     .split('\n')
     .filter((line) => line.trim() !== '').length;
 
-const isUsableProductFolder = (folderPath: string): boolean => {
+const MIN_LINES_EXCLUSIVE = 2;
+/** Không folder nào được nặng hơn N lần trọng số trung vị → tránh 1 folder chiếm gần 100%. */
+const MAX_WEIGHT_TO_MEDIAN = 3;
+
+interface FolderCandidate {
+  folderPath: string;
+  capCount: number;
+  linkCount: number;
+}
+
+const readProductFolder = (folderPath: string): FolderCandidate | null => {
   try {
     const capPath = path.join(folderPath, 'cap.txt');
     const linkPath = path.join(folderPath, 'link.txt');
     if (!fs.existsSync(capPath) || !fs.existsSync(linkPath)) {
-      return false;
+      return null;
     }
 
-    const capLength = countNonEmptyLines(fs.readFileSync(capPath, 'utf-8'));
-    const linkLength = countNonEmptyLines(fs.readFileSync(linkPath, 'utf-8'));
-    return capLength >= 2 && linkLength >= 2;
+    const capCount = countNonEmptyLines(fs.readFileSync(capPath, 'utf-8'));
+    const linkCount = countNonEmptyLines(fs.readFileSync(linkPath, 'utf-8'));
+    if (capCount <= MIN_LINES_EXCLUSIVE || linkCount <= MIN_LINES_EXCLUSIVE) {
+      return null;
+    }
+    if (getMediaInFolder(folderPath).length === 0) {
+      return null;
+    }
+
+    return { folderPath, capCount, linkCount };
   } catch {
-    return false;
+    return null;
   }
+};
+
+/**
+ * Trọng số tương đối theo số bài còn đăng được (min cap/link):
+ * sqrt để folder nhiều data được ưu tiên nhưng không tăng tuyến tính,
+ * rồi chặn trần theo trung vị.
+ */
+const pickWeightedFolder = (candidates: FolderCandidate[]): string => {
+  const rawWeights = candidates.map((c) => Math.sqrt(Math.min(c.capCount, c.linkCount)));
+  const sorted = [...rawWeights].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const ceiling = median * MAX_WEIGHT_TO_MEDIAN;
+  const weights = rawWeights.map((w) => Math.min(w, ceiling));
+
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  let roll = Math.random() * total;
+  for (let i = 0; i < candidates.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return candidates[i].folderPath;
+  }
+  return candidates[candidates.length - 1].folderPath;
 };
 
 export const getRandomFolder = (
@@ -61,18 +99,19 @@ export const getRandomFolder = (
       })
       .map((entry) => path.join(rootPath, entry.name))
       .filter((folderPath) => !excludeSet.has(path.normalize(folderPath)))
-      .filter((folderPath) => isUsableProductFolder(folderPath));
+      .map((folderPath) => readProductFolder(folderPath))
+      .filter((c): c is FolderCandidate => c !== null);
 
     if (candidates.length === 0) {
       console.error(
-        'No usable folders found (need cap.txt + link.txt with >= 2 lines each):',
+        'No usable folders found (need cap.txt + link.txt with > 2 lines each and at least 1 image/video):',
         rootPath,
         `| excluded=${excludeFolders.length}`,
       );
       return '';
     }
 
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    return pickWeightedFolder(candidates);
   } catch (error) {
     console.error('Error reading folder:', rootPath, error);
     return '';
