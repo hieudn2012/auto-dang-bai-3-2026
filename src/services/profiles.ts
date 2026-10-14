@@ -9,11 +9,37 @@ interface Pagination {
 
 const defaultPagination: Pagination = {
   page: 1,
-  limit: 1000
+  limit: 200
 }
 
-export const getProfiles = (group_id: number, pagination: Pagination = defaultPagination) => {
-  return axios.post(`/api/v2/profile-list`, { group_id, ...defaultPagination, ...pagination })
+const getProfilesPage = (group_id: number, pagination: Pagination) => {
+  return axios.post(`/api/v2/profile-list`, { group_id, ...pagination })
+}
+
+export const getProfiles = async (group_id: number, pagination: Pagination = defaultPagination) => {
+  const limit = pagination.limit || defaultPagination.limit
+  let page = pagination.page || defaultPagination.page
+  const first = await getProfilesPage(group_id, { page, limit })
+  const total: number = Number(first?.data?.data?.total) || 0
+  const items: any[] = [...(first?.data?.data?.data || [])]
+  let lastCount = items.length
+
+  while (lastCount >= limit && items.length < total) {
+    page += 1
+    const res = await getProfilesPage(group_id, { page, limit })
+    const rows: any[] = res?.data?.data?.data || []
+    lastCount = rows.length
+    if (!rows.length) break
+    items.push(...rows)
+  }
+
+  return {
+    ...first,
+    data: {
+      ...first.data,
+      data: { ...first.data?.data, total, data: items }
+    }
+  }
 }
 
 const getGroupList = () => {
