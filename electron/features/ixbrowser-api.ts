@@ -5,7 +5,7 @@ const BASE_URL = 'http://127.0.0.1:53200';
 
 const PAGINATIONS = {
   page: 1,
-  limit: 500
+  limit: 200
 }
 
 interface OpenedProfile {
@@ -108,13 +108,33 @@ export const deleteProfile = async (profileId: number) => {
   return response.data;
 };
 
-// /api/v2/profile-list
+// /api/v2/profile-list — gom đủ trang (API limit tối đa theo page)
 export const getProfileList = async (groupId: number): Promise<ProfileData[]> => {
-  const response = await axios.post(`${BASE_URL}/api/v2/profile-list`, {
-    ...PAGINATIONS,
-    group_id: groupId
+  const limit = PAGINATIONS.limit;
+  let page = PAGINATIONS.page;
+  const first = await axios.post(`${BASE_URL}/api/v2/profile-list`, {
+    group_id: groupId,
+    page,
+    limit,
   });
-  return get(response, 'data.data.data', []);
+  const total = Number(get(first, 'data.data.total', 0)) || 0;
+  const items: ProfileData[] = [...(get(first, 'data.data.data', []) as ProfileData[])];
+  let lastCount = items.length;
+
+  while (lastCount >= limit && items.length < total) {
+    page += 1;
+    const res = await axios.post(`${BASE_URL}/api/v2/profile-list`, {
+      group_id: groupId,
+      page,
+      limit,
+    });
+    const rows = get(res, 'data.data.data', []) as ProfileData[];
+    lastCount = rows.length;
+    if (!rows.length) break;
+    items.push(...rows);
+  }
+
+  return items;
 };
 
 // /api/v2/native-client-profile-opened-list
