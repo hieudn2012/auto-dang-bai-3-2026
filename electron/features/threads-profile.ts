@@ -113,7 +113,18 @@ const REPOST_BUTTON_SELECTOR = `div.x6s0dn4.x1eywl5b.x78zum5.xl56j7k svg[title="
 const QUOTE_BUTTON_SELECTOR = `div.x6s0dn4.x78zum5.xdzw4kq svg[title="Quote"]`
 const MODAL_SELECTOR = 'div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is'
 const TEXT_AREA_CAPTION = 'div[aria-label="Empty text field. Type to compose a new post."]'
-const POST_BUTTON_SUBMIT = 'div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5'
+const POST_BUTTON_SUBMIT_SELECTORS = [
+  'div.xc26acl.x6s0dn4.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv.xw2npq5',
+  'div.xc26acl.x6s0dn4.xtlf3c.x78zum5.xl56j7k.x6ikm8r.x10wlt62.xf7dkkf.xv54qhq.xlyipyv',
+]
+
+const findPostSubmitButton = async (root: { $(selector: string): Promise<any> }) => {
+  for (const selector of POST_BUTTON_SUBMIT_SELECTORS) {
+    const el = await root.$(selector);
+    if (el) return el;
+  }
+  return null;
+}
 const MORE_BUTTON_SELECTOR = 'div.x6s0dn4.x15dp1bm.x1pg3x37.xqi6p0a.x102ru31.x78zum5.xl56j7k.x1n2onr6.x3oybdh.xx6bhzk.x12w9bfk.x11xpdln.x1qx5ct2.xw4jnvo svg[title="More"]'
 
 const WAIT_FOR_UI_MS = 60_000;
@@ -278,8 +289,7 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       const caption = mode === 'affiliate' ? getRandomCaption(folder) : cutSexyCaption();
       await page.keyboard.type(caption, { delay: 100 });
     }
-    // in modal find div with class xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
-    const postButton = await modal.$(POST_BUTTON_SUBMIT);
+    const postButton = await findPostSubmitButton(modal);
     if (!postButton) {
       throw new Error('Không tìm thấy nút "Post"');
     }
@@ -1093,8 +1103,7 @@ export const clickEditLatestPostButton = async ({
       await waitRandom(1000, 2000);
     }
 
-    // find div with class = xc26acl x6s0dn4 x78zum5 xl56j7k x6ikm8r x10wlt62 xf7dkkf xv54qhq xlyipyv xw2npq5
-    const doneBtn = await page.$(POST_BUTTON_SUBMIT);
+    const doneBtn = await findPostSubmitButton(page);
     if (!doneBtn) {
       throw new Error('Không tìm thấy nút "Done"');
     }
