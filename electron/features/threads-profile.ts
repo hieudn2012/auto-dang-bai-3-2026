@@ -110,7 +110,7 @@ export interface PostParams {
 const POST_BUTTON_SELECTOR = 'div.xc26acl';
 const LATEST_POST_SELECTOR = 'div.x1a6qonq.x6ikm8r.x10wlt62.xj0a0fe.x126k92a.x6prxxf.x7r5mf7'
 const REPOST_BUTTON_SELECTOR = `div.x6s0dn4.x1eywl5b.x78zum5.xl56j7k svg[title="Repost"]`
-const QUOTE_BUTTON_SELECTOR = `div.x6s0dn4.x78zum5.xdzw4kq svg[title="Quote"]`
+const QUOTE_BUTTON_SELECTOR = 'span.x1lliihq.x1plvlek.xryxfnj.x1n2onr6.xyejjpt.x15dsfln.x12jkypp.x193iq5w.xeuugli.x1fj9vlw.x13faqbe.x1vvkbs.x1s928wv.xhkezso.x1gmr53x.x1cpjm7i.x1fgarty.x1943h6x.x1i0vuye.xjohtrz.x1s688f.xw2npq5.x1yc453h.x1tu3fi.x3x7a5m'
 const MODAL_SELECTOR = 'div.x1n2onr6.x1ja2u2z.x1afcbsf.x78zum5.xdt5ytf.x1a2a7pz.x71s49j.x1plvlek.xryxfnj.x5hsz1j.x1u6grsq.x1mkrjbl.x4hg4is'
 const TEXT_AREA_CAPTION = 'div[aria-label="Empty text field. Type to compose a new post."]'
 const POST_BUTTON_SUBMIT_SELECTORS = [
@@ -255,7 +255,15 @@ export const clickPostButton = async (params: PostParams, event: IpcMainEvent, a
       await waitRandom(1000, 2000);
       await waitRandom(3000, 5000);
 
-      const quoteButton = await page.$(QUOTE_BUTTON_SELECTOR);
+      const quoteCandidates = await page.$$(QUOTE_BUTTON_SELECTOR);
+      let quoteButton = null;
+      for (const el of quoteCandidates) {
+        const text = await page.evaluate((e) => e?.textContent?.trim(), el);
+        if (text === 'Quote' || text === 'Trích dẫn') {
+          quoteButton = el;
+          break;
+        }
+      }
       if (!quoteButton) {
         throw new Error('Không tìm thấy nút "Quote"');
       }
