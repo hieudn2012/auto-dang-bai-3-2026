@@ -10,6 +10,7 @@ import { GenerateCaptionsParams } from './features/gemini'
 import { CaptureProductImageParams } from './features/amz'
 import { ChangeProfileInfoParams, GenerateProfileParams } from './features/profile'
 import { Android } from './features/android'
+import { BuildVideosParams } from './features/build-videos'
 
 const invoke = ipcRenderer.invoke as <T extends InvokeChannel>(channel: T, ...args: unknown[]) => Promise<ReturnType<typeof ipcRenderer.invoke>>
 
@@ -136,6 +137,8 @@ contextBridge.exposeInMainWorld('api', {
   listCheckViewsReports: () => invoke(InvokeChannel.LIST_CHECK_VIEWS_REPORTS),
   getCheckViewsReport: (fileName: string) => invoke(InvokeChannel.GET_CHECK_VIEWS_REPORT, fileName),
   fetchTwoFaToken: (secret: string) => invoke(InvokeChannel.FETCH_TWO_FA_TOKEN, secret),
+  scanBuildVideos: (parentFolder: string) => invoke(InvokeChannel.SCAN_BUILD_VIDEOS, parentFolder),
+  buildVideos: (params: BuildVideosParams) => invoke(InvokeChannel.BUILD_VIDEOS, params),
 });
 
 contextBridge.exposeInMainWorld('sendToRenderer', (channel: string, data: unknown) => {

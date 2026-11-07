@@ -28,6 +28,7 @@ export default defineConfig({
             watch: null,
             rollupOptions: {
               external: [
+                'ffmpeg-static',
                 'gologin',
                 'sharp',
                 '@img/sharp-darwin-arm64',

@@ -17,6 +17,7 @@ import { DarkModeProvider } from './contexts/DarkModeContext'
 import { LDProvider } from './configs/LDProvider'
 import ContactSupport from './screens/ContactSupport'
 import AndroidManage from './screens/AndroidManage'
+import BuildVideos from './screens/BuildVideos'
 // import LDFlagsViewer from './components/LDFlagsViewer'
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ function App() {
               <Route path={routerPath.login} element={<Login />} />
               <Route path={routerPath.contact_support} element={<ContactSupport />} />
               <Route path={routerPath.android_manage} element={<AndroidManage />} />
+              <Route path={routerPath.build_videos} element={<BuildVideos />} />
             </Routes>
           </Router>
         </QueryClientProvider>

@@ -12,4 +12,5 @@ export const routerPath = {
   contact_support: '/contact-support',
   sexy_content: '/sexy-content',
   android_manage: '/android-manage',
+  build_videos: '/build-videos',
 };

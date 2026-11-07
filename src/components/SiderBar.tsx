@@ -40,6 +40,13 @@ const getRouters = (flags: Flags) => {
     description: 'Quản lý Android'
   });
 
+  result.push({
+    path: routerPath.build_videos,
+    name: 'Build videos',
+    icon: <i className="fa-solid fa-film"></i>,
+    description: 'Ghép video reaction'
+  });
+
   if (hasTools) {
     result.push({
       path: routerPath.import_sheet,

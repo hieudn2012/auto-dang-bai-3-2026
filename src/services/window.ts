@@ -14,6 +14,7 @@ import { GenerateCaptionsParams } from "electron/features/gemini";
 import { CaptureProductImageParams } from "electron/features/amz";
 import { ChangeProfileInfoParams, GenerateProfileParams, ProfileResult } from "electron/features/profile";
 import { Android } from "electron/features/android";
+import { BuildVideoFolder, BuildVideosParams } from "electron/features/build-videos";
 
 type WindownInstance = typeof window & {
   api: {
@@ -210,6 +211,23 @@ type WindownInstance = typeof window & {
       totalSends: number
     }>,
     fetchTwoFaToken: (secret: string) => Promise<string>,
+    scanBuildVideos: (parentFolder: string) => Promise<{ parentFolder: string; folders: BuildVideoFolder[] }>,
+    buildVideos: (params: BuildVideosParams) => Promise<{
+      parentFolder: string
+      ffmpeg: string
+      total: number
+      success: number
+      skipped: number
+      failed: number
+      results: {
+        folder: string
+        name: string
+        ok: boolean
+        skipped?: boolean
+        outputPath?: string
+        error?: string
+      }[]
+    }>,
   }
 }
 

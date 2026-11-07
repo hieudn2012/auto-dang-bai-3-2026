@@ -82,6 +82,8 @@ export enum InvokeChannel {
   LIST_CHECK_VIEWS_REPORTS = 'list-check-views-reports',
   GET_CHECK_VIEWS_REPORT = 'get-check-views-report',
   FETCH_TWO_FA_TOKEN = 'fetch-two-fa-token',
+  SCAN_BUILD_VIDEOS = 'scan-build-videos',
+  BUILD_VIDEOS = 'build-videos',
 }
 
 export type MainConfig = {
@@ -114,6 +116,7 @@ export type MainConfig = {
     outputAccount?: string,
     proxyFolder?: string,
   }
+  buildVideosDir?: string
 }
 
 export type History = {

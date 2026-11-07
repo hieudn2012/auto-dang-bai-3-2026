@@ -38,6 +38,7 @@ import { deletePost } from './features/threads-delete'
 import { changeProfileInfo, generateProfile, getProfiles } from './features/profile'
 import { assignAccountsToAndroids, assignProxiesToAndroids, autoRegisterAccountsOnAndroids, closeAndroid, connectAllRunningAndroids, createPostOnAndroids, editLatestPostOnAndroids, exportAccountsFromOutput, fullSetupOnAndroids, getAndroidList, loginInstagramOnAndroids, openAndroid, openThreadsAppOnAndroids, quoteLatestPostOnAndroids, randomDeviceIdentity, randomDeviceIdentityOnAndroids, randomMuMuName, setupProxiesOnAndroids } from './features/android'
 import { checkAccountViews, getCheckViewsReport, listCheckViewsReports } from './features/check-account-views'
+import { buildVideos, scanBuildVideos } from './features/build-videos'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
@@ -395,6 +396,14 @@ handle(InvokeChannel.GET_CHECK_VIEWS_REPORT, async (_event, fileName) => {
 
 handle(InvokeChannel.FETCH_TWO_FA_TOKEN, async (_event, secret: string) => {
   return fetchTwoFaToken(secret);
+});
+
+handle(InvokeChannel.SCAN_BUILD_VIDEOS, async (_event, parentFolder: string) => {
+  return scanBuildVideos(parentFolder);
+});
+
+handle(InvokeChannel.BUILD_VIDEOS, async (event, params) => {
+  return buildVideos(params, event);
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
