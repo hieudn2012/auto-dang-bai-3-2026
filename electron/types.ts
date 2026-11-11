@@ -117,6 +117,7 @@ export type MainConfig = {
     proxyFolder?: string,
   }
   buildVideosDir?: string
+  reactionVideosDir?: string
 }
 
 export type History = {

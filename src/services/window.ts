@@ -211,20 +211,27 @@ type WindownInstance = typeof window & {
       totalSends: number
     }>,
     fetchTwoFaToken: (secret: string) => Promise<string>,
-    scanBuildVideos: (parentFolder: string) => Promise<{ parentFolder: string; folders: BuildVideoFolder[] }>,
+    scanBuildVideos: (parentFolder: string, reactionFolder?: string) => Promise<{
+      parentFolder: string
+      reactionFolder?: string
+      reactionCount: number
+      reactionError?: string
+      folders: BuildVideoFolder[]
+    }>,
     buildVideos: (params: BuildVideosParams) => Promise<{
       parentFolder: string
+      reactionFolder: string
       ffmpeg: string
       total: number
       success: number
-      skipped: number
       failed: number
       results: {
         folder: string
         name: string
         ok: boolean
-        skipped?: boolean
         outputPath?: string
+        outputName?: string
+        createdAt?: string
         error?: string
       }[]
     }>,

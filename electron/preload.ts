@@ -137,7 +137,8 @@ contextBridge.exposeInMainWorld('api', {
   listCheckViewsReports: () => invoke(InvokeChannel.LIST_CHECK_VIEWS_REPORTS),
   getCheckViewsReport: (fileName: string) => invoke(InvokeChannel.GET_CHECK_VIEWS_REPORT, fileName),
   fetchTwoFaToken: (secret: string) => invoke(InvokeChannel.FETCH_TWO_FA_TOKEN, secret),
-  scanBuildVideos: (parentFolder: string) => invoke(InvokeChannel.SCAN_BUILD_VIDEOS, parentFolder),
+  scanBuildVideos: (parentFolder: string, reactionFolder?: string) =>
+    invoke(InvokeChannel.SCAN_BUILD_VIDEOS, parentFolder, reactionFolder),
   buildVideos: (params: BuildVideosParams) => invoke(InvokeChannel.BUILD_VIDEOS, params),
 });
 

@@ -42,6 +42,10 @@ import { buildVideos, scanBuildVideos } from './features/build-videos'
 // Suppress macOS text input context warnings
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
+if (process.env.VITE_DEV_SERVER_URL) {
+  app.commandLine.appendSwitch('disable-http-cache')
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // The built directory structure
@@ -83,9 +87,9 @@ function createWindow() {
   })
 
   if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL)
-    // Open DevTools automatically in development
-    // win.webContents.openDevTools()
+    win.webContents.session.clearCache().finally(() => {
+      win?.loadURL(VITE_DEV_SERVER_URL)
+    })
   } else {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
@@ -398,8 +402,8 @@ handle(InvokeChannel.FETCH_TWO_FA_TOKEN, async (_event, secret: string) => {
   return fetchTwoFaToken(secret);
 });
 
-handle(InvokeChannel.SCAN_BUILD_VIDEOS, async (_event, parentFolder: string) => {
-  return scanBuildVideos(parentFolder);
+handle(InvokeChannel.SCAN_BUILD_VIDEOS, async (_event, parentFolder: string, reactionFolder?: string) => {
+  return scanBuildVideos(parentFolder, reactionFolder);
 });
 
 handle(InvokeChannel.BUILD_VIDEOS, async (event, params) => {

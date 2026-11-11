@@ -6,6 +6,11 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
+    // Electron resolves localhost to 127.0.0.1. Vite on Windows otherwise
+    // listens only on IPv6, so the window gets a failed or cached script.
+    host: '127.0.0.1',
+    port: 5173,
+    strictPort: true,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:53200',
